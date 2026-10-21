@@ -24,7 +24,7 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 | F10 | Đã có sẵn: HP bar kẻ địch (chỉ hiện khi mất máu), ghi chú gắn item (`Notes.CustomRecord`), `Catalog/Bestiary.isSeen`, daily seed, `QuickSlot.SIZE = 6` (static), phím zoom | `ui/CharHealthIndicator`, `journal/Notes`, `Dungeon.daily` | Nhóm C nhỏ hơn dự kiến |
 | F11 | Hunger: HUNGRY 300, STARVING 450, +1/lượt; đổi theo `Shadows` (x1,5), `SaltCube`; tạm dừng khi `WellFed`, tầng bị khóa | `actors/buffs/Hunger.java` | Food Forecast tính chính xác được từ buff, không cần ước lượng |
 | F12 | Bản debug Android có `applicationIdSuffix ".indev"` | `android/build.gradle` | Cài song song với SPD gốc để thử, chưa cần đổi tên ngay |
-| F14 | Generator dùng "bộ bài" theo từng loại item: lần rút thứ n của một loại là cố định theo seed, nhưng **ai rút** (sinh tầng, hoặc hành vi người chơi như loot quái, hạt từ cỏ) đều tăng bộ đếm `dropped`. Tầng được sinh khi người chơi đến lần đầu | `items/Generator.java:698-724`, `Mob.createLoot`, `Level.create` | **Rủi ro lớn cho Ranked**: hai người cùng seed có thể thấy đồ khác nhau ở tầng sau nếu hành vi trước đó khác. Seed pool chấm điểm bằng cách sinh tầng tuần tự cũng có thể lệch so với lúc chơi thật. **Chưa kiểm chứng đầy đủ** → spike T-seed |
+| F14 | Sinh tầng và "bộ bài" của `Generator`: lần rút thứ n của một loại item cố định theo seed riêng của loại đó (code ghi rõ mục đích: drop nhất quán dù xảy ra lúc nào). **Loot quái** (`Mob.createLoot`) dùng `randomUsingDefaults` hoặc tạo trực tiếp, không đụng bộ bài. **Hạt từ cỏ** (`HighGrass:143`) rút bộ bài SEED, nhưng sinh tầng không bao giờ rút bộ bài SEED (`Generator.random()` chuyển SEED sang `randomUsingDefaults`, `PlantsRoom` cũng dùng defaults). Bộ đếm `LimitedDrops` của sinh tầng chỉ tăng trong `Level.create` và `SpecialRoom` | `items/Generator.java:271-273,684-691,712-727`, `actors/mobs/Mob.java:1139-1159`, `levels/features/HighGrass.java:143`, `levels/Level.java:226-258` | **Đồ có sẵn ở các tầng sau không đổi vì loot quái hay giẫm cỏ**; hành vi chơi chỉ đổi vị trí và thời điểm đồ phát sinh khi chơi. Kết luận từ đọc code, **chưa chạy thử**. Ngoại lệ hẹp cần theo dõi: (1) rút bộ bài dùng chung với sinh tầng lúc chơi: Ring of Wealth rút ARTIFACT (`RingOfWealth.java:291`), Scroll of Transmutation đổi artifact (`:298`); (2) nội dung tầng phụ thuộc inventory, ví dụ trinket Exotic Crystals đổi tỉ lệ bình/scroll exotic (`ExoticCrystals.java:48`); (3) dữ liệu cục bộ: `Bones.get()` thêm item vào tầng (`RegularLevel.java:493`) |
 | F13 | Thông báo cập nhật và news feed trỏ về upstream | `services/updates`, `services/news`, `docs/recommended-changes.md` | Phải tắt/đổi trước khi phát hành |
 
 ## 2. Luật đã chốt từ user (21/10) và giả định còn lại
@@ -46,7 +46,7 @@ flowchart LR
   D1["D1 Số boss: 3 boss đầu (đã chọn)"] --> D4["D4 Cách tính thắng"]
   D1 --> A4["A4 Seed pool tầng 1 đến 5"]
   D2["D2 Cách chọn class"] --> A4
-  F14["F14 Cùng seed, cùng đồ?"] --> A4
+  F14["F14 Ngoại lệ làm lệch đồ tầng sau"] --> A4
   F14 --> A3["A3 Chống gian lận"]
   D4 --> A3
   D4 --> A5["A5 Ghost và replay"]
@@ -64,7 +64,7 @@ flowchart LR
 
 **Nhóm I, luật Duel (D1, D2, D4).** Trận là một lần chơi đầy đủ từ tầng 1 nên mọi cơ chế thường (quest, shop, đói, nhận dạng item) đều tham gia. D1 cho biết trận kéo dài tới tầng 15. D2 (chọn class) quyết định seed pool chấm chung hay theo class, và ảnh hưởng công bằng của bảng xếp hạng. D4 quyết định server phải đo và kiểm tra cái gì.
 
-**Nhóm II, tin cậy và dữ liệu (D5, F14).** D5 đổi **định dạng event log**, nền của Death Analysis (B1), Boss Practice/B6, replay (A5) và chống gian lận (A3). Vì trận dài và đầy đủ, log lớn hơn nhiều so với bản boss-only; phải chốt D5 trước khi cố định định dạng log. F14 là rủi ro nền: nếu hành vi người chơi làm lệch đồ ở tầng sau, "cùng seed" không còn công bằng và điểm seed pool không còn đúng. Cần spike trước khi làm A4.
+**Nhóm II, tin cậy và dữ liệu (D5, F14).** D5 đổi **định dạng event log**, nền của Death Analysis (B1), Boss Practice/B6, replay (A5) và chống gian lận (A3). Vì trận dài và đầy đủ, log lớn hơn nhiều so với bản boss-only; phải chốt D5 trước khi cố định định dạng log. F14 đã được đọc lại: loot quái và giẫm cỏ **không** đổi đồ có sẵn ở tầng sau, nên seed pool chấm bằng cách sinh tầng tuần tự về cơ bản đúng. Còn lại vài ngoại lệ hẹp (Ring of Wealth, Transmutation, trinket Exotic Crystals, Bones) cần chuẩn hóa trong Ranked và một spike chạy thật để xác nhận.
 
 **Nhóm III, quy trình (D6, D7).** D6 quyết định thứ tự, nhưng Ranked chỉ nên bắt đầu khi D4, D5 và F14 đã rõ. D7 quyết định luật có ổn định trong một mùa không.
 
@@ -119,7 +119,7 @@ Danh sách đầy đủ ở [`TASKS.md`](TASKS.md) mục "Nhóm 3". Bổ sung t�
 - **Tính năng chỉ hiển thị không gọi `Random`** (F7), có test kiểm tra trạng thái trước/sau khi bật tính năng.
 - **Log luôn ghi đủ để nâng cấp xác thực sau** (kết quả mỗi lần tung RNG, thao tác, mốc thời gian), kể cả khi D5 chọn mức nhẹ hơn.
 - **Spike khung test trước tiên** (F9): thử dựng test logic thuần (công thức Food Forecast, bảng Run Value, mã hóa log) và một test headless khởi tạo `Dungeon`; kết quả quyết định mức test tích hợp khả thi.
-- **Spike "cùng seed, cùng đồ"** (F14, T-seed): chạy hai kịch bản hành vi khác nhau (ví dụ giẫm cỏ, giết quái có loot) trên cùng seed và so sánh đồ ở tầng 1 đến 5. Nếu lệch, phương án gồm sinh trước toàn bộ tầng theo thứ tự cố định, tách bộ đếm "bộ bài" của hành vi người chơi khỏi sinh tầng, hoặc lưu/khôi phục trạng thái Generator theo tầng. Làm trước A4.
+- **Spike "cùng seed, cùng đồ"** (F14, T-seed): chạy hai kịch bản chơi khác nhau (giẫm cỏ, giết quái có loot, đi đường khác) trên cùng seed và so sánh **danh sách đồ có sẵn** từng tầng 1 đến 15, kể cả vị trí. Kỳ vọng từ đọc code: danh sách giống nhau. Sau đó thử riêng các ngoại lệ ở F14 (Ring of Wealth, Transmutation, Exotic Crystals, Bones). Ranked cần chế độ "sạch": tắt Bones, chuẩn hóa meta (mở khóa class, trang hướng dẫn), và quyết định cách xử lý ba ngoại lệ còn lại (chặn, hoặc tách bộ bài lúc chơi khỏi sinh tầng). Làm trước A4.
 - **Spike "thả vào tầng boss"** (F2, F4) cho Boss Practice: đường vào tầng boss với hero dựng sẵn và các trạng thái tích lũy.
 - Dùng `.indev` khi thử trên điện thoại (F12).
 
