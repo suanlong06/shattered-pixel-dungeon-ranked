@@ -2,7 +2,7 @@
 
 Tài liệu này thay cho phần "Nhóm 2" cũ của [`TASKS.md`](TASKS.md). Mục đích: biết quyết định nào phải chốt **trước khi bắt tay làm**, quyết định nào có thể hỏi **khi đang code**, và chúng ảnh hưởng nhau thế nào.
 
-Trạng thái: **7 câu "Hỏi ngay" đang chờ user chọn** (mục 4). Sau khi chọn xong sẽ chạy Agent kiểm tra khả thi lâu dài; kết quả ghi ở mục 7.
+Trạng thái (21/10): user đã đính chính luật Duel (mục 2), nên câu D2 và D3 cũ đã rút, D2 mới hỏi cách chọn class. **D1 đã chọn: 3 boss đầu.** Còn 5 câu chờ chọn (mục 4). Chọn xong sẽ chạy Agent kiểm tra khả thi lâu dài; kết quả ghi ở mục 7.
 
 ---
 
@@ -14,7 +14,7 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 |---|---|---|---|
 | F1 | Boss ở tầng 5, 10, 15, 20, 25 (Goo, Tengu, DM-300, Dwarf King, Yog); tầng 26 là `LastLevel` | `Dungeon.newLevel`, `Dungeon.bossLevel` | Chuỗi boss cố định theo tầng |
 | F2 | Seed của một tầng chỉ phụ thuộc seed gốc + số tầng, không phụ thuộc tầng trước | `Dungeon.seedForDepth` | Sinh thẳng tầng boss được về mặt seed. Cách "thả" người chơi vào tầng boss (InterlevelScene) **chưa kiểm chứng** → việc T-start |
-| F3 | Tầng boss là đấu trường dựng sẵn; seed chỉ đổi vị trí, trang trí, hazard | `levels/*BossLevel.java` | Seed pool chấm tầng 1→14 (A4) mất tác dụng nếu bỏ qua tầng thường |
+| F3 | Tầng boss là đấu trường dựng sẵn; seed chỉ đổi vị trí, trang trí, hazard | `levels/*BossLevel.java` | Với chế độ Boss Practice (vào thẳng boss bằng kit) seed gần như không quan trọng; seed pool chỉ có ý nghĩa ở Ranked đua từ tầng 1 |
 | F4 | Có trạng thái tích lũy qua các tầng: `LimitedDrops` (bình sức mạnh, scroll nâng cấp...), bộ bài `Generator`, quest | `Dungeon.LimitedDrops` | Bắt đầu từ tầng boss thì trạng thái này không có, kit phải cấp đủ |
 | F5 | Subclass mở bằng `TengusMask` (Tengu), armor ability bằng `KingsCrown` (Dwarf King) | `items/TengusMask.java`, `items/KingsCrown.java` | Số boss mỗi trận quyết định build cần những phần nào |
 | F6 | 6 class (Warrior, Mage, Rogue, Huntress, Duelist, Cleric), mỗi class 2 subclass | `HeroClass` | Số kit phải cân bằng |
@@ -24,11 +24,17 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 | F10 | Đã có sẵn: HP bar kẻ địch (chỉ hiện khi mất máu), ghi chú gắn item (`Notes.CustomRecord`), `Catalog/Bestiary.isSeen`, daily seed, `QuickSlot.SIZE = 6` (static), phím zoom | `ui/CharHealthIndicator`, `journal/Notes`, `Dungeon.daily` | Nhóm C nhỏ hơn dự kiến |
 | F11 | Hunger: HUNGRY 300, STARVING 450, +1/lượt; đổi theo `Shadows` (x1,5), `SaltCube`; tạm dừng khi `WellFed`, tầng bị khóa | `actors/buffs/Hunger.java` | Food Forecast tính chính xác được từ buff, không cần ước lượng |
 | F12 | Bản debug Android có `applicationIdSuffix ".indev"` | `android/build.gradle` | Cài song song với SPD gốc để thử, chưa cần đổi tên ngay |
+| F14 | Generator dùng "bộ bài" theo từng loại item: lần rút thứ n của một loại là cố định theo seed, nhưng **ai rút** (sinh tầng, hoặc hành vi người chơi như loot quái, hạt từ cỏ) đều tăng bộ đếm `dropped`. Tầng được sinh khi người chơi đến lần đầu | `items/Generator.java:698-724`, `Mob.createLoot`, `Level.create` | **Rủi ro lớn cho Ranked**: hai người cùng seed có thể thấy đồ khác nhau ở tầng sau nếu hành vi trước đó khác. Seed pool chấm điểm bằng cách sinh tầng tuần tự cũng có thể lệch so với lúc chơi thật. **Chưa kiểm chứng đầy đủ** → spike T-seed |
 | F13 | Thông báo cập nhật và news feed trỏ về upstream | `services/updates`, `services/news`, `docs/recommended-changes.md` | Phải tắt/đổi trước khi phát hành |
 
-## 2. Giả định đang dùng (báo lại nếu sai)
+## 2. Luật đã chốt từ user (21/10) và giả định còn lại
 
-- **Duel là đua song song**: mỗi người chơi bản riêng của cùng một chuỗi, thấy ghost/tiến độ đối thủ, hai nhân vật không tương tác trực tiếp. (Suy ra từ ghost race, reconnect/RESUME, vote reroll trong ROADMAP.)
+**Đã chốt:**
+- **Ranked Duel**: hai client đua song song từ tầng 1 lên các boss ở tầng 5, 10, 15 (D1 chọn 3 boss đầu). Ai hạ boss trước thì thắng (cách tính chi tiết ở D4).
+- **Seed pool**: dùng công cụ tạo, chọn seed có đồ tốt ở tầng 1 đến 5 để người chơi sống sót giai đoạn đầu.
+- **Boss Practice**: vào thẳng boss bằng kit là **một chế độ khác**, chơi đơn để luyện tay. Không thuộc Ranked.
+
+**Giả định còn lại (báo lại nếu sai):**
 - Ranked giai đoạn đầu chỉ có 1v1.
 - Server do user tự vận hành (OPPO A53), chưa dùng dịch vụ cloud trả phí.
 - Repo cũ nằm trên máy user nên phiên cloud này **không đọc được**. Mọi thông tin về thiết kế cũ lấy từ `ROADMAP.md`, chưa đối chiếu với `TECHNICAL_DESIGN.md`.
@@ -37,35 +43,32 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 
 ```mermaid
 flowchart LR
-  D1["D1 Số boss mỗi trận"] --> D2["D2 Kit và mang theo"]
-  D1 --> D3["D3 Class và build"]
-  D2 --> D3
-  D1 --> A4["A4 Seed pool"]
-  D2 --> A4
-  D1 --> B6["B6 Training"]
-  D2 --> B6
-  D4["D4 Điều kiện thắng"] --> A3["A3 Chống gian lận"]
+  D1["D1 Số boss: 3 boss đầu (đã chọn)"] --> D4["D4 Cách tính thắng"]
+  D1 --> A4["A4 Seed pool tầng 1 đến 5"]
+  D2["D2 Cách chọn class"] --> A4
+  F14["F14 Cùng seed, cùng đồ?"] --> A4
+  F14 --> A3["A3 Chống gian lận"]
+  D4 --> A3
   D4 --> A5["A5 Ghost và replay"]
   D5["D5 Mức xác thực"] --> LOG["T-log: định dạng log"]
   D5 --> A3
   D5 --> A5
-  D5 --> B6
   D4 -.-> D5
   LOG --> B1["B1 Death Analysis"]
-  LOG --> B6
+  LOG --> BP["Boss Practice và B6"]
   D6["D6 Thứ tự làm"] --> PLAN["Lịch làm"]
   D7["D7 Cách theo upstream"] --> VER["Phiên bản luật và cờ tính năng"]
 ```
 
 Đọc bản đồ theo ba nhóm:
 
-**Nhóm I, luật Duel (D1 đến D4).** D1 là gốc. Số boss quyết định có cần mang đồ giữa các boss không (D2), có cần armor ability không (D3, F5), và seed pool còn ý nghĩa không (A4, F3). D2 và D1 cùng quyết định Training Mode có thể dùng lại "bắt đầu ở tầng boss với kit X" (cùng một cơ chế dùng cho Duel và luyện boss). D4 quyết định server phải đo và kiểm tra cái gì.
+**Nhóm I, luật Duel (D1, D2, D4).** Trận là một lần chơi đầy đủ từ tầng 1 nên mọi cơ chế thường (quest, shop, đói, nhận dạng item) đều tham gia. D1 cho biết trận kéo dài tới tầng 15. D2 (chọn class) quyết định seed pool chấm chung hay theo class, và ảnh hưởng công bằng của bảng xếp hạng. D4 quyết định server phải đo và kiểm tra cái gì.
 
-**Nhóm II, tin cậy và dữ liệu (D5).** Quyết định này đổi **định dạng event log**, mà log là nền của Death Analysis (B1), Training (B6), replay (A5) và chống gian lận (A3). Vì B1 là tính năng làm sớm, phải chốt D5 trước khi cố định định dạng log, dù Ranked làm sau. D5 cũng chi phối phạm vi sửa code gốc (F7, F8), nên ảnh hưởng độ khó merge upstream (D7).
+**Nhóm II, tin cậy và dữ liệu (D5, F14).** D5 đổi **định dạng event log**, nền của Death Analysis (B1), Boss Practice/B6, replay (A5) và chống gian lận (A3). Vì trận dài và đầy đủ, log lớn hơn nhiều so với bản boss-only; phải chốt D5 trước khi cố định định dạng log. F14 là rủi ro nền: nếu hành vi người chơi làm lệch đồ ở tầng sau, "cùng seed" không còn công bằng và điểm seed pool không còn đúng. Cần spike trước khi làm A4.
 
-**Nhóm III, quy trình (D6, D7).** D6 quyết định thứ tự, nhưng chỉ có nghĩa khi D1 đến D5 đã rõ (nếu làm Ranked trước mà luật chưa chốt thì làm lại). D7 quyết định luật có ổn định trong một mùa không.
+**Nhóm III, quy trình (D6, D7).** D6 quyết định thứ tự, nhưng Ranked chỉ nên bắt đầu khi D4, D5 và F14 đã rõ. D7 quyết định luật có ổn định trong một mùa không.
 
-Hệ quả khi chọn theo đề xuất (D1=A, D2=A): Duel là chuỗi 3 trận boss độc lập, mỗi trận bắt đầu bằng kit cố định. A4 thu nhỏ thành "lọc seed cho đấu trường boss". Số kit cần dựng: 6 class x 3 boss = 18. B6 dùng lại chính cơ chế bắt đầu của Duel.
+Boss Practice là chế độ riêng, tận dụng chung cơ chế "dựng hero với kit rồi vào thẳng tầng boss" và event log. Kit, danh sách boss, class/build của chế độ này hỏi khi bắt đầu làm (L17).
 
 ## 4. Hỏi ngay (7 câu)
 
@@ -73,13 +76,13 @@ Tiêu chí "hỏi ngay": câu trả lời làm thay đổi nền móng (bước 
 
 | ID | Câu hỏi | Chặn / ảnh hưởng | Đề xuất | Kết quả |
 |---|---|---|---|---|
-| D1 | Số boss mỗi trận Duel | A2, A4, A5, B6, D2, D3 | A: 3 boss đầu (Goo, Tengu, DM-300) | chờ |
-| D2 | Trang bị và mang theo giữa các boss | A2, A4, B6, khối lượng cân bằng | A: kit cố định, reset mỗi boss | chờ |
-| D3 | Class và build trong Duel | số kit, màn hình chọn, giao thức | A: chọn class, build đặt sẵn | chờ |
-| D4 | Điều kiện thắng | A1, A3, A5, ghost | A: ai hạ boss cuối trước (giờ thực) | chờ |
-| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | chờ |
-| D6 | Thứ tự ưu tiên | toàn bộ lịch | A: nền móng, QoL nhỏ, rồi Ranked | chờ |
-| D7 | Cách theo upstream | quy trình merge, ổn định mùa | A: theo bản phát hành (tag) | chờ |
+| D1 | Số boss mỗi trận Duel | độ dài trận, D4 | A: 3 boss đầu | **đã chọn: 3 boss đầu** |
+| D2 | Cách chọn class trong Duel đua | A4, công bằng xếp hạng | A: tự chọn class | chờ (thẻ 2/6) |
+| D3 | (đã rút) kit và build giữa các boss | chuyển sang Boss Practice, L17 | | rút do luật mới |
+| D4 | Điều kiện thắng | A1, A3, A5, ghost | A: ai hạ boss cuối trước (giờ thực) | chờ (thẻ 4/7) |
+| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | chờ (thẻ 5/7) |
+| D6 | Thứ tự ưu tiên | toàn bộ lịch | A: nền móng, QoL nhỏ, rồi Ranked | chờ (thẻ 6/7) |
+| D7 | Cách theo upstream | quy trình merge, ổn định mùa | A: theo bản phát hành (tag) | chờ (thẻ 7/7) |
 
 Chi tiết ba lựa chọn của từng câu nằm trong các thẻ quyết định ở thread; bảng này ghi kết quả khi user chọn.
 
@@ -94,7 +97,7 @@ Các câu này chỉ ảnh hưởng một task, hoặc cần thấy tính năng 
 | L3 | Android và desktop chung một bảng xếp hạng hay tách | thiết kế rating (liên quan D4) | tách theo nền tảng nhập liệu cho đến khi có số liệu | A1 |
 | L4 | Rating: thuật toán, độ dài mùa, trận xếp hạng đầu | thiết kế rating | rating kiểu Elo/Glicko đơn giản, mùa 8 tuần | A1 |
 | L5 | Tính năng Learning nào bật trong Ranked | trước khi bật Ranked đầu tiên | whitelist do server gửi; bản đầu chỉ tính năng không lộ thông tin thêm | T0.2, B* |
-| L6 | Chính sách ngắt kết nối, strike, vote reroll, tranh chấp | thiết kế A1 (đối chiếu repo cũ) | giữ luật cũ nếu đọc được, nếu không dùng bộ luật tối giản | A1 |
+| L6 | Chính sách ngắt kết nối, giới hạn thời gian trận, hòa, strike, vote reroll, tranh chấp | thiết kế A1 (đối chiếu repo cũ) | giữ luật cũ nếu đọc được, nếu không dùng bộ luật tối giản | A1 |
 | L7 | Tên game, `appPackageName`, icon, thông báo cập nhật, news, nút ủng hộ | trước bản phát hành đầu | dùng `.indev` để thử, chưa phát hành | F12, F13 |
 | L8 | Ngôn ngữ cho chuỗi mới: chỉ EN, hay EN + VI | tính năng UI đầu tiên (B3) | EN + VI, ngôn ngữ khác rơi về EN | B* |
 | L9 | Known Item Recognition: chỉ item đã định danh hay cả đã thử dùng; ký hiệu cho item chưa biết | B3 | chỉ đã định danh, có ký hiệu rõ cho item chưa biết | B3 |
@@ -105,6 +108,8 @@ Các câu này chỉ ảnh hưởng một task, hoặc cần thấy tính năng 
 | L14 | Combat Probability: dạng % hay Cao/Vừa/Thấp; có cho Ranked không | C6 | % , chỉ Solo | C6 |
 | L15 | Mục C nào đáng làm, và chế độ ngoài 1v1 (2v2, Weekly League, Daily) | sau khi có báo cáo khảo sát C | chưa làm gì cho đến khi 1v1 ổn định | C* |
 | L16 | Có hỗ trợ iOS không | trước khi dựng CI phát hành | không | CI |
+| L17 | Boss Practice: danh sách boss, kit và build mỗi class, kit reset hay mang theo, có cho đấu đôi bằng kit không | bắt đầu làm Boss Practice | chơi đơn; kit cố định theo class và boss, reset mỗi boss; chưa làm đấu đôi | B6, Boss Practice |
+| L18 | Tiêu chí "đồ tốt tầng 1 đến 5" của seed pool, và trần chất lượng để hạn chế may rủi | bắt đầu A4 (sau spike F14) | đảm bảo có đồ phòng thủ dùng được và hồi máu hoặc thoát thân trong tầng 1 đến 5, có trần trên | A4 |
 
 ## 6. Tự quyết (kỹ thuật và tối ưu)
 
@@ -114,7 +119,8 @@ Danh sách đầy đủ ở [`TASKS.md`](TASKS.md) mục "Nhóm 3". Bổ sung t�
 - **Tính năng chỉ hiển thị không gọi `Random`** (F7), có test kiểm tra trạng thái trước/sau khi bật tính năng.
 - **Log luôn ghi đủ để nâng cấp xác thực sau** (kết quả mỗi lần tung RNG, thao tác, mốc thời gian), kể cả khi D5 chọn mức nhẹ hơn.
 - **Spike khung test trước tiên** (F9): thử dựng test logic thuần (công thức Food Forecast, bảng Run Value, mã hóa log) và một test headless khởi tạo `Dungeon`; kết quả quyết định mức test tích hợp khả thi.
-- **Spike "thả vào tầng boss"** (F2): kiểm tra đường vào tầng boss với hero dựng sẵn, và các trạng thái ở F4.
+- **Spike "cùng seed, cùng đồ"** (F14, T-seed): chạy hai kịch bản hành vi khác nhau (ví dụ giẫm cỏ, giết quái có loot) trên cùng seed và so sánh đồ ở tầng 1 đến 5. Nếu lệch, phương án gồm sinh trước toàn bộ tầng theo thứ tự cố định, tách bộ đếm "bộ bài" của hành vi người chơi khỏi sinh tầng, hoặc lưu/khôi phục trạng thái Generator theo tầng. Làm trước A4.
+- **Spike "thả vào tầng boss"** (F2, F4) cho Boss Practice: đường vào tầng boss với hero dựng sẵn và các trạng thái tích lũy.
 - Dùng `.indev` khi thử trên điện thoại (F12).
 
 ## 7. Kết quả kiểm tra khả thi lâu dài

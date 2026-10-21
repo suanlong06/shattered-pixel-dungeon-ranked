@@ -34,16 +34,16 @@ Mã A/B/C lấy từ ROADMAP. "Chờ Q#" = phụ thuộc câu hỏi ở Nhóm 2.
 | T-log | **Ghi log trận (event log)** dùng chung | xác định điểm hook: sát thương, di chuyển, dùng item, hồi máu | một định dạng log duy nhất cho B1, B6, A3, A5 (xem 3.3) |
 | B1 | Death Analysis | thông tin nào *game thật sự biết* tại thời điểm chết | màn hình sau khi chết: vài lượt cuối, sát thương theo nguồn, đồ thoát thân chưa dùng; chỉ nêu dữ kiện, không phán "chơi dở" |
 | B2 | Contextual Knowledge | kiểm tra hệ Journal/Catalog/Bestiary của v4.0.2 để tái sử dụng "đã khám phá" | tóm tắt quái lần đầu gặp; chỉ hiện thông tin đã khám phá |
-| B6 | Adaptive Training Mode | khả năng lưu/khôi phục trạng thái một encounter mà không phá RNG | practice boss, test item, xem lại combat từ log; không tính vào ranked/leaderboard. Cách khôi phục xem L13 |
+| B6 | Adaptive Training Mode và **Boss Practice** (vào thẳng boss bằng kit, chơi đơn, chế độ riêng ngoài Ranked, xem L17) | khả năng lưu/khôi phục trạng thái một encounter mà không phá RNG | practice boss, test item, xem lại combat từ log; không tính vào ranked/leaderboard. Cách khôi phục xem L13 |
 
 ### 1.2 Ranked core — nhóm A (làm sau khi chốt A2)
 | ID | Tính năng | [X] Xác minh trước | [T] Việc làm |
 |---|---|---|---|
-| A2 | Duel = speedrun boss | **chốt thiết kế (D1 đến D4)** | mô tả luật, chuỗi boss, đồ/loadout, điều kiện thắng, hòa, hết giờ |
-| A4 | Seed pool có chấm điểm | tiêu chí chấm của repo cũ (`traversal-v1.json`) còn hợp lý với A2 không (cũ chấm tầng 1→14) | SeedScanner/SeedScorer viết lại theo thiết kế A2; pool riêng cho ranked |
+| A2 | Duel = đua song song từ tầng 1 lên boss 5/10/15, ai hạ boss trước thắng | D1 đã chọn (3 boss đầu); còn D2 (class), D4 (cách tính thắng) | mô tả luật, điều kiện thắng, hòa, hết giờ, bỏ cuộc |
+| A4 | Seed pool có chấm điểm | **spike T-seed**: cùng seed có cho cùng đồ ở tầng 1 đến 5 bất kể hành vi không (DECISIONS F14); tiêu chí chấm cũ (`traversal-v1.json`, tầng 1 đến 14) cần đổi sang "đồ tốt tầng 1 đến 5" | SeedScanner/SeedScorer viết lại: tạo seed pool có đồ giúp sống sót tầng 1 đến 5 (xem L18); pool riêng cho ranked |
 | A1 | Server + matchmaking + rating mùa | quyết định L1, L2, L3 | ranked-server, hàng chờ, rating, strike, vote reroll, reconnect/RESUME, tranh chấp |
 | A3 | Chống gian lận | danh sách vector tấn công trong `docs/redteam-*.md` còn đúng với client mới | digest trạng thái, forensics, lưu replay để xác minh phía server |
-| A5 | Ghost race, replay, telemetry | phụ thuộc T-log và A2 (ghost theo boss hay theo cả run) | ghost, replay viewer, telemetry |
+| A5 | Ghost race, replay, telemetry | phụ thuộc T-log và A2 (ghost theo tầng/mốc trong cả run) | ghost, replay viewer, telemetry |
 | A6 | Pack & Skin | cách v4.0.2 nạp texture/asset (có thể đã đổi so với v3.3.8) | package `skins/`, tab Skins, denylist khi ranked |
 | A7 | Triển khai server 24/7 lên OPPO A53 | quyết định L1; lại đo RAM/boot khi có server thật | runbook, giám sát, sao lưu DB |
 
