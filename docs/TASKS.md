@@ -24,6 +24,8 @@ Mã A/B/C lấy từ ROADMAP. "Chờ Q#" = phụ thuộc câu hỏi ở Nhóm 2.
 | T0.3 | [T] Khung test + CI chạy build/test | chưa có code tính năng nào |
 | T0.4 | [X] Xác minh build desktop v4.0.2 chạy được sạch (JDK 17) và chạy được test headless | tiền đề của T0.3 |
 | T0.5 | [X] Đọc lại thiết kế repo cũ (`TECHNICAL_DESIGN.md`, `docs/`) để liệt kê điều còn dùng / đã lỗi thời | chỉ đọc, không sửa repo cũ |
+| T0.6 | [X] **Spike tất định S1 đến S6** (xem `DECISIONS.md` mục 7.4): digest tầng 1 đến 15 giữa hai JVM, nhật ký RNG, vector toán ART/JVM, headless, bot đo thời gian, thử vá | quyết định mức xác thực D5 dựa trên số đo |
+| T0.7 | [T] Chế độ Ranked "sạch": mở khóa cả 6 class, tắt Bones, chuẩn hóa meta (trang hướng dẫn, intro, Catalog), chặn rút bộ bài lúc chơi dùng chung với sinh tầng | cần cho "cùng seed, cùng tầng" |
 
 ### 1.1 Learning / QoL — nhóm B (làm trước vì độc lập, dễ kiểm chứng)
 | ID | Tính năng | [X] Xác minh trước | [T] Việc làm |
@@ -68,7 +70,7 @@ Mỗi mục: [X] khảo sát khả thi + chi phí + rủi ro lệch ranked → b
 Đã tách và phân tích quan hệ trong [`DECISIONS.md`](DECISIONS.md):
 
 - **Hỏi ngay (D1 đến D7):** luật Duel (số boss, kit, class/build, điều kiện thắng), mức xác thực kết quả, thứ tự ưu tiên, cách theo upstream. Mỗi câu có 3 lựa chọn và một đề xuất.
-- **Hỏi khi đang code (L1 đến L16):** hạ tầng, tài khoản, rating, chi tiết từng tính năng QoL, phát hành. Mỗi câu có thời điểm hỏi và mặc định.
+- **Hỏi khi đang code (L1 đến L19):** hạ tầng, tài khoản, rating, chi tiết từng tính năng QoL, phát hành. Mỗi câu có thời điểm hỏi và mặc định.
 
 Các câu Q1 đến Q15 ở bản trước đã được gộp vào hai danh sách trên (Q1 đến Q4 thành D1 đến D4; Q13 thành D6; Q9 thành L1; Q10 thành L2, L3; Q5 thành L9; Q6 thành L10; Q7 thành L11; Q8 thành L13; Q11 thành L14; Q12 thành L15; Q14 thành L16). Q15 đã có đáp án: giữ nhánh để duyệt.
 

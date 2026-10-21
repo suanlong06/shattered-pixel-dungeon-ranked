@@ -4,7 +4,7 @@
 Bản fork của Shattered Pixel Dungeon (SPD), làm lại sạch từ đầu trên nền upstream mới nhất,
 vẫn nhận được bản cập nhật từ upstream. Hai mảng chính:
 1. **Ranked Duel** 1v1 có server riêng (matchmaking, rating theo mùa, chống gian lận, seed pool chấm điểm,
-   ghost/replay/telemetry, Pack & Skin có denylist khi đấu ranked). Duel được rút gọn thành **speedrun các boss**.
+   ghost/replay/telemetry, Pack & Skin có denylist khi đấu ranked). Duel là cuộc đua song song từ tầng 1 lên boss tầng 5/10/15, ai hạ boss cuối trước thắng; Boss Practice (vào thẳng boss bằng kit, chơi đơn) là chế độ riêng.
    Server chạy 24/7 trên OPPO A53 đã root (chroot Ubuntu).
 2. **Learning / QoL**: giúp người chơi hiểu và học (Death Analysis, Known Item Recognition, Food Forecast…),
    không làm nhân vật mạnh hơn.

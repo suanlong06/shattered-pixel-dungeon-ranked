@@ -2,7 +2,7 @@
 
 Tài liệu này thay cho phần "Nhóm 2" cũ của [`TASKS.md`](TASKS.md). Mục đích: biết quyết định nào phải chốt **trước khi bắt tay làm**, quyết định nào có thể hỏi **khi đang code**, và chúng ảnh hưởng nhau thế nào.
 
-Trạng thái (21/10): user đã đính chính luật Duel (mục 2), nên câu D2 và D3 cũ đã rút, D2 mới hỏi cách chọn class. **D1 đã chọn: 3 boss đầu.** Còn 5 câu chờ chọn (mục 4). Chọn xong sẽ chạy Agent kiểm tra khả thi lâu dài; kết quả ghi ở mục 7.
+Trạng thái (21/10): user đã đính chính luật Duel (mục 2) và chọn đủ các câu ở mục 4. Hai Agent đã kiểm tra khả thi lâu dài (mục 7). **Còn một câu cần user quyết lại: mức xác thực D5**, vì kết quả kiểm tra cho thấy mức "Nặng" rất tốn công.
 
 ---
 
@@ -25,6 +25,11 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 | F11 | Hunger: HUNGRY 300, STARVING 450, +1/lượt; đổi theo `Shadows` (x1,5), `SaltCube`; tạm dừng khi `WellFed`, tầng bị khóa | `actors/buffs/Hunger.java` | Food Forecast tính chính xác được từ buff, không cần ước lượng |
 | F12 | Bản debug Android có `applicationIdSuffix ".indev"` | `android/build.gradle` | Cài song song với SPD gốc để thử, chưa cần đổi tên ngay |
 | F14 | Sinh tầng và "bộ bài" của `Generator`: lần rút thứ n của một loại item cố định theo seed riêng của loại đó (code ghi rõ mục đích: drop nhất quán dù xảy ra lúc nào). **Loot quái** (`Mob.createLoot`) dùng `randomUsingDefaults` hoặc tạo trực tiếp, không đụng bộ bài. **Hạt từ cỏ** (`HighGrass:143`) rút bộ bài SEED, nhưng sinh tầng không bao giờ rút bộ bài SEED (`Generator.random()` chuyển SEED sang `randomUsingDefaults`, `PlantsRoom` cũng dùng defaults). Bộ đếm `LimitedDrops` của sinh tầng chỉ tăng trong `Level.create` và `SpecialRoom` | `items/Generator.java:271-273,684-691,712-727`, `actors/mobs/Mob.java:1139-1159`, `levels/features/HighGrass.java:143`, `levels/Level.java:226-258` | **Đồ có sẵn ở các tầng sau không đổi vì loot quái hay giẫm cỏ**; hành vi chơi chỉ đổi vị trí và thời điểm đồ phát sinh khi chơi. Kết luận từ đọc code, **chưa chạy thử**. Ngoại lệ hẹp cần theo dõi: (1) rút bộ bài dùng chung với sinh tầng lúc chơi: Ring of Wealth rút ARTIFACT (`RingOfWealth.java:291`), Scroll of Transmutation đổi artifact (`:298`); (2) nội dung tầng phụ thuộc inventory, ví dụ trinket Exotic Crystals đổi tỉ lệ bình/scroll exotic (`ExoticCrystals.java:48`); (3) dữ liệu cục bộ: `Bones.get()` thêm item vào tầng (`RegularLevel.java:493`) |
+| F15 | Hiệu ứng, sprite, UI gọi `Random` chung ngăn xếp (khoảng 225 lời gọi trong 51 file) trên luồng render; một số lời gọi RNG **của gameplay** chỉ chạy khi nhìn thấy (`sprite.visible`, `heroFOV`) | `Hero.java:632-634`, `Monk.java:121-123`, `Eye.java:198-200` (đã tự xác minh); số liệu 225/51 theo Agent | Lượng RNG tiêu thụ phụ thuộc hiển thị; chạy headless sẽ lệch client nếu không tách luồng RNG |
+| F16 | `Random.chances(HashMap)` duyệt `keySet`, dùng ở sinh tầng (phòng bí mật) và gameplay; thứ tự `HashMap<Class>` thay đổi theo lần chạy (Agent thử trên JDK 21) | `Random.java:202`; theo Agent | "Cùng seed, cùng tầng" có thể sai ở phòng bí mật; cần `LinkedHashMap` |
+| F17 | Nội dung tầng và gameplay phụ thuộc hồ sơ người chơi: class chỉ mở khóa bằng badge, `Bones.get()` thêm item vào tầng, trang hướng dẫn, intro, Catalog (Trinity của Cleric) | `HeroClass.java:330-346`, `RegularLevel.java:493` (đã tự xác minh); phần còn lại theo Agent | Ranked cần chế độ "sạch" (T0.7) |
+| F18 | `Statistics.duration` là thời gian trong game (đơn vị lượt), không phải giờ thực | `Actor.java:195`, `Statistics.java:66` (đã tự xác minh) | Giờ thực của trận phải do server giữ |
+| F19 | Ngoài loot quái và cỏ, còn vài lần rút bộ bài lúc chơi dùng chung với sinh tầng: Ring of Wealth (artifact), Transmutation (artifact, trinket); item đang cầm cũng đổi nội dung tầng (Exotic Crystals) | `RingOfWealth.java:291`, `ScrollOfTransmutation.java:298,325`, `ExoticCrystals.java:48` (đã tự xác minh) | Chặn hoặc chuyển sang `randomUsingDefaults` trong Ranked |
 | F13 | Thông báo cập nhật và news feed trỏ về upstream | `services/updates`, `services/news`, `docs/recommended-changes.md` | Phải tắt/đổi trước khi phát hành |
 
 ## 2. Luật đã chốt từ user (21/10) và giả định còn lại
@@ -77,12 +82,12 @@ Tiêu chí "hỏi ngay": câu trả lời làm thay đổi nền móng (bước 
 | ID | Câu hỏi | Chặn / ảnh hưởng | Đề xuất | Kết quả |
 |---|---|---|---|---|
 | D1 | Số boss mỗi trận Duel | độ dài trận, D4 | A: 3 boss đầu | **đã chọn: 3 boss đầu** |
-| D2 | Cách chọn class trong Duel đua | A4, công bằng xếp hạng | A: tự chọn class | chờ (thẻ 2/6) |
+| D2 | Cách chọn class trong Duel đua | A4, công bằng xếp hạng | A: tự chọn class | **đã chọn: tự chọn class** |
 | D3 | (đã rút) kit và build giữa các boss | chuyển sang Boss Practice, L17 | | rút do luật mới |
-| D4 | Điều kiện thắng | A1, A3, A5, ghost | A: ai hạ boss cuối trước (giờ thực) | chờ (thẻ 4/7) |
-| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | chờ (thẻ 5/7) |
-| D6 | Thứ tự ưu tiên | toàn bộ lịch | A: nền móng, QoL nhỏ, rồi Ranked | chờ (thẻ 6/7) |
-| D7 | Cách theo upstream | quy trình merge, ổn định mùa | A: theo bản phát hành (tag) | chờ (thẻ 7/7) |
+| D4 | Điều kiện thắng | A1, A3, A5, ghost | A: ai hạ boss cuối trước (giờ thực) | **đã chọn: hạ boss cuối trước**, giờ thực do server giữ (mục 7) |
+| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | **đã chọn: Nặng (mô phỏng lại)**; đang xem lại theo mục 7 |
+| D6 | Thứ tự ưu tiên | toàn bộ lịch | A: nền móng, QoL nhỏ, rồi Ranked | **đã chọn: nền móng, QoL, Ranked** (nền móng gồm spike tất định) |
+| D7 | Cách theo upstream | quy trình merge, ổn định mùa | A: theo bản phát hành (tag) | **đã chọn: theo bản phát hành** |
 
 Chi tiết ba lựa chọn của từng câu nằm trong các thẻ quyết định ở thread; bảng này ghi kết quả khi user chọn.
 
@@ -109,7 +114,8 @@ Các câu này chỉ ảnh hưởng một task, hoặc cần thấy tính năng 
 | L15 | Mục C nào đáng làm, và chế độ ngoài 1v1 (2v2, Weekly League, Daily) | sau khi có báo cáo khảo sát C | chưa làm gì cho đến khi 1v1 ổn định | C* |
 | L16 | Có hỗ trợ iOS không | trước khi dựng CI phát hành | không | CI |
 | L17 | Boss Practice: danh sách boss, kit và build mỗi class, kit reset hay mang theo, có cho đấu đôi bằng kit không | bắt đầu làm Boss Practice | chơi đơn; kit cố định theo class và boss, reset mỗi boss; chưa làm đấu đôi | B6, Boss Practice |
-| L18 | Tiêu chí "đồ tốt tầng 1 đến 5" của seed pool, và trần chất lượng để hạn chế may rủi | bắt đầu A4 (sau spike F14) | đảm bảo có đồ phòng thủ dùng được và hồi máu hoặc thoát thân trong tầng 1 đến 5, có trần trên | A4 |
+| L18 | Tiêu chí "đồ tốt tầng 1 đến 5" của seed pool, và trần chất lượng để hạn chế may rủi | bắt đầu A4 (sau spike S1) | chấm theo từng class và lấy mức thấp nhất (đạt ngưỡng cho cả 6 class); cân cả "sống sót" lẫn "nhanh"; có trần trên; seed bí mật đến lúc bắt đầu trận và dùng một lần; ghost chỉ hiện tầng và mốc | A4 |
+| L19 | Luật kết thúc trận: giới hạn thời gian, chết, cả hai chết, hòa, hết giờ, mất kết nối lâu | trước khi viết giao thức A1, sau khi bot S5 đo thời lượng một lượt chơi tầng 1 đến 15 | chết là thua; cả hai chết thì ai xuống sâu hơn thắng, rồi ai chết muộn hơn; giới hạn tổng thời gian đặt theo số đo; mất kết nối quá 5 phút là thua, ngắn hơn thì RESUME | A1, A2 |
 
 ## 6. Tự quyết (kỹ thuật và tối ưu)
 
@@ -123,6 +129,49 @@ Danh sách đầy đủ ở [`TASKS.md`](TASKS.md) mục "Nhóm 3". Bổ sung t�
 - **Spike "thả vào tầng boss"** (F2, F4) cho Boss Practice: đường vào tầng boss với hero dựng sẵn và các trạng thái tích lũy.
 - Dùng `.indev` khi thử trên điện thoại (F12).
 
-## 7. Kết quả kiểm tra khả thi lâu dài
+## 7. Kết quả kiểm tra khả thi lâu dài (2 Agent, 21/10)
 
-Chưa chạy. Sẽ chạy Agent sau khi user chọn xong 7 câu, kiểm tra: mâu thuẫn giữa các lựa chọn, đối chiếu với các phát hiện ở mục 1, rủi ro khi mở rộng (5 boss, thêm chế độ, nhiều mùa), và những lựa chọn nên đổi.
+Hai Agent đọc code độc lập: một Agent soi tính tất định của D5, một Agent soi mâu thuẫn trong tổ hợp lựa chọn. Mình tự kiểm lại các điểm chính (đánh dấu "đã tự xác minh" ở mục 1); phần còn lại là kết luận của Agent, chưa chạy thử.
+
+### 7.1 Kết luận
+
+- **D1, D2, D4, D6, D7 nhất quán và khả thi** khi thêm các quy tắc ở 7.3.
+- **D5 "Nặng" khả thi có điều kiện, công sức lớn.** Gameplay chạy trên RNG không seed; hiệu ứng dùng chung RNG và số lần gọi phụ thuộc hiển thị (F7, F15); thứ tự lượt và `HashMap` không ổn định (F8, F16); chạy headless đòi sửa sprite. Agent ước tính phải đụng khoảng 150 file gốc nếu sửa tay, nên cách làm bền là biến đổi bytecode lúc build (ASM) kèm test "golden digest" sau mỗi lần nâng tag. Đề xuất này **chưa thử**.
+- **Mô phỏng lại không chống được** bot/tự động hóa, đọc trước bản đồ, và người chơi tối ưu với seed đã biết. Tất định còn mở thêm rủi ro: client sửa đổi có thể thử trước chuỗi hành động (TAS).
+- **Mâu thuẫn D5 và D6:** D5 cần nền tất định (tách RNG, cố định thứ tự) trước khi ghi log đáng tin, còn D6 làm QoL trước. Giải quyết: QoL chỉ-hiển-thị không cần tất định nếu tuân thủ quy tắc không gọi `Random`; nền tất định nằm trong "nền móng" ở dạng spike (7.4) trước, patch sau.
+- **Mâu thuẫn D4 và D5:** mô phỏng lại chỉ cho biết kết quả hợp lệ, không cho biết thời điểm. Giờ thực phải do server giữ (7.3).
+
+### 7.2 Đính chính F14
+
+Bản trước của tài liệu nói loot quái và giẫm cỏ làm lệch đồ tầng sau. **Sai.** Loot quái không đụng bộ bài, cỏ rút bộ bài SEED mà sinh tầng không dùng (F14). Còn các ngoại lệ hẹp ở F19 và hồ sơ ở F17. Cả Agent kỹ thuật cũng bác bỏ hai điểm này.
+
+### 7.3 Quy tắc mặc định đã thêm (tự quyết, user phản đối được)
+
+- **Ranked "sạch"** (T0.7): mở khóa cả 6 class, tắt Bones, chuẩn hóa hồ sơ (guide, intro, Catalog), Ring of Wealth và Transmutation không rút bộ bài dùng chung với sinh tầng. Test: digest các tầng 1 đến 15 không đổi theo hành vi hay hồ sơ.
+- **Giờ thực do server giữ**: server ghi giờ nhận checkpoint theo tầng và heartbeat có chữ ký (số lượt + digest). Kết quả "tạm thời" khi nhận tin hạ boss cuối, "chính thức" sau khi xác minh (có thể hậu kiểm). Hòa thì so số lượt rồi giờ nhận. Không chống được bot hoàn toàn; ghi rõ trong luật.
+- **Ghost chỉ hiện tầng và mốc**, không hiện vị trí hay đồ (cùng seed nghĩa là cùng bố cục).
+- **Seed**: bí mật đến lúc bắt đầu trận, dùng một lần, chấm theo từng class (L18).
+- **Luật kết thúc trận** theo L19 (mặc định), chốt trước khi viết giao thức.
+- **Tách `HashMap<Class>` sang `LinkedHashMap`** và khóa thứ tự lượt `(time, priority, id)` khi làm nền tất định.
+- **Sửa mâu thuẫn tài liệu**: ROADMAP A2/A4, CLAUDE.md, TASKS (L1 đến L19) đã cập nhật theo luật mới.
+
+### 7.4 Spike nền móng (thêm vào T0.6)
+
+| Spike | Việc | Công sức ước tính (Agent) |
+|---|---|---|
+| S1 | Test JVM headless: `Dungeon.init(seed)` + sinh tầng 1 đến 15 ở hai JVM, so digest; thêm kịch bản cỏ/quái/Transmutation (chốt F14, F19) | khoảng 0,5 ngày |
+| S2 | Nhật ký RNG trên hai lần chạy GUI cùng seed và input, tìm điểm lệch đầu tiên | khoảng 0,5 ngày |
+| S3 | Vector kiểm `java.util.Random`, `Math.pow/cos/asin` so với `StrictMath` trên ART thật (OPPO) và JVM desktop | khoảng 0,5 ngày |
+| S4 | Khởi động headless (libGDX headless + MockGL), đo RAM/CPU trên desktop và chroot A53 | 1 đến 2 ngày |
+| S5 | Bot đơn giản tầng 1 đến 15, đo thời lượng một lượt chơi và thời gian sinh tầng (dữ liệu cho L19) | khoảng 1 ngày |
+| S6 | Thử vá Actor/Level/HashMap và tách RNG hiệu ứng, chạy lại S2 xem lệch có hết không | khoảng 1 ngày |
+
+### 7.5 Bậc thang xác thực (đề xuất, cần user quyết)
+
+| Bậc | Nội dung | Ghi chú |
+|---|---|---|
+| 1 | Log có chữ ký gồm kết quả mỗi lần tung RNG, server kiểm quy tắc và khoảng hợp lệ, heartbeat theo đoạn; tách RNG gameplay/hiệu ứng | ra Ranked sớm; đúng với lựa chọn "Vừa" cũ |
+| 2 | Thêm patch tất định (bytecode), PRNG lưu được trạng thái, golden digest; server phát lại ngẫu nhiên một phần trận, đoạn nghi ngờ và trận top | cần máy kiểm tra ngoài A53 |
+| 3 | Mô phỏng lại mọi trận (**D5 "Nặng"**) | chỉ khi bậc 2 ổn định qua ít nhất hai tag upstream |
+
+Log ở mọi bậc ghi đủ để lên bậc cao hơn. Câu hỏi D5 mới đang chờ user trong thread.

@@ -1,7 +1,7 @@
 # Roadmap — spd-ranked
 
 Bản fork của Shattered Pixel Dungeon (nền v4.0.2) gồm hai mảng:
-1. **Ranked Duel** — chế độ thi đấu 1v1 có server riêng, rút gọn thành speedrun các boss.
+1. **Ranked Duel** — chế độ thi đấu 1v1 có server riêng: hai client đua song song từ tầng 1 lên boss tầng 5, 10, 15; ai hạ boss cuối trước thắng.
 2. **Learning / QoL** — giúp người chơi *hiểu → quyết định → học*, không làm nhân vật mạnh hơn
    ("make player smarter, not character stronger").
 
@@ -15,14 +15,14 @@ Repo cũ (chỉ tham khảo, nền v3.3.8): `C:\Workspace\20_Projects\Shattered 
 | # | Tính năng | Ghi chú | Tham khảo trong repo cũ |
 |---|---|---|---|
 | A1 | **Ranked Duel client–server** | ranked-server riêng; matchmaking; rating theo mùa/ladder; strike; vote reroll; reconnect/RESUME; xử lý tranh chấp | `ranked-server/`, `services/`, `networking/VoteReroll.java`, `ui/ResumeIndicator.java`, `TECHNICAL_DESIGN.md` |
-| A2 | **Chế độ Duel = speedrun boss** | Ranked không chơi từ đầu đến cuối mà rút gọn thành chuỗi boss | (mới — thiết kế lại) |
+| A2 | **Chế độ Duel = đua song song từ tầng 1** | cùng seed, đua lên boss 5/10/15 (3 boss đầu), ai hạ boss cuối trước theo đồng hồ server thì thắng; tự chọn class. Chi tiết: `docs/DECISIONS.md` | (mới — thiết kế lại) |
 | A3 | **Chống gian lận** | digest trạng thái, forensics, lưu replay để xác minh | `TECHNICAL_DESIGN.md`, `docs/redteam-*.md` |
-| A4 | **Seed pool có chấm điểm** | SeedScanner/SeedScorer chấm seed theo độ hiệu quả đi tầng 1→14 để loại seed quá xấu | `networking/SeedScanner.java`, `SeedScorer.java`, `seed-criteria/traversal-v1.json` |
+| A4 | **Seed pool có chấm điểm** | SeedScanner/SeedScorer tạo seed pool có đồ tốt ở tầng 1 đến 5 giúp sống sót giai đoạn đầu (tiêu chí cũ chấm hiệu quả đi tầng 1→14 cần đổi) | `networking/SeedScanner.java`, `SeedScorer.java`, `seed-criteria/traversal-v1.json` |
 | A5 | **Ghost race, replay, telemetry** | | `networking/GhostRace.java`, `ReplayLogger.java`, `RankedTelemetry.java` |
 | A6 | **Pack & Skin** | người chơi cài texture pack; khi đấu ranked pack bị giới hạn bởi denylist; package `skins/`; tab Skins trong Settings | `skins/*`, `assets/skins/ranked_denylist.properties` |
 | A7 | **Hạ tầng server 24/7** | chạy trên OPPO A53 đã root (chroot Ubuntu); đã đo ~1,1 s khởi động, ~50 MB RAM | `docs/deploy-runbook.md`, `docs/plans/plan-1-database-a53.md` |
 
-Lưu ý: A2 làm thay đổi phạm vi của A4 (seed chấm theo tầng 1→14) và A5 (ghost/replay theo boss) — cần chốt thiết kế A2 trước.
+Lưu ý: luật Duel đã chốt (xem `docs/DECISIONS.md`). Tiêu chí seed của A4 đổi sang "đồ tốt tầng 1 đến 5"; ghost/replay của A5 theo tầng và mốc boss. Chế độ **Boss Practice** (vào thẳng boss bằng kit, chơi đơn) là chế độ riêng, không thuộc Ranked.
 
 ## B. Tính năng mới đã chọn (Learning / QoL)
 
@@ -59,7 +59,7 @@ Lưu ý: A2 làm thay đổi phạm vi của A4 (seed chấm theo tầng 1→14)
 1. **Nền móng**: package riêng, cờ tính năng, chế độ Solo/Ranked tách biệt, khung test.
 2. **QoL nhỏ, độc lập, dễ kiểm chứng**: B3 Known Item Recognition → B5 Food Forecast → B4 Smart Inventory.
 3. **Ghi log trận đấu** (dùng chung cho B1 Death Analysis, B6 Training, A5 replay/telemetry, A3 chống gian lận) → B1.
-4. **Ranked core**: thiết kế A2 (boss speedrun) → A4 seed pool → A1 server + matchmaking → A3 → A5 ghost.
+4. **Ranked core**: A2 (luật đã chốt) → các spike tất định và seed → A4 seed pool → A1 server + matchmaking → A3 → A5 ghost.
 5. **A6 Pack & Skin** (độc lập, làm song song được).
 6. **A7 triển khai** server lên A53.
 7. Mục C theo kết quả nghiên cứu.
