@@ -26,6 +26,7 @@ Mã A/B/C lấy từ ROADMAP. "Chờ Q#" = phụ thuộc câu hỏi ở Nhóm 2.
 | T0.5 | [X] Đọc lại thiết kế repo cũ (`TECHNICAL_DESIGN.md`, `docs/`) để liệt kê điều còn dùng / đã lỗi thời | chỉ đọc, không sửa repo cũ |
 | T0.6 | [X] **Spike tất định S1 đến S6** (xem `DECISIONS.md` mục 7.4): digest tầng 1 đến 15 giữa hai JVM, nhật ký RNG, vector toán ART/JVM, headless, bot đo thời gian, thử vá | quyết định mức xác thực D5 dựa trên số đo |
 | T0.7 | [T] Chế độ Ranked "sạch": mở khóa cả 6 class, tắt Bones, chuẩn hóa meta (trang hướng dẫn, intro, Catalog), chặn rút bộ bài lúc chơi dùng chung với sinh tầng | cần cho "cùng seed, cùng tầng" |
+| T0.8 | [T] **Nền tất định** (D5 Nặng): PRNG gameplay lưu được trạng thái, tách RNG hiệu ứng, `StrictMath`, thứ tự Actor `(time, priority, id)`, đổi HashMap/HashSet sang có thứ tự, bộ chạy headless và ghi/phát lại input theo lệnh | làm sau spike T0.6, **trước mọi QoL**; xem `DECISIONS.md` mục 7.6 |
 
 ### 1.1 Learning / QoL — nhóm B (làm trước vì độc lập, dễ kiểm chứng)
 | ID | Tính năng | [X] Xác minh trước | [T] Việc làm |
@@ -86,7 +87,7 @@ Những mục này không cần hỏi trước; nếu bạn không đồng ý, b
 - Mọi tính năng có cờ bật/tắt; cờ ranked được **server quyết định**, client không tự bật.
 
 ### 3.2 Không làm lệch mô phỏng
-- Sự thật từ code (xem `DECISIONS.md` F7, F8): RNG chiến đấu không seed, hiệu ứng dùng chung `Random`; `Actor` chọn lượt bằng `HashSet`. Vì vậy "cùng seed + cùng thao tác" **chưa** đảm bảo cùng kết quả; mô phỏng lại tất định là việc lớn, chỉ làm nếu D5 chọn mức nặng.
+- Sự thật từ code (xem `DECISIONS.md` F7, F8, F15, F16): RNG chiến đấu không seed, hiệu ứng dùng chung `Random`, `Actor` chọn lượt bằng `HashSet`. D5 đã chọn Nặng nên các điểm này phải được sửa trong T0.8 (thiết kế ở `DECISIONS.md` mục 7.6).
 - Tính năng chỉ-hiển-thị **không bao giờ** gọi RNG của game và không đổi trạng thái; nếu cần ngẫu nhiên thì dùng nguồn riêng.
 - Test tự động kiểm tra: cùng seed + cùng input, bật/tắt tính năng cho cùng digest trạng thái.
 - Tính toán như dự báo đói, xác suất đánh trúng dùng đúng công thức game (đọc từ class gốc), không sao chép số cứng.

@@ -2,7 +2,7 @@
 
 Tài liệu này thay cho phần "Nhóm 2" cũ của [`TASKS.md`](TASKS.md). Mục đích: biết quyết định nào phải chốt **trước khi bắt tay làm**, quyết định nào có thể hỏi **khi đang code**, và chúng ảnh hưởng nhau thế nào.
 
-Trạng thái (21/10): user đã đính chính luật Duel (mục 2) và chọn đủ các câu ở mục 4. Hai Agent đã kiểm tra khả thi lâu dài (mục 7). **Còn một câu cần user quyết lại: mức xác thực D5**, vì kết quả kiểm tra cho thấy mức "Nặng" rất tốn công.
+Trạng thái (21/10): user đã đính chính luật Duel (mục 2) và chọn đủ các câu ở mục 4. Hai Agent đã kiểm tra khả thi lâu dài (mục 7). **D5 đã chốt lại sau khi xem kết quả: Nặng ngay từ đầu, kèm yêu cầu mọi ngẫu nhiên và hàm toán cố định theo seed (mục 7.6).** Không còn câu nào chờ user.
 
 ---
 
@@ -85,7 +85,7 @@ Tiêu chí "hỏi ngay": câu trả lời làm thay đổi nền móng (bước 
 | D2 | Cách chọn class trong Duel đua | A4, công bằng xếp hạng | A: tự chọn class | **đã chọn: tự chọn class** |
 | D3 | (đã rút) kit và build giữa các boss | chuyển sang Boss Practice, L17 | | rút do luật mới |
 | D4 | Điều kiện thắng | A1, A3, A5, ghost | A: ai hạ boss cuối trước (giờ thực) | **đã chọn: hạ boss cuối trước**, giờ thực do server giữ (mục 7) |
-| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | **đã chọn: Nặng (mô phỏng lại)**; đang xem lại theo mục 7 |
+| D5 | Mức xác thực kết quả | T-log, A3, A5, B1, B6, sửa code gốc | B: log có chữ ký + server kiểm quy tắc | **đã chọn: Nặng ngay từ đầu** (chốt lại 21/10 sau mục 7), mọi ngẫu nhiên và hàm toán cố định theo seed |
 | D6 | Thứ tự ưu tiên | toàn bộ lịch | A: nền móng, QoL nhỏ, rồi Ranked | **đã chọn: nền móng, QoL, Ranked** (nền móng gồm spike tất định) |
 | D7 | Cách theo upstream | quy trình merge, ổn định mùa | A: theo bản phát hành (tag) | **đã chọn: theo bản phát hành** |
 
@@ -123,7 +123,7 @@ Danh sách đầy đủ ở [`TASKS.md`](TASKS.md) mục "Nhóm 3". Bổ sung t�
 
 - **Luật rule-set là dữ liệu**: số boss, kit, có mang theo hay không, whitelist tính năng nằm trong một file cấu hình có số phiên bản, không hard-code. Nhờ vậy chọn sai ở D1/D2 vẫn đổi được bằng dữ liệu thay vì viết lại.
 - **Tính năng chỉ hiển thị không gọi `Random`** (F7), có test kiểm tra trạng thái trước/sau khi bật tính năng.
-- **Log luôn ghi đủ để nâng cấp xác thực sau** (kết quả mỗi lần tung RNG, thao tác, mốc thời gian), kể cả khi D5 chọn mức nhẹ hơn.
+- **Log đủ để mô phỏng lại ngay từ đầu** (D5 Nặng): seed, thao tác theo lượt, digest định kỳ, mốc thời gian do server nhận; kết quả RNG ghi thêm để dò điểm lệch khi gỡ lỗi.
 - **Spike khung test trước tiên** (F9): thử dựng test logic thuần (công thức Food Forecast, bảng Run Value, mã hóa log) và một test headless khởi tạo `Dungeon`; kết quả quyết định mức test tích hợp khả thi.
 - **Spike "cùng seed, cùng đồ"** (F14, T-seed): chạy hai kịch bản chơi khác nhau (giẫm cỏ, giết quái có loot, đi đường khác) trên cùng seed và so sánh **danh sách đồ có sẵn** từng tầng 1 đến 15, kể cả vị trí. Kỳ vọng từ đọc code: danh sách giống nhau. Sau đó thử riêng các ngoại lệ ở F14 (Ring of Wealth, Transmutation, Exotic Crystals, Bones). Ranked cần chế độ "sạch": tắt Bones, chuẩn hóa meta (mở khóa class, trang hướng dẫn), và quyết định cách xử lý ba ngoại lệ còn lại (chặn, hoặc tách bộ bài lúc chơi khỏi sinh tầng). Làm trước A4.
 - **Spike "thả vào tầng boss"** (F2, F4) cho Boss Practice: đường vào tầng boss với hero dựng sẵn và các trạng thái tích lũy.
@@ -166,7 +166,7 @@ Bản trước của tài liệu nói loot quái và giẫm cỏ làm lệch đ�
 | S5 | Bot đơn giản tầng 1 đến 15, đo thời lượng một lượt chơi và thời gian sinh tầng (dữ liệu cho L19) | khoảng 1 ngày |
 | S6 | Thử vá Actor/Level/HashMap và tách RNG hiệu ứng, chạy lại S2 xem lệch có hết không | khoảng 1 ngày |
 
-### 7.5 Bậc thang xác thực (đề xuất, cần user quyết)
+### 7.5 Bậc thang xác thực (Agent đề xuất, user **không** chọn đi từng bậc)
 
 | Bậc | Nội dung | Ghi chú |
 |---|---|---|
@@ -174,4 +174,24 @@ Bản trước của tài liệu nói loot quái và giẫm cỏ làm lệch đ�
 | 2 | Thêm patch tất định (bytecode), PRNG lưu được trạng thái, golden digest; server phát lại ngẫu nhiên một phần trận, đoạn nghi ngờ và trận top | cần máy kiểm tra ngoài A53 |
 | 3 | Mô phỏng lại mọi trận (**D5 "Nặng"**) | chỉ khi bậc 2 ổn định qua ít nhất hai tag upstream |
 
-Log ở mọi bậc ghi đủ để lên bậc cao hơn. Câu hỏi D5 mới đang chờ user trong thread.
+Agent khuyên đi từng bậc. User quyết định đi thẳng bậc 3 và muốn mọi ngẫu nhiên cố định theo seed. Các bậc 1 và 2 vẫn là phần của con đường (log có chữ ký, heartbeat, PRNG lưu được trạng thái), chỉ không dừng ở đó.
+
+### 7.6 Quyết định cuối về D5 (21/10) và hệ quả
+
+User chọn: **Nặng ngay từ đầu**, và đổi mọi hàm ngẫu nhiên/toán thành cố định theo RNG của seed để việc kiểm tra và chế độ phát lại trận sau này dễ và nhẹ hơn.
+
+Thiết kế kỹ thuật (mình tự quyết, theo kết quả kiểm tra):
+- **Một PRNG gameplay duy nhất**, tự quản, khởi tạo từ seed trận, **lưu được trạng thái** trong Bundle (cho RESUME, điểm kiểm tra phát lại). Mọi ngẫu nhiên của gameplay đi qua nó. Cấm `java.util.Random`, `Math.random`, `Collections.shuffle` không seed trong gameplay (lint + test).
+- **Luồng RNG hiệu ứng/UI tách riêng**, cũng khởi tạo cố định nhưng không bao giờ ảnh hưởng gameplay và không nằm trong digest. Lời gọi RNG của gameplay không được đặt sau điều kiện hiển thị (`sprite.visible`, `heroFOV`); những chỗ như `Hero:632`, `Monk:121`, `Eye:198` phải chuyển sang luồng hiệu ứng hoặc rút giá trị trước điều kiện.
+- **Hàm toán cố định**: gameplay dùng `StrictMath` (hoặc bảng tính sẵn) thay `Math.pow/sin/cos/asin/hypot`. Kết quả phải giống nhau giữa ART và JVM (spike S3).
+- **Thứ tự cố định**: `Actor` chọn lượt theo khóa `(time, priority, id)`; `HashSet/HashMap` trong gameplay và sinh tầng đổi sang `LinkedHashSet/LinkedHashMap` hoặc duyệt có thứ tự.
+- **Input ghi ở mức lệnh theo lượt**, không theo đồng hồ; có bộ chạy headless bước cố định để phát lại.
+- **Cách áp dụng vào code**: ưu tiên biến đổi bytecode lúc build để diff nguồn gần bằng 0 (Agent đề xuất, **chưa thử**); nếu không đạt thì patch nguồn có script cơ học. Chọn sau spike S6. Sau mỗi lần nâng tag chạy test "golden digest".
+- **Việc làm trước tiên** (nền móng, xếp trước QoL): T0.3 khung test, T0.4 headless, T0.6 spike S1 đến S6, rồi T0.8 nền tất định.
+
+Chi phí chấp nhận: công sức lớn (Agent ước tính khoảng 150 file gốc nếu sửa tay), QoL bắt đầu muộn hơn, mỗi lần nâng tag upstream tốn thêm một đợt kiểm thử.
+
+Rủi ro còn lại cần biết (không do lựa chọn này gây ra hết):
+- Tất định cho phép client sửa đổi **đoán trước** kết quả tung xúc xắc rồi chọn hành động tốt nhất. Mô phỏng lại không bắt được vì log vẫn hợp lệ. Giảm nhẹ: seed bí mật đến lúc bắt đầu trận, thống kê nhịp input, heartbeat có chữ ký. Không loại bỏ hoàn toàn được ở game chạy phía client.
+- Mô phỏng lại không bắt bot, hack bản đồ, người chơi tối ưu với seed đã biết.
+- Spike có thể cho thấy chi phí thật khác ước tính; khi đó sẽ báo lại trước khi làm tiếp.
