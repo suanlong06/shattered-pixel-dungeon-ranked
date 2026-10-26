@@ -1140,7 +1140,7 @@ public abstract class Mob extends Char {
 		Item item;
 		if (loot instanceof Generator.Category) {
 
-			item = Generator.randomUsingDefaults( (Generator.Category)loot );
+			item = com.shatteredpixel.shatteredpixeldungeon.ranked.RankedDraws.usingDefaults( (Generator.Category)loot ); // spd-ranked: T0.7 Thief ARTIFACT
 
 		} else if (loot instanceof Class<?>) {
 

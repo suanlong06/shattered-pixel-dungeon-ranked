@@ -46,7 +46,7 @@ public class ExoticCrystals extends Trinket {
 	}
 
 	public static float consumableExoticChance(){
-		return consumableExoticChance(trinketLevel(ExoticCrystals.class));
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.exoticChance( consumableExoticChance(trinketLevel(ExoticCrystals.class)) ); // spd-ranked: T0.7
 	}
 
 	public static float consumableExoticChance( int level ){

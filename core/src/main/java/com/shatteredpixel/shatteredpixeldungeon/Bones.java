@@ -54,6 +54,7 @@ public class Bones {
 	private static HeroClass heroClass;
 
 	public static void leave() {
+		if (!com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.bonesAllowed()) return; // spd-ranked: T0.7 no bones
 
 		//remains will usually drop on the floor the hero died on
 		// but are capped at 5 floors above the lowest depth reached (even when ascending)
@@ -153,7 +154,7 @@ public class Bones {
 
 	public static ArrayList<Item> get() {
 		//daily runs do not interact with remains
-		if (Dungeon.daily){
+		if (Dungeon.daily || !com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.bonesAllowed()){ // spd-ranked: T0.7 no bones
 			return null;
 		}
 
