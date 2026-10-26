@@ -1727,6 +1727,7 @@ public class Hero extends Char {
 
 			if (fieldOfView[ m.pos ] && m.alignment == Alignment.ENEMY) {
 				visible.add(m);
+				com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ContextualKnowledge.seen( m ); // spd-ranked: B2
 				if (!visibleEnemies.contains( m )) {
 					newMob = true;
 				}

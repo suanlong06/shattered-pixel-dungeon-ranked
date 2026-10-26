@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked;
 
 import com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ContextualKnowledge;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameSettings;
 
@@ -32,11 +33,16 @@ public final class Features {
 		return mode == GameMode.RANKED;
 	}
 
+	public static boolean isPractice(){
+		return mode == GameMode.PRACTICE;
+	}
+
 	/** starts a new run in this mode; Ranked takes the current default ranked feature set */
 	public static void setMode( GameMode m ){
 		mode = m;
 		rankedSet = defaultRankedSet();
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
+		ContextualKnowledge.reset();
 	}
 
 	public static boolean enabled( Feature f ){
@@ -74,6 +80,7 @@ public final class Features {
 			}
 		}
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
+		ContextualKnowledge.reset();
 	}
 
 	private static EnumSet<Feature> defaultRankedSet(){

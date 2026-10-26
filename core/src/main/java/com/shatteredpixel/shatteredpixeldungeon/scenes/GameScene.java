@@ -1571,6 +1571,7 @@ public class GameScene extends PixelScene {
 
 	public static void gameOver() {
 		if (scene == null) return;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.qol.DeathAnalysis.report( Dungeon.hero ); // spd-ranked: B1
 
 		Banner gameOver = new Banner( BannerSprites.get( BannerSprites.Type.GAME_OVER ) );
 		gameOver.show( 0x000000, 2f );
