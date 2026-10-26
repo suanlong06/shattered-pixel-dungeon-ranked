@@ -90,6 +90,13 @@ public class SPDAction extends GameAction {
 	public static final GameAction ZOOM_IN      = new SPDAction("zoom_in");
 	public static final GameAction ZOOM_OUT     = new SPDAction("zoom_out");
 
+	// spd-ranked: C1 camera keys, see ranked.qol.CameraKeys
+	public static final GameAction CAMERA_CENTER = new SPDAction("camera_center");
+	public static final GameAction CAMERA_UP     = new SPDAction("camera_up");
+	public static final GameAction CAMERA_DOWN   = new SPDAction("camera_down");
+	public static final GameAction CAMERA_LEFT   = new SPDAction("camera_left");
+	public static final GameAction CAMERA_RIGHT  = new SPDAction("camera_right");
+
 	private static final LinkedHashMap<Integer, GameAction> defaultBindings = new LinkedHashMap<>();
 	static {
 		defaultBindings.put( Input.Keys.ESCAPE,         SPDAction.BACK );
@@ -147,6 +154,8 @@ public class SPDAction extends GameAction {
 		defaultBindings.put( Input.Keys.PLUS,           SPDAction.ZOOM_IN );
 		defaultBindings.put( Input.Keys.EQUALS,         SPDAction.ZOOM_IN );
 		defaultBindings.put( Input.Keys.MINUS,          SPDAction.ZOOM_OUT );
+
+		defaultBindings.put( Input.Keys.V,              SPDAction.CAMERA_CENTER ); // spd-ranked: C1
 	}
 
 	public static LinkedHashMap<Integer, GameAction> getDefaults() {

@@ -180,7 +180,8 @@ public class TalentsPane extends ScrollPane {
 
 			if (mode == TalentButton.Mode.UPGRADE) {
 				setupStars();
-				if (Dungeon.hero.talentPointsAvailable(tier) > 0){
+				//spd-ranked: random pick is not a recorded command, so it is off in Ranked
+				if (Dungeon.hero.talentPointsAvailable(tier) > 0 && !com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()){
 
 					random = new IconButton(Icons.SHUFFLE.get()){
 						@Override
