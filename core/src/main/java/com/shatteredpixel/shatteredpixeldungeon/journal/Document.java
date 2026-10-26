@@ -104,7 +104,7 @@ public enum Document {
 	}
 
 	public boolean isPageFound( String page ){
-		return pagesStates.containsKey(page) && pagesStates.get(page) > NOT_FOUND;
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.pageKnown( pagesStates.containsKey(page) && pagesStates.get(page) > NOT_FOUND ); // spd-ranked: T0.7
 	}
 
 	public boolean isPageFound( int pageIdx ){
@@ -112,6 +112,7 @@ public enum Document {
 	}
 
 	public boolean anyPagesFound(){
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()) return true; // spd-ranked: T0.7
 		for( Integer val : pagesStates.values()){
 			if (val != NOT_FOUND){
 				return true;
@@ -121,6 +122,7 @@ public enum Document {
 	}
 
 	public boolean allPagesFound(){
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()) return true; // spd-ranked: T0.7
 		for( Integer val : pagesStates.values()){
 			if (val == NOT_FOUND){
 				return false;
@@ -144,7 +146,7 @@ public enum Document {
 	}
 
 	public boolean isPageRead( String page ){
-		return pagesStates.containsKey(page) && pagesStates.get(page) == READ;
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.pageKnown( pagesStates.containsKey(page) && pagesStates.get(page) == READ ); // spd-ranked: T0.7
 	}
 
 	public boolean isPageRead( int pageIdx ){

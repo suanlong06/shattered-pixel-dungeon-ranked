@@ -1170,8 +1170,8 @@ public class CursedWand {
 				origin.detach(Dungeon.hero.belongings.backpack);
 			}
 			Item result;
-			do {
-				result = Generator.randomUsingDefaults(Random.oneOf(Generator.Category.WEAPON, Generator.Category.ARMOR,
+			do { // spd-ranked: T0.7 next line
+				result = com.shatteredpixel.shatteredpixeldungeon.ranked.RankedDraws.usingDefaults(Random.oneOf(Generator.Category.WEAPON, Generator.Category.ARMOR,
 						Generator.Category.RING, Generator.Category.ARTIFACT));
 			} while (result.cursed);
 			if (result.isUpgradable()) result.upgrade();

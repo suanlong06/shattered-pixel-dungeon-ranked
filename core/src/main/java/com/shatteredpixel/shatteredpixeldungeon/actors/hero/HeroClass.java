@@ -328,6 +328,7 @@ public enum HeroClass {
 	}
 	
 	public boolean isUnlocked(){
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()) return true; // spd-ranked: T0.7 all classes
 		//always unlock on debug builds
 		if (DeviceCompat.isDebug()) return true;
 

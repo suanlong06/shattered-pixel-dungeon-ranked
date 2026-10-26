@@ -233,7 +233,7 @@ public class SPDSettings extends GameSettings {
 	}
 	
 	public static boolean intro() {
-		return getBoolean( KEY_INTRO, true );
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.intro( getBoolean( KEY_INTRO, true ) ); // spd-ranked: T0.7
 	}
 	
 	public static void lastClass( int value ) {

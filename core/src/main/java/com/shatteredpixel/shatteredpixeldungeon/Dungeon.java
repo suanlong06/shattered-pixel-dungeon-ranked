@@ -215,6 +215,7 @@ public class Dungeon {
 
 	//we initialize the seed separately so that things like interlevelscene can access it early
 	public static void initSeed(){
+		com.shatteredpixel.shatteredpixeldungeon.ranked.Features.setMode( com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode.SOLO ); // spd-ranked: T0.2 runs started from the menu are Solo
 		if (daily) {
 			//Ensures that daily seeds are not in the range of user-enterable seeds
 			seed = SPDSettings.lastDaily() + DungeonSeed.TOTAL_SEEDS;
@@ -251,6 +252,7 @@ public class Dungeon {
 			SecretRoom.initForRun();
 
 			Generator.fullReset();
+			com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.applyGeneratorRules(); // spd-ranked: T0.7
 
 		Random.resetGenerators( seed+2 ); // spd-ranked: gameplay rolls follow the run seed
 		
@@ -685,6 +687,7 @@ public class Dungeon {
 
 			Actor.storeNextID( bundle );
 			com.shatteredpixel.shatteredpixeldungeon.ranked.Determinism.store( bundle ); // spd-ranked
+			com.shatteredpixel.shatteredpixeldungeon.ranked.Features.store( bundle ); // spd-ranked: T0.2
 			
 			Bundle badges = new Bundle();
 			Badges.saveLocal( badges );
@@ -737,6 +740,7 @@ public class Dungeon {
 		Actor.clear();
 		Actor.restoreNextID( bundle );
 		com.shatteredpixel.shatteredpixeldungeon.ranked.Determinism.restore( bundle ); // spd-ranked
+		com.shatteredpixel.shatteredpixeldungeon.ranked.Features.restore( bundle ); // spd-ranked: T0.2
 
 		quickslot.reset();
 		QuickSlotButton.reset();
@@ -823,6 +827,7 @@ public class Dungeon {
 
 		Statistics.restoreFromBundle( bundle );
 		Generator.restoreFromBundle( bundle );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.applyGeneratorRules(); // spd-ranked: T0.7
 
 	}
 	

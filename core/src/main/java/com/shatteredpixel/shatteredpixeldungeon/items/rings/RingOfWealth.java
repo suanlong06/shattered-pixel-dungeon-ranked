@@ -288,7 +288,7 @@ public class RingOfWealth extends Ring {
 				result = Generator.randomUsingDefaults(Generator.Category.RING);
 				break;
 			case 4:
-				result = Generator.random(Generator.Category.ARTIFACT);
+				result = com.shatteredpixel.shatteredpixeldungeon.ranked.RankedDraws.random(Generator.Category.ARTIFACT); // spd-ranked: T0.7
 				break;
 		}
 		//minimum level is 1/2/3/4/5/6 when ring level is 1/3/5/7/9/11
