@@ -142,4 +142,28 @@ class TrainingTest {
 	void bossPracticeRestartIsIdentical(){
 		assertEquals(practice(777L), practice(777L));
 	}
+
+	@Test
+	void bossPracticeLeavesBadgesAndJournalAlone(){
+		Headless.newRun(777L, HeroClass.WARRIOR);
+		BossPractice.setUp(BossPractice.Boss.GOO);
+		boolean badge = com.shatteredpixel.shatteredpixeldungeon.Badges.allUnlocked()
+				.contains(com.shatteredpixel.shatteredpixeldungeon.Badges.Badge.BOSS_SLAIN_1);
+		boolean seen = Bestiary.isSeen(Gnoll.class);
+		int count = Bestiary.encounterCount(Gnoll.class);
+		com.shatteredpixel.shatteredpixeldungeon.Badges.unlock(com.shatteredpixel.shatteredpixeldungeon.Badges.Badge.BOSS_SLAIN_1);
+		Bestiary.setSeen(Gnoll.class);
+		Bestiary.countEncounter(Gnoll.class);
+		assertEquals(badge, com.shatteredpixel.shatteredpixeldungeon.Badges.isUnlocked(com.shatteredpixel.shatteredpixeldungeon.Badges.Badge.BOSS_SLAIN_1));
+		assertEquals(seen, Bestiary.isSeen(Gnoll.class));
+		assertEquals(count, Bestiary.encounterCount(Gnoll.class));
+	}
+
+	@Test
+	void bossPracticeHuntressBowScalesWithKitLevel(){
+		Headless.newRun(777L, HeroClass.HUNTRESS);
+		BossPractice.setUp(BossPractice.Boss.TENGU);
+		assertEquals(BossPractice.Boss.TENGU.heroLevel / 5,
+				Dungeon.hero.belongings.getItem(com.shatteredpixel.shatteredpixeldungeon.items.weapon.SpiritBow.class).level());
+	}
 }

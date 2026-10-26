@@ -102,6 +102,8 @@ public final class BossPractice {
 			a.upgrade( boss.upgrades );
 			a.identify();
 		}
+		//no class-specific extras: the Mage's staff is the equipped weapon, and the Huntress's
+		//spirit bow cannot be upgraded, it scales with hero level (lvl/5), which the kit already sets
 		for (int i = 0; i < boss.healing; i++){
 			new PotionOfHealing().identify().collect( hero.belongings.backpack );
 		}
