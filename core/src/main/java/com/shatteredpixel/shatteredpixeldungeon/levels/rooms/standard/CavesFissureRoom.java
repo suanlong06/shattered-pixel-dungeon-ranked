@@ -138,8 +138,8 @@ public class CavesFissureRoom extends StandardRoom {
 
 			//fill in each fissure
 			for (float lineAngle : lineAngles) {
-				float dX = (float) Math.cos(lineAngle / A - Math.PI / 2.0);
-				float dY = (float) Math.sin(lineAngle / A - Math.PI / 2.0);
+				float dX = (float) StrictMath.cos(lineAngle / A - Math.PI / 2.0);
+				float dY = (float) StrictMath.sin(lineAngle / A - Math.PI / 2.0);
 
 				boolean horizontal;
 				if (Math.abs(dX) >= Math.abs(dY)) {
@@ -241,8 +241,8 @@ public class CavesFissureRoom extends StandardRoom {
 	}
 
 	private void buildBridge( Level level, float fisssureAngle, PointF center, int centerMargin){
-		float dX = (float)Math.cos(fisssureAngle/A - Math.PI/2.0);
-		float dY = (float)Math.sin(fisssureAngle/A - Math.PI/2.0);
+		float dX = (float)StrictMath.cos(fisssureAngle/A - Math.PI/2.0);
+		float dY = (float)StrictMath.sin(fisssureAngle/A - Math.PI/2.0);
 
 		int edgemargin = 2;
 
@@ -312,7 +312,7 @@ public class CavesFissureRoom extends StandardRoom {
 	protected static float angleBetweenPoints( PointF from, PointF to ){
 		double m = (to.y - from.y)/(to.x - from.x);
 
-		float angle = (float)(A*(Math.atan(m) + Math.PI/2.0));
+		float angle = (float)(A*(StrictMath.atan(m) + Math.PI/2.0));
 		if (from.x > to.x) angle -= 180f;
 		return angle;
 	}

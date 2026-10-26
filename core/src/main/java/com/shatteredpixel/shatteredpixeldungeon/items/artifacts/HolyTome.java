@@ -165,9 +165,9 @@ public class HolyTome extends Artifact {
 		}
 
 		if (lvlDiffFromTarget >= 0){
-			exp += Math.round(chargesSpent * 10f * Math.pow(1.1f, lvlDiffFromTarget));
+			exp += Math.round(chargesSpent * 10f * StrictMath.pow(1.1f, lvlDiffFromTarget));
 		} else {
-			exp += Math.round(chargesSpent * 10f * Math.pow(0.75f, -lvlDiffFromTarget));
+			exp += Math.round(chargesSpent * 10f * StrictMath.pow(0.75f, -lvlDiffFromTarget));
 		}
 
 		if (exp >= (level() + 1) * 50 && level() < levelCap) {

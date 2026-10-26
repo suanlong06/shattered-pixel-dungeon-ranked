@@ -266,7 +266,7 @@ public class AmbitiousImpRoom extends SpecialRoom {
 
 				@Override
 				public void update() {
-					alpha(0.3f + 0.3f*(float)Math.sin(Game.timeTotal));
+					alpha(0.3f + 0.3f*(float)StrictMath.sin(Game.timeTotal));
 					super.update();
 				}
 

@@ -181,8 +181,8 @@ public class SuperNovaTracker extends Buff {
 
 		@Override
 		public void update() {
-			am = brightness + 0.1f*(float)Math.cos(20*Game.timeTotal);
-			scale.set((radius + (float)Math.cos(20*Game.timeTotal))/RADIUS);
+			am = brightness + 0.1f*(float)StrictMath.cos(20*Game.timeTotal);
+			scale.set((radius + (float)StrictMath.cos(20*Game.timeTotal))/RADIUS);
 			PointF p = DungeonTilemap.raisedTileCenterToWorld(pos);
 			point(p.x, p.y);
 			super.update();

@@ -300,7 +300,7 @@ abstract public class Weapon extends KindOfWeapon {
 			ACC /= 5;
 		}
 
-		return encumbrance > 0 ? (float)(ACC / Math.pow( 1.5, encumbrance )) : ACC;
+		return encumbrance > 0 ? (float)(ACC / StrictMath.pow( 1.5, encumbrance )) : ACC;
 	}
 	
 	@Override
@@ -313,7 +313,7 @@ abstract public class Weapon extends KindOfWeapon {
 		if (owner instanceof Hero) {
 			int encumbrance = STRReq() - ((Hero)owner).STR();
 			if (encumbrance > 0){
-				delay *= Math.pow( 1.2, encumbrance );
+				delay *= StrictMath.pow( 1.2, encumbrance );
 			}
 		}
 
@@ -383,7 +383,7 @@ abstract public class Weapon extends KindOfWeapon {
 		} else if (enchantment != null) {
 			//chance to lose harden buff is 10/20/40/80/100% when upgrading from +6/7/8/9/10
 			if (enchantHardened){
-				if (level() >= 6 && Random.Float(10) < Math.pow(2, level()-6)){
+				if (level() >= 6 && Random.Float(10) < StrictMath.pow(2, level()-6)){
 					enchantHardened = false;
 				}
 
@@ -392,7 +392,7 @@ abstract public class Weapon extends KindOfWeapon {
 				if (Random.Int(3) == 0) enchant(null);
 
 			//otherwise chance to lose enchant is 10/20/40/80/100% when upgrading from +4/5/6/7/8
-			} else if (level() >= 4 && Random.Float(10) < Math.pow(2, level()-4)){
+			} else if (level() >= 4 && Random.Float(10) < StrictMath.pow(2, level()-4)){
 				enchant(null);
 			}
 

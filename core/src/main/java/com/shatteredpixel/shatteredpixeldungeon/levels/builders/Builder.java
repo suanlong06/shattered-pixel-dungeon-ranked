@@ -155,7 +155,7 @@ public abstract class Builder {
 	protected static float angleBetweenPoints( PointF from, PointF to ){
 		double m = (to.y - from.y)/(to.x - from.x);
 		
-		float angle = (float)(A*(Math.atan(m) + Math.PI/2.0));
+		float angle = (float)(A*(StrictMath.atan(m) + Math.PI/2.0));
 		if (from.x > to.x) angle -= 180f;
 		return angle;
 	}
@@ -175,7 +175,7 @@ public abstract class Builder {
 		PointF prevCenter = new PointF((prev.left + prev.right)/2f, (prev.top + prev.bottom)/2f);
 
 		// calculating using y = mx+b, straight line formula
-		double m = Math.tan(angle/A + Math.PI/2.0);
+		double m = StrictMath.tan(angle/A + Math.PI/2.0);
 		double b = prevCenter.y -m*prevCenter.x;
 
 		//using the line equation, we find the point along the prev room where the line exists

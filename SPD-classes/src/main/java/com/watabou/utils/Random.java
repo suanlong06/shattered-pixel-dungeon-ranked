@@ -44,7 +44,34 @@ public class Random {
 
 	private static java.util.Random make( Long seed ){
 		if (factory != null) return factory.apply(seed);
-		return seed == null ? new java.util.Random() : new java.util.Random(seed);
+		// spd-ranked: StatefulRandom gives the same sequence as java.util.Random, but its state can be saved
+		return new StatefulRandom( seed == null ? new java.util.Random().nextLong() : seed );
+	}
+
+	// spd-ranked: whole generator stack state (bottom first), for saving/restoring a run mid-way
+	public static synchronized long[] getStackState(){
+		java.util.Iterator<java.util.Random> it = generators.descendingIterator();
+		long[] out = new long[generators.size() * 3];
+		int i = 0;
+		while (it.hasNext()){
+			java.util.Random r = it.next();
+			if (!(r instanceof StatefulRandom)) {
+				throw new IllegalStateException("generator state is not saveable: " + r.getClass().getName());
+			}
+			long[] st = ((StatefulRandom) r).getState();
+			System.arraycopy(st, 0, out, i, 3);
+			i += 3;
+		}
+		return out;
+	}
+
+	public static synchronized void setStackState( long[] state ){
+		generators = new ArrayDeque<>();
+		for (int i = 0; i + 2 < state.length; i += 3){
+			StatefulRandom r = new StatefulRandom(0);
+			r.setState(new long[]{ state[i], state[i+1], state[i+2] });
+			generators.push(r);
+		}
 	}
 
 	public static synchronized void resetGenerators(){

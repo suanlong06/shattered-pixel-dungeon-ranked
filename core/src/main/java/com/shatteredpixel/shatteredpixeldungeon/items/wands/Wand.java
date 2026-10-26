@@ -216,7 +216,7 @@ public abstract class Wand extends Item {
 		if (target != Dungeon.hero &&
 				Dungeon.hero.subClass == HeroSubClass.WARLOCK &&
 				//standard 1 - 0.92^x chance, plus 7%. Starts at 15%
-				Random.Float() > (Math.pow(0.92f, (wandLevel*chargesUsed)+1) - 0.07f)){
+				Random.Float() > (StrictMath.pow(0.92f, (wandLevel*chargesUsed)+1) - 0.07f)){
 			SoulMark.prolong(target, SoulMark.class, SoulMark.DURATION + wandLevel);
 		}
 
@@ -845,7 +845,7 @@ public abstract class Wand extends Item {
 			missingCharges = Math.max(0, missingCharges);
 
 			float turnsToCharge = (float) (BASE_CHARGE_DELAY
-					+ (SCALING_CHARGE_ADDITION * Math.pow(scalingFactor, missingCharges)));
+					+ (SCALING_CHARGE_ADDITION * StrictMath.pow(scalingFactor, missingCharges)));
 
 			if (Regeneration.regenOn())
 				partialCharge += (1f/turnsToCharge) * RingOfEnergy.wandChargeMultiplier(target);

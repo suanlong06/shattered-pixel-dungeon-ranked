@@ -15,6 +15,7 @@ dependencies {
     testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
     testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
     testImplementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    testImplementation "org.ow2.asm:asm:9.9"
 }
 
 // spd-ranked: tests run headless with the game's assets as working directory
@@ -28,12 +29,17 @@ tasks.named('test') {
         showStandardStreams = true
     }
     systemProperty 'spdr.test.out', layout.buildDirectory.dir('spdr').get().asFile.absolutePath
+    // regenerate golden digests: -Dspdr.golden.update=<path> (see GoldenDigestTest)
+    if (System.getProperty('spdr.golden.update') != null) {
+        systemProperty 'spdr.golden.update', rootProject.file(System.getProperty('spdr.golden.update')).absolutePath
+        outputs.upToDateWhen { false }
+    }
 }
 
-// spd-ranked: determinism spikes (S1...). Known to fail on unmodified v4.0.2 until T0.8.
-tasks.named('test') { useJUnitPlatform { excludeTags 'determinism' } }
+// spd-ranked: determinism tests (tag "determinism") are part of the default test run since T0.8.
+// determinismTest stays as a shortcut to run only them.
 tasks.register('determinismTest', Test) {
-    description = 'Runs the determinism spike tests (tag "determinism").'
+    description = 'Runs only the determinism tests (tag "determinism").'
     group = 'verification'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath

@@ -38,6 +38,7 @@ public final class Headless {
 		} catch (Exception e){
 			throw new RuntimeException(e);
 		}
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.HeadlessGame.install(new HeadlessPlatform());
 		Game.version = "4.0.2-test";
 		Game.versionCode = 922;
 		started = true;
@@ -83,6 +84,7 @@ public final class Headless {
 	/** Starts a fresh run exactly like InterlevelScene.descend() does for a new game. */
 	public static void newRun(long seed, HeroClass cls, Profile profile){
 		boot();
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.TurnRunner.leaveScene();
 		applyProfile(profile);
 		GamesInProgress.selectedClass = cls;
 		GamesInProgress.curSlot = 1;

@@ -70,7 +70,7 @@ public class Slime extends Mob {
 	public float lootChance(){
 		//each drop makes future drops 1/4 as likely
 		// so loot chance looks like: 1/5, 1/20, 1/80, 1/320, etc.
-		return super.lootChance() * (float)Math.pow(1/4f, Dungeon.LimitedDrops.SLIME_WEP.count);
+		return super.lootChance() * (float)StrictMath.pow(1/4f, Dungeon.LimitedDrops.SLIME_WEP.count);
 	}
 	
 	@Override

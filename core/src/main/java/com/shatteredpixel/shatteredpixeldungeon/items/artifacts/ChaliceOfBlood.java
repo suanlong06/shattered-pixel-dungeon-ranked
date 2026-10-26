@@ -88,10 +88,10 @@ public class ChaliceOfBlood extends Artifact {
 				//subtract 1 from hero HP as we want to include dmg == hp as a kill
 				deathChance = (maxDmg - (totalHeroHP-1)) / (float) ((maxDmg - minDmg)+1);
 				if (deathChance < 0.5f) {
-					deathChance = (float) Math.pow(2 * deathChance, 2) / 2f;
+					deathChance = (float) StrictMath.pow(2 * deathChance, 2) / 2f;
 				} else if (deathChance < 1f) {
 					deathChance = 1f - deathChance;
-					deathChance = (float) Math.pow(2 * deathChance, 2) / 2f;
+					deathChance = (float) StrictMath.pow(2 * deathChance, 2) / 2f;
 					deathChance = 1f - deathChance;
 				} else {
 					deathChance = 1;

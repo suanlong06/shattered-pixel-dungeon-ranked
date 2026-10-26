@@ -133,7 +133,7 @@ public class Berserk extends ShieldBuff implements ActionIndicator.Action {
 			if (powerLossBuffer > 0){
 				powerLossBuffer--;
 			} else {
-				power -= GameMath.gate(0.1f, power, 1f) * 0.05f * Math.pow((target.HP / (float) target.HT), 2);
+				power -= GameMath.gate(0.1f, power, 1f) * 0.05f * StrictMath.pow((target.HP / (float) target.HT), 2);
 
 				if (power < 1f){
 					ActionIndicator.clearAction(this);
@@ -208,7 +208,7 @@ public class Berserk extends ShieldBuff implements ActionIndicator.Action {
 
 	public int currentShieldBoost(){
 		//base multiplier scales at 1/1.5/2/2.5/3x at 100/37/20/9/0% HP
-		float shieldMultiplier = 1f + 2*(float)Math.pow((1f-(target.HP/(float)target.HT)), 3);
+		float shieldMultiplier = 1f + 2*(float)StrictMath.pow((1f-(target.HP/(float)target.HT)), 3);
 
 		//Endless rage effect on shield and cooldown
 		if (power > 1f){

@@ -15,6 +15,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      # includes the determinism tests (replay, frame rate, child JVM, save/load), the lint and the golden digests (T0.8)
       - name: Unit tests (headless)
         run: ./gradlew :core:test --stacktrace
       - name: Desktop release jar
@@ -24,17 +25,3 @@ jobs:
         with:
           name: test-reports
           path: core/build/reports/tests/
-
-  # Determinism spikes (T0.6). Expected to fail on unmodified SPD until T0.8: visible, not blocking.
-  determinism:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Determinism spike tests
-        run: ./gradlew :core:determinismTest

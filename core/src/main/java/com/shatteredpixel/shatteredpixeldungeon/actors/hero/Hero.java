@@ -1503,6 +1503,7 @@ public class Hero extends Char {
 	}
 	
 	public void rest( boolean fullRest ) {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordRest( fullRest ); // spd-ranked
 		spendAndNextConstant( TIME_TO_REST );
 		if (hasTalent(Talent.HOLD_FAST)){
 			if (heroClass != HeroClass.WARRIOR || buff(BrokenSeal.WarriorShield.class) != null) {
@@ -2488,6 +2489,7 @@ public class Hero extends Char {
 	}
 
 	public boolean search( boolean intentional ) {
+		if (intentional) com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordSearch(); // spd-ranked
 		
 		if (!isAlive()) return false;
 		

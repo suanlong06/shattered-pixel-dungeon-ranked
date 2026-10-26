@@ -79,7 +79,7 @@ public class SmokeBomb extends ArmorAbility {
 			return super.chargeUse(hero);
 		} else {
 			//reduced charge use by 16%/30%/41%/50%
-			return (float)(super.chargeUse(hero) * Math.pow(0.84, hero.pointsInTalent(Talent.SHADOW_STEP)));
+			return (float)(super.chargeUse(hero) * StrictMath.pow(0.84, hero.pointsInTalent(Talent.SHADOW_STEP)));
 		}
 	}
 

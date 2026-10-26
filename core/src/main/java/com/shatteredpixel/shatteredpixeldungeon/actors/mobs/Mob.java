@@ -763,7 +763,7 @@ public abstract class Mob extends Char {
 						if (sprite.visible){
 							elapsed = progress = 1;
 						}
-						progress = (float)Math.pow(progress, 2); //alpha fades slowly then quickly
+						progress = (float)StrictMath.pow(progress, 2); //alpha fades slowly then quickly
 						super.updateValues(progress);
 					}
 
@@ -1082,7 +1082,7 @@ public abstract class Mob extends Char {
 			Preparation prep = Dungeon.hero.buff(Preparation.class);
 			if (prep != null){
 				// 2/4/8/16% per prep level, multiplied by talent points
-				float bhBonus = 0.02f * (float)Math.pow(2, prep.attackLevel()-1);
+				float bhBonus = 0.02f * (float)StrictMath.pow(2, prep.attackLevel()-1);
 				bhBonus *= Dungeon.hero.pointsInTalent(Talent.BOUNTY_HUNTER);
 				dropBonus += bhBonus;
 			}
@@ -1625,7 +1625,7 @@ public abstract class Mob extends Char {
 				return 1 / (distance( enemy ) + enemy.stealth());
 			//otherwise uses very low chance detection (1/8 at 2 tiles, 0% at 3+)
 			} else {
-				float chance = 1 / (float)Math.pow((distance( enemy ) + enemy.stealth()), 3);
+				float chance = 1 / (float)StrictMath.pow((distance( enemy ) + enemy.stealth()), 3);
 				if (chance < 0.1f){
 					return 0;
 				} else {
@@ -1705,7 +1705,7 @@ public abstract class Mob extends Char {
 		//set to 0 if below 10% (usually happens at 4+ distance)
 		@Override
 		protected float detectionChance( Char enemy ){
-			float chance = 1 / (float)Math.pow((distance( enemy ) + enemy.stealth()), 2);
+			float chance = 1 / (float)StrictMath.pow((distance( enemy ) + enemy.stealth()), 2);
 			if (chance < 0.1f){
 				return 0;
 			} else {

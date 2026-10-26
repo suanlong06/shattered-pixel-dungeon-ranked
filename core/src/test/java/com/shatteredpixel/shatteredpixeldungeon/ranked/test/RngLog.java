@@ -49,16 +49,16 @@ public final class RngLog {
 		StackTraceElement[] st = new Throwable().getStackTrace();
 		for (StackTraceElement e : st){
 			String c = e.getClassName();
-			if (c.startsWith("java.") || c.equals("com.watabou.utils.Random") || c.startsWith(RngLog.class.getName())) continue;
+			if (c.startsWith("java.") || c.equals("com.watabou.utils.Random") || c.equals("com.watabou.utils.StatefulRandom") || c.startsWith(RngLog.class.getName())) continue;
 			return c.substring(c.lastIndexOf('.') + 1) + "." + e.getMethodName() + ":" + e.getLineNumber();
 		}
 		return "?";
 	}
 
-	static final class Logging extends java.util.Random {
+	static final class Logging extends com.watabou.utils.StatefulRandom {
 		final String tag;
 
-		Logging(int id, String kind){ super(); tag = kind + id; }
+		Logging(int id, String kind){ super(new java.util.Random().nextLong()); tag = kind + id; }
 		Logging(int id, String kind, long seed){ super(seed); tag = kind + id; }
 
 		@Override

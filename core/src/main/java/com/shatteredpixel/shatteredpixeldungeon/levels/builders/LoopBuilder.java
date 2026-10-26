@@ -62,8 +62,8 @@ public class LoopBuilder extends RegularBuilder {
 	}
 	
 	private double curveEquation( double x ){
-		return Math.pow(4, 2*curveExponent)
-				*(Math.pow((x % 0.5f )-0.25, 2*curveExponent + 1))
+		return StrictMath.pow(4, 2*curveExponent)
+				*(StrictMath.pow((x % 0.5f )-0.25, 2*curveExponent + 1))
 				+ 0.25 + 0.5*Math.floor(2*x);
 	}
 	

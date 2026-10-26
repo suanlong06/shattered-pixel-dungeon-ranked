@@ -79,10 +79,10 @@ public class RingOfMight extends Ring {
 	public String statsInfo() {
 		if (isIdentified()){
 			String info = Messages.get(this, "stats",
-					soloBonus(), Messages.decimalFormat("#.##", 100f * (Math.pow(1.035, soloBuffedBonus()) - 1f)));
+					soloBonus(), Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.035, soloBuffedBonus()) - 1f)));
 			if (isEquipped(Dungeon.hero) && soloBuffedBonus() != combinedBuffedBonus(Dungeon.hero)){
 				info += "\n\n" + Messages.get(this, "combined_stats",
-						getBonus(Dungeon.hero, Might.class), Messages.decimalFormat("#.##", 100f * (Math.pow(1.035, combinedBuffedBonus(Dungeon.hero)) - 1f)));
+						getBonus(Dungeon.hero, Might.class), Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.035, combinedBuffedBonus(Dungeon.hero)) - 1f)));
 			}
 			return info;
 		} else {
@@ -99,7 +99,7 @@ public class RingOfMight extends Ring {
 	@Override
 	public String upgradeStat2(int level) {
 		if (cursed && cursedKnown) level = Math.min(-1, level-3);
-		return Messages.decimalFormat("#.##", 100f * (Math.pow(1.035, level+1)-1f)) + "%";
+		return Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.035, level+1)-1f)) + "%";
 	}
 
 	@Override
@@ -112,7 +112,7 @@ public class RingOfMight extends Ring {
 	}
 	
 	public static float HTMultiplier( Char target ){
-		return (float)Math.pow(1.035, getBuffedBonus(target, Might.class));
+		return (float)StrictMath.pow(1.035, getBuffedBonus(target, Might.class));
 	}
 
 	public class Might extends RingBuff {

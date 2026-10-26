@@ -189,7 +189,7 @@ public class GridBuilder extends Builder {
 				int rIdx = nIdx;
 				float xDiff = aimCenter.x - ((rIdx % 1000) - 100);
 				float yDiff = aimCenter.y - ((rIdx / 1000) - 100);
-				float dist = (float) Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+				float dist = (float) Math.sqrt(StrictMath.pow(xDiff, 2) + StrictMath.pow(yDiff, 2));
 				//farther out from the center = more likely to pull to center
 				// 67-100% chance to pull to center at 0-4 tiles of distance
 				//also always go toward center on first room placement

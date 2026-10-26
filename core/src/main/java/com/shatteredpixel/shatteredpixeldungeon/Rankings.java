@@ -245,7 +245,7 @@ public enum Rankings {
 
 		}
 
-		Statistics.chalMultiplier = (float)Math.pow(1.25, Challenges.activeChallenges());
+		Statistics.chalMultiplier = (float)StrictMath.pow(1.25, Challenges.activeChallenges());
 		Statistics.chalMultiplier = Math.round(Statistics.chalMultiplier*20f)/20f;
 
 		Statistics.totalScore = Statistics.progressScore + Statistics.treasureScore + Statistics.exploreScore

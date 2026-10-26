@@ -684,6 +684,7 @@ public class Dungeon {
 			Ring.save( bundle );
 
 			Actor.storeNextID( bundle );
+			com.shatteredpixel.shatteredpixeldungeon.ranked.Determinism.store( bundle ); // spd-ranked
 			
 			Bundle badges = new Bundle();
 			Badges.saveLocal( badges );
@@ -735,6 +736,7 @@ public class Dungeon {
 
 		Actor.clear();
 		Actor.restoreNextID( bundle );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.Determinism.restore( bundle ); // spd-ranked
 
 		quickslot.reset();
 		QuickSlotButton.reset();
