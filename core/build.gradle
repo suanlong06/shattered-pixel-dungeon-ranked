@@ -14,6 +14,7 @@ dependencies {
     testImplementation "org.json:json:20170516"
     testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
     testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    testImplementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 }
 
 // spd-ranked: tests run headless with the game's assets as working directory

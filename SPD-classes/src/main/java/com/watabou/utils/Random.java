@@ -39,17 +39,25 @@ public class Random {
 		resetGenerators();
 	}
 
+	// spd-ranked: lets a test harness wrap or replace generators (seed == null means unseeded)
+	public static java.util.function.Function<Long, java.util.Random> factory = null;
+
+	private static java.util.Random make( Long seed ){
+		if (factory != null) return factory.apply(seed);
+		return seed == null ? new java.util.Random() : new java.util.Random(seed);
+	}
+
 	public static synchronized void resetGenerators(){
 		generators = new ArrayDeque<>();
-		generators.push(new java.util.Random());
+		generators.push(make(null));
 	}
 
 	public static synchronized void pushGenerator(){
-		generators.push( new java.util.Random() );
+		generators.push( make(null) );
 	}
 
 	public static synchronized void pushGenerator( long seed ){
-		generators.push( new java.util.Random( scrambleSeed(seed) ) );
+		generators.push( make( scrambleSeed(seed) ) );
 	}
 
 	//scrambles a given seed, this helps eliminate patterns between the outputs of similar seeds
