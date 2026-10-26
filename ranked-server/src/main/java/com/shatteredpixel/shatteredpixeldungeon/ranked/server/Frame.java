@@ -1,0 +1,59 @@
+package com.shatteredpixel.shatteredpixeldungeon.ranked.server;
+
+import com.google.gson.JsonObject;
+
+/**
+ * spd-ranked (A1): one protocol message, {@code {type, seq, matchId, data}}.
+ * On the wire it is a 4-byte big-endian length followed by UTF-8 JSON (see FrameCodec).
+ */
+public final class Frame {
+
+	/** bump on any incompatible change; HELLO with another version is refused */
+	public static final int PROTOCOL = 1;
+
+	// client -> server
+	public static final String HELLO = "HELLO";
+	public static final String QUEUE = "QUEUE";
+	public static final String LEAVE_QUEUE = "LEAVE_QUEUE";
+	public static final String READY = "READY";
+	public static final String PROGRESS = "PROGRESS";
+	public static final String DIED = "DIED";
+	public static final String CLEARED = "CLEARED";
+	public static final String RESIGN = "RESIGN";
+	public static final String RESUME = "RESUME";
+	public static final String PING = "PING";
+
+	// server -> client
+	public static final String WELCOME = "WELCOME";
+	public static final String QUEUED = "QUEUED";
+	public static final String MATCH_FOUND = "MATCH_FOUND";
+	public static final String START = "START";
+	public static final String OPPONENT = "OPPONENT";
+	public static final String RESUMED = "RESUMED";
+	public static final String RESULT = "RESULT";
+	public static final String PONG = "PONG";
+	public static final String ERROR = "ERROR";
+
+	public final String type;
+	public final long seq;
+	public final String matchId;
+	public final JsonObject data;
+
+	public Frame(String type, long seq, String matchId, JsonObject data) {
+		this.type = type;
+		this.seq = seq;
+		this.matchId = matchId;
+		this.data = data == null ? new JsonObject() : data;
+	}
+
+	public Frame(String type, JsonObject data) {
+		this(type, 0, null, data);
+	}
+
+	public int i(String key, int def) { return data.has(key) ? data.get(key).getAsInt() : def; }
+	public long l(String key, long def) { return data.has(key) ? data.get(key).getAsLong() : def; }
+	public String s(String key) { return data.has(key) && !data.get(key).isJsonNull() ? data.get(key).getAsString() : null; }
+
+	@Override
+	public String toString() { return type + " " + data; }
+}

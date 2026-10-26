@@ -44,7 +44,7 @@ Mã A/B/C lấy từ ROADMAP. "Chờ Q#" = phụ thuộc câu hỏi ở Nhóm 2.
 |---|---|---|---|
 | A2 | Duel = đua song song từ tầng 1 lên boss 5/10/15, ai hạ boss trước thắng (**logic kết thúc trận xong**: `docs/A2-duel-end.md`) | D1 đã chọn (3 boss đầu); còn D2 (class), D4 (cách tính thắng) | mô tả luật, điều kiện thắng, hòa, hết giờ, bỏ cuộc |
 | A4 | Seed pool có chấm điểm (đợt 1 xong: `docs/A4-seed-pool.md`) | **spike T-seed**: chạy thật để xác nhận đồ có sẵn từng tầng không đổi theo hành vi chơi (đọc code cho thấy không đổi; còn vài ngoại lệ hẹp, xem DECISIONS F14); tiêu chí chấm cũ (`traversal-v1.json`, tầng 1 đến 14) cần đổi sang "đồ tốt tầng 1 đến 5" | SeedScanner/SeedScorer viết lại: tạo seed pool có đồ giúp sống sót tầng 1 đến 5 (xem L18); pool riêng cho ranked |
-| A1 | Server + matchmaking + rating mùa | quyết định L1, L2, L3 | ranked-server, hàng chờ, rating, strike, vote reroll, reconnect/RESUME, tranh chấp |
+| A1 | Server + matchmaking + rating mùa (đợt 1 xong: `docs/A1-ranked-server.md`) | quyết định L1, L2, L3 | ranked-server, hàng chờ, rating, strike, vote reroll, reconnect/RESUME, tranh chấp |
 | A3 | Chống gian lận | danh sách vector tấn công trong `docs/redteam-*.md` còn đúng với client mới | digest trạng thái, forensics, lưu replay để xác minh phía server |
 | A5 | Ghost race, replay, telemetry | phụ thuộc T-log và A2 (ghost theo tầng/mốc trong cả run) | ghost, replay viewer, telemetry |
 | A6 | Pack & Skin | cách v4.0.2 nạp texture/asset (có thể đã đổi so với v3.3.8) | package `skins/`, tab Skins, denylist khi ranked |

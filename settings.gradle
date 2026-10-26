@@ -15,3 +15,5 @@ include ':services'
     //news
     include ':services:news:debugNews'
     include ':services:news:shatteredNews'
+//spd-ranked: A1 ranked server
+include ':ranked-server'
