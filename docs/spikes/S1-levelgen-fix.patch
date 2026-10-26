@@ -1,0 +1,57 @@
+diff --git a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLaboratoryRoom.java b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLaboratoryRoom.java
+index f68649a..7afa575 100644
+--- a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLaboratoryRoom.java
++++ b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLaboratoryRoom.java
+@@ -49,7 +49,7 @@ import java.util.HashMap;
+ 
+ public class SecretLaboratoryRoom extends SecretRoom {
+ 	
+-	private static HashMap<Class<? extends Potion>, Float> potionChances = new HashMap<>();
++	private static HashMap<Class<? extends Potion>, Float> potionChances = new java.util.LinkedHashMap<>();
+ 	static{
+ 		potionChances.put(PotionOfHealing.class,        1f);
+ 		potionChances.put(PotionOfMindVision.class,     2f);
+@@ -88,7 +88,7 @@ public class SecretLaboratoryRoom extends SecretRoom {
+ 		level.drop( new EnergyCrystal().quantity(Random.IntRange(3, 5)), pos );
+ 
+ 		int n = Random.IntRange( 2, 3 );
+-		HashMap<Class<? extends Potion>, Float> chances = new HashMap<>(potionChances);
++		HashMap<Class<? extends Potion>, Float> chances = new java.util.LinkedHashMap<>(potionChances);
+ 		for (int i=0; i < n; i++) {
+ 			do {
+ 				pos = level.pointToCell(random());
+diff --git a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLibraryRoom.java b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLibraryRoom.java
+index 23a0a97..c199836 100644
+--- a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLibraryRoom.java
++++ b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/secret/SecretLibraryRoom.java
+@@ -55,7 +55,7 @@ public class SecretLibraryRoom extends SecretRoom {
+ 		return Math.max(7, super.minHeight());
+ 	}
+ 	
+-	private static HashMap<Class<? extends Scroll>, Float> scrollChances = new HashMap<>();
++	private static HashMap<Class<? extends Scroll>, Float> scrollChances = new java.util.LinkedHashMap<>();
+ 	static{
+ 		scrollChances.put( ScrollOfIdentify.class,      1f );
+ 		scrollChances.put( ScrollOfRemoveCurse.class,   2f );
+@@ -86,7 +86,7 @@ public class SecretLibraryRoom extends SecretRoom {
+ 		entrance.set( Door.Type.HIDDEN );
+ 		
+ 		int n = Random.IntRange( 2, 3 );
+-		HashMap<Class<? extends Scroll>, Float> chances = new HashMap<>(scrollChances);
++		HashMap<Class<? extends Scroll>, Float> chances = new java.util.LinkedHashMap<>(scrollChances);
+ 		for (int i=0; i < n; i++) {
+ 			int pos;
+ 			do {
+diff --git a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/special/ShopRoom.java b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/special/ShopRoom.java
+index 08021b8..5864338 100644
+--- a/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/special/ShopRoom.java
++++ b/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/rooms/special/ShopRoom.java
+@@ -361,7 +361,7 @@ public class ShopRoom extends SpecialRoom {
+ 	protected static Bag ChooseBag(Belongings pack){
+ 
+ 		//generate a hashmap of all valid bags.
+-		HashMap<Bag, Integer> bags = new HashMap<>();
++		HashMap<Bag, Integer> bags = new java.util.LinkedHashMap<>();
+ 		if (!Dungeon.LimitedDrops.VELVET_POUCH.dropped()) bags.put(new VelvetPouch(), 1);
+ 		if (!Dungeon.LimitedDrops.SCROLL_HOLDER.dropped()) bags.put(new ScrollHolder(), 0);
+ 		if (!Dungeon.LimitedDrops.POTION_BANDOLIER.dropped()) bags.put(new PotionBandolier(), 0);

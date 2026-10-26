@@ -6,4 +6,38 @@ java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
 dependencies {
     api project(':SPD-classes')
     implementation project(':services')
+
+    // spd-ranked: headless test harness (T0.3/T0.4)
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation "org.json:json:20170516"
+    testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+    testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+// spd-ranked: tests run headless with the game's assets as working directory
+tasks.named('test') {
+    useJUnitPlatform()
+    workingDir = file('src/main/assets')
+    maxHeapSize = '2g'
+    testLogging {
+        events 'failed', 'skipped'
+        exceptionFormat 'full'
+        showStandardStreams = true
+    }
+    systemProperty 'spdr.test.out', layout.buildDirectory.dir('spdr').get().asFile.absolutePath
+}
+
+// spd-ranked: determinism spikes (S1...). Known to fail on unmodified v4.0.2 until T0.8.
+tasks.named('test') { useJUnitPlatform { excludeTags 'determinism' } }
+tasks.register('determinismTest', Test) {
+    description = 'Runs the determinism spike tests (tag "determinism").'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'determinism' }
+    workingDir = file('src/main/assets')
+    maxHeapSize = '2g'
+    testLogging { events 'passed', 'failed', 'skipped'; exceptionFormat 'full' }
 }
