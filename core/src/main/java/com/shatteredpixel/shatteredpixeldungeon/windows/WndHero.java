@@ -193,6 +193,7 @@ public class WndHero extends WndTabbed {
 			if (hero.shielding() > 0)   statSlot( Messages.get(this, "health"), hero.HP + "+" + hero.shielding() + "/" + hero.HT );
 			else                        statSlot( Messages.get(this, "health"), (hero.HP) + "/" + hero.HT );
 			statSlot( Messages.get(this, "exp"), hero.exp + "/" + hero.maxExp() );
+			if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.enabled( com.shatteredpixel.shatteredpixeldungeon.ranked.Feature.FOOD_FORECAST )) statSlot( "Hunger", com.shatteredpixel.shatteredpixeldungeon.ranked.qol.FoodForecast.of( hero ).summary() ); // spd-ranked: B5
 
 			pos += GAP;
 

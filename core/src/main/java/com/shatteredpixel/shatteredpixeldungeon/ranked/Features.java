@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked;
 
+import com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameSettings;
 
@@ -35,6 +36,7 @@ public final class Features {
 	public static void setMode( GameMode m ){
 		mode = m;
 		rankedSet = defaultRankedSet();
+		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 	}
 
 	public static boolean enabled( Feature f ){
@@ -71,6 +73,7 @@ public final class Features {
 				}
 			}
 		}
+		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 	}
 
 	private static EnumSet<Feature> defaultRankedSet(){

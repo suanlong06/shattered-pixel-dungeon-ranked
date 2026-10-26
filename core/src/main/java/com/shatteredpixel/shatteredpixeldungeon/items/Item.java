@@ -159,6 +159,7 @@ public class Item implements Bundlable {
 		GameScene.cancel();
 		curUser = hero;
 		curItem = this;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog.useItem( hero, this, action ); // spd-ranked: T-log
 		
 		if (action.equals( AC_DROP )) {
 			

@@ -226,6 +226,7 @@ public class ItemSlot extends Button {
 
 		if (item == null){
 			status.visible = extra.visible = level.visible = false;
+			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.RunValueStar.update( this, null ); // spd-ranked: B4
 			return;
 		} else {
 			status.visible = extra.visible = level.visible = true;
@@ -301,6 +302,7 @@ public class ItemSlot extends Button {
 			level.text( null );
 		}
 
+		com.shatteredpixel.shatteredpixeldungeon.ranked.qol.RunValueStar.update( this, item ); // spd-ranked: B4
 		layout();
 	}
 	

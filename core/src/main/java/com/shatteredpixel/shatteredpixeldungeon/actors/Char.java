@@ -987,6 +987,7 @@ public abstract class Char extends Actor {
 		dmg = ShieldBuff.processDamage(this, dmg, src);
 		shielded -= dmg;
 		HP -= dmg;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog.damage( this, src, dmg + shielded ); // spd-ranked: T-log
 
 		if (HP > 0 && src instanceof Char && ((Char) src).buff(Grim.GrimTracker.class) != null){
 
@@ -1121,6 +1122,7 @@ public abstract class Char extends Actor {
 	}
 	
 	public void die( Object src ) {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog.death( this, src ); // spd-ranked: T-log
 		//something else is forcing death, so remove death mark to prevent conflicts
 		if (buff(DeathMark.DeathMarkTracker.class) != null){
 			buff(DeathMark.DeathMarkTracker.class).detachOnDeath();
@@ -1322,6 +1324,7 @@ public abstract class Char extends Actor {
 			previousPos = -1;
 		}
 		pos = step;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog.move( this, step ); // spd-ranked: T-log
 		
 		if (this != Dungeon.hero) {
 			sprite.visible = Dungeon.level.heroFOV[pos];

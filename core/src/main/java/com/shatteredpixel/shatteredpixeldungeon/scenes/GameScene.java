@@ -305,6 +305,7 @@ public class GameScene extends PixelScene {
 
 		heaps = new Group();
 		add( heaps );
+		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.qol.KnownItemMarkers() ); // spd-ranked: B3
 		
 		for ( Heap heap : Dungeon.level.heaps.valueList() ) {
 			addHeapSprite( heap );
