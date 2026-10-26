@@ -5,7 +5,10 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Feature;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog;
-import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndTitledMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,17 +81,18 @@ public final class DeathAnalysis {
 
 	public List<String> lines(){
 		List<String> out = new ArrayList<>();
-		out.add( "Death analysis: killed by " + killer );
-		out.add( "Damage in the last " + (int)WINDOW + " turns: " + join( damage, " " ) );
+		out.add( Messages.get( DeathAnalysis.class, "killed", killer ) );
+		out.add( Messages.get( DeathAnalysis.class, "damage", (int)WINDOW, join( damage, " " ) ) );
+		out.add( Messages.get( DeathAnalysis.class, "last" ) );
 		for (EventLog.Event e : last){
 			out.add( "  t" + (int)e.time + " " + e.type + " " + e.actor + " " + e.subject + " " + e.value );
 		}
-		out.add( "Known escape items carried: " + join( unusedEscapes, " x" ) );
+		out.add( Messages.get( DeathAnalysis.class, "escapes", join( unusedEscapes, " x" ) ) );
 		return out;
 	}
 
 	private static String join( Map<String, Integer> m, String sep ){
-		if (m.isEmpty()) return "none";
+		if (m.isEmpty()) return Messages.get( DeathAnalysis.class, "none" );
 		StringBuilder s = new StringBuilder();
 		for (Map.Entry<String, Integer> e : m.entrySet()){
 			if (s.length() > 0) s.append( ", " );
@@ -97,9 +101,14 @@ public final class DeathAnalysis {
 		return s.toString();
 	}
 
-	/** hook on the game over screen; only writes to the game log */
+	/** hook on the game over screen: shows the report in its own window */
 	public static void report( Hero hero ){
 		if (!Features.enabled( Feature.DEATH_ANALYSIS )) return;
-		for (String l : of( hero ).lines()) GLog.i( l );
+		StringBuilder s = new StringBuilder();
+		for (String l : of( hero ).lines()){
+			if (s.length() > 0) s.append( '\n' );
+			s.append( l );
+		}
+		GameScene.show( new WndTitledMessage( Icons.get( Icons.SKULL ), Messages.get( DeathAnalysis.class, "title" ), s.toString() ) );
 	}
 }

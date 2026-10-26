@@ -115,6 +115,7 @@ public class Assets {
 		public static final String SCENES   = "messages/scenes/scenes";
 		public static final String UI       = "messages/ui/ui";
 		public static final String WINDOWS  = "messages/windows/windows";
+		public static final String RANKED   = "messages/ranked/ranked"; // spd-ranked
 	}
 
 	public static class Music {

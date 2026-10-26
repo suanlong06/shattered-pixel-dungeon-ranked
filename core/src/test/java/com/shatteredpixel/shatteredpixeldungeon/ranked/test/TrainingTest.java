@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked.test;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Gnoll;
@@ -72,7 +73,7 @@ class TrainingTest {
 		assertEquals(hasteKnown, d.unusedEscapes.containsKey("PotionOfHaste"));
 
 		List<String> lines = d.lines();
-		assertEquals("Death analysis: killed by Gnoll", lines.get(0));
+		assertEquals("Killed by Gnoll", lines.get(0));
 		assertEquals("Damage in the last 10 turns: Rat 5, Gnoll 4", lines.get(1));
 	}
 
@@ -129,6 +130,12 @@ class TrainingTest {
 		assertEquals(hero.HT, hero.HP);
 		assertEquals(BossPractice.Boss.GOO.upgrades, hero.belongings.weapon().level());
 		assertTrue(hero.belongings.getAllItems(PotionOfHealing.class).size() > 0);
+	}
+
+	@Test
+	void bossPracticeUsesItsOwnSlotAndPendingBoss(){
+		assertTrue(BossPractice.SLOT > GamesInProgress.MAX_SLOTS, "never one of the normal game slots");
+		assertNull(BossPractice.startPending(), "a normal run has no pending boss");
 	}
 
 	@Test

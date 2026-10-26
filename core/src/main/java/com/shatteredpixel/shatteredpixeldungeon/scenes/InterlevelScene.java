@@ -644,7 +644,8 @@ public class InterlevelScene extends PixelScene {
 				Dungeon.branch = trueBranch;
 			}
 
-			Level level = Dungeon.newLevel();
+			Level level = com.shatteredpixel.shatteredpixeldungeon.ranked.practice.BossPractice.startPending(); // spd-ranked: B6
+			if (level == null) level = Dungeon.newLevel();
 			Dungeon.switchLevel( level, -1 );
 		} else {
 			if (curTransition.destBranch != Dungeon.branch && Dungeon.depth >= 16 && Dungeon.depth <= 20) {

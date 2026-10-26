@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.food.Food;
 import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.SaltCube;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 
 /**
  * spd-ranked (B5): how many turns until Hungry / Starving, and how long the food in the pack lasts.
@@ -73,10 +74,10 @@ public final class FoodForecast {
 	/** one line for the hero window, e.g. "Hungry in 120, starving in 270 | food 2 (+600)" */
 	public String summary(){
 		String s;
-		if (toStarving == 0)    s = "starving now";
-		else if (toHungry < 0)  s = "paused";
-		else if (toHungry == 0) s = "starving in " + toStarving;
-		else                    s = "hungry " + toHungry + ", starving " + toStarving;
-		return s + " | food " + foodItems + " (+" + foodTurns() + ")";
+		if (toStarving == 0)    s = Messages.get( this, "starving_now" );
+		else if (toHungry < 0)  s = Messages.get( this, "paused" );
+		else if (toHungry == 0) s = Messages.get( this, "starving_in", toStarving );
+		else                    s = Messages.get( this, "hungry", toHungry, toStarving );
+		return Messages.get( this, "food", s, foodItems, foodTurns() );
 	}
 }

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked.practice;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
@@ -8,6 +9,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.potions.PotionOfHealing;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
+import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.watabou.noosa.Game;
 
 /**
  * spd-ranked (B6): Boss Practice, a solo mode outside Ranked (DECISIONS L17 defaults):
@@ -38,7 +42,36 @@ public final class BossPractice {
 		}
 	}
 
+	/** practice runs live in their own save slot, past the normal ones, so they never show up in or overwrite games in progress */
+	public static final int SLOT = GamesInProgress.MAX_SLOTS + 1;
+
+	private static Boss pending;
+
 	private BossPractice(){}
+
+	/**
+	 * Menu entry: prepares a fresh practice run for the selected class in {@link #SLOT}.
+	 * The floor itself is built by {@link #startPending()} when InterlevelScene starts the run.
+	 */
+	public static void start( Boss boss ){
+		Dungeon.deleteGame( SLOT, true );
+		GamesInProgress.curSlot = SLOT;
+		pending = boss;
+		Dungeon.hero = null;
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		Dungeon.initSeed();
+		ActionIndicator.clearAction();
+		InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
+		Game.switchScene( InterlevelScene.class );
+	}
+
+	/** hook in InterlevelScene after {@code Dungeon.init()}: the practice floor, or null for a normal run */
+	public static Level startPending(){
+		if (pending == null) return null;
+		Boss b = pending;
+		pending = null;
+		return setUp( b );
+	}
 
 	/**
 	 * Call right after {@code Dungeon.init()} (which sets the mode back to Solo):

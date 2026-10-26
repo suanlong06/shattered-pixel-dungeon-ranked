@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked.qol;
 
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Bestiary;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Feature;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.utils.GLog;
@@ -32,8 +33,8 @@ public final class ContextualKnowledge {
 		Class<?> c = m.getClass();
 		if (!noted.add( c )) return null;
 		String name = c.getSimpleName();
-		if (!Bestiary.isSeen( c )) return name + ": not in your bestiary yet";
-		return name + ": max HP " + m.HT + ", defeated " + Bestiary.encounterCount( c ) + " before";
+		if (!Bestiary.isSeen( c )) return Messages.get( ContextualKnowledge.class, "unknown", name );
+		return Messages.get( ContextualKnowledge.class, "known", name, m.HT, Bestiary.encounterCount( c ) );
 	}
 
 	/** hook in Hero.checkVisibleMobs, for each enemy in view */
