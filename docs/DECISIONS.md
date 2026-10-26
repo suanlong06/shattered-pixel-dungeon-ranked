@@ -42,7 +42,7 @@ Những điều dưới đây đọc trực tiếp từ source, không phải su
 **Giả định còn lại (báo lại nếu sai):**
 - Ranked giai đoạn đầu chỉ có 1v1.
 - Server do user tự vận hành (OPPO A53), chưa dùng dịch vụ cloud trả phí.
-- Repo cũ nằm trên máy user nên phiên cloud này **không đọc được**. Mọi thông tin về thiết kế cũ lấy từ `ROADMAP.md`, chưa đối chiếu với `TECHNICAL_DESIGN.md`.
+- Thiết kế repo cũ đã được đối chiếu (T0.5): xem [`T0.5-old-design-review.md`](T0.5-old-design-review.md).
 
 ## 3. Bản đồ phụ thuộc
 
