@@ -1550,7 +1550,7 @@ public abstract class Level implements Bundlable {
 		int ay = a / width();
 		int bx = b % width();
 		int by = b / width();
-		return (float)Math.sqrt(Math.pow(Math.abs( ax - bx ), 2) + Math.pow(Math.abs( ay - by ), 2));
+		return (float)Math.sqrt(StrictMath.pow(Math.abs( ax - bx ), 2) + StrictMath.pow(Math.abs( ay - by ), 2));
 	}
 
 	//usually just if the base terrain of a cell is solid, but other cases exist too

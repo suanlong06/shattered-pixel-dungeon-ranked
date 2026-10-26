@@ -68,7 +68,7 @@ public class DungeonSeed {
 			if (c > 'Z' || c < 'A')
 				throw new IllegalArgumentException("codes must be 9 A-Z characters.");
 
-			result += (c - 65) * Math.pow(26, (8 - i));
+			result += (c - 65) * StrictMath.pow(26, (8 - i));
 		}
 		return result;
 	}

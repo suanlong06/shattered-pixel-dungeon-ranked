@@ -83,8 +83,8 @@ public class PointF {
 	}
 	
 	public PointF polar( float a, float l ) {
-		this.x = l * (float)Math.cos( a );
-		this.y = l * (float)Math.sin( a );
+		this.x = l * (float)StrictMath.cos( a );
+		this.y = l * (float)StrictMath.sin( a );
 		return this;
 	}
 	
@@ -144,15 +144,15 @@ public class PointF {
 	}
 
 	public static float angle( float x, float y ) {
-		return (float)Math.atan2( y, x );
+		return (float)StrictMath.atan2( y, x );
 	}
 
 	public static float angle( PointF start, PointF end ) {
-		return (float)Math.atan2( end.y - start.y, end.x - start.x );
+		return (float)StrictMath.atan2( end.y - start.y, end.x - start.x );
 	}
 
 	public static float angle( Point start, Point end ) {
-		return (float)Math.atan2( end.y - start.y, end.x - start.x );
+		return (float)StrictMath.atan2( end.y - start.y, end.x - start.x );
 	}
 
 	@Override

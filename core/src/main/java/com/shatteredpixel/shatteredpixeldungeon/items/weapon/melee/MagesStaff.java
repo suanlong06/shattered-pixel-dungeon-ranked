@@ -547,7 +547,7 @@ public class MagesStaff extends MeleeWeapon {
 		}
 
 		public void radiateXY(float amt){
-			float hypot = (float)Math.hypot(speed.x, speed.y);
+			float hypot = (float)StrictMath.hypot(speed.x, speed.y);
 			this.x += speed.x/hypot*amt;
 			this.y += speed.y/hypot*amt;
 		}

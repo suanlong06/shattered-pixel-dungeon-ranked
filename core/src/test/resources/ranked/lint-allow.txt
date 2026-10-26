@@ -1,0 +1,5 @@
+# DeterminismLintTest exceptions: "RULE class#method  reason". Every entry must still match something.
+FXRNG com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene#create  gameplay (Rogue's Foresight secret check), on its own seeded generator, pushed and popped
+FXRNG com/shatteredpixel/shatteredpixeldungeon/windows/WndChooseAbility$1$1#onSelect  gameplay: the "random" armor ability choice
+FXRNG com/shatteredpixel/shatteredpixeldungeon/windows/WndChooseSubclass$1$1#onSelect  gameplay: the "random" subclass choice
+HASH com/watabou/utils/Bundle#<clinit>  class alias lookup table, never iterated

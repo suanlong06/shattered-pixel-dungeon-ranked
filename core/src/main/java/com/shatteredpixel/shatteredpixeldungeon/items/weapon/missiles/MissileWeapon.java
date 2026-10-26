@@ -453,7 +453,7 @@ abstract public class MissileWeapon extends Weapon {
 	protected boolean useRoundingInDurabilityCalc = true;
 
 	public float durabilityPerUse( int level ){
-		float usages = baseUses * (float)(Math.pow(1.5f, level));
+		float usages = baseUses * (float)(StrictMath.pow(1.5f, level));
 
 		//+50%/75% durability
 		if (Dungeon.hero != null && Dungeon.hero.hasTalent(Talent.DURABLE_PROJECTILES)){

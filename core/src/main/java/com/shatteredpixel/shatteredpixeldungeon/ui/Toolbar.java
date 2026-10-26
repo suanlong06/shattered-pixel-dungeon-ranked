@@ -177,6 +177,7 @@ public class Toolbar extends Component {
 								});
 							} else {
 
+								com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
 								item.execute(Dungeon.hero);
 								if (item.usesTargeting) {
 									QuickSlotButton.useTargeting(idx);
@@ -462,6 +463,7 @@ public class Toolbar extends Component {
 									super.onSelect(idx, alt);
 									Item item = items.get(idx);
 									if (alt && item.defaultAction() != null) {
+										com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
 										item.execute(Dungeon.hero);
 									} else {
 										InventoryPane.clearTargetingSlot();

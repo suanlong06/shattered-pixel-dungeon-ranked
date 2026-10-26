@@ -419,7 +419,7 @@ public class Armor extends EquipableItem {
 		
 		if (owner instanceof Hero){
 			int aEnc = STRReq() - ((Hero) owner).STR();
-			if (aEnc > 0) evasion /= Math.pow(1.5, aEnc);
+			if (aEnc > 0) evasion /= StrictMath.pow(1.5, aEnc);
 			
 			Momentum momentum = owner.buff(Momentum.class);
 			if (momentum != null){
@@ -434,7 +434,7 @@ public class Armor extends EquipableItem {
 		
 		if (owner instanceof Hero) {
 			int aEnc = STRReq() - ((Hero) owner).STR();
-			if (aEnc > 0) speed /= Math.pow(1.2, aEnc);
+			if (aEnc > 0) speed /= StrictMath.pow(1.2, aEnc);
 		}
 		
 		return speed;
@@ -464,7 +464,7 @@ public class Armor extends EquipableItem {
 		} else if (glyph != null) {
 			//chance to lose harden buff is 10/20/40/80/100% when upgrading from +6/7/8/9/10
 			if (glyphHardened) {
-				if (level() >= 6 && Random.Float(10) < Math.pow(2, level()-6)){
+				if (level() >= 6 && Random.Float(10) < StrictMath.pow(2, level()-6)){
 					glyphHardened = false;
 				}
 
@@ -481,7 +481,7 @@ public class Armor extends EquipableItem {
 					lossChanceStart += 1+Dungeon.hero.pointsInTalent(Talent.RUNIC_TRANSFERENCE);
 				}
 
-				if (level() >= lossChanceStart && Random.Float(10) < Math.pow(2, level()-4)) {
+				if (level() >= lossChanceStart && Random.Float(10) < StrictMath.pow(2, level()-4)) {
 					inscribe(null);
 				}
 			}

@@ -70,7 +70,7 @@ public class ScrollOfPsionicBlast extends ExoticScroll {
 			}
 		}
 		
-		curUser.damage(Math.max(0, Math.round(curUser.HT*(0.5f * (float)Math.pow(0.9, targets.size())))), this);
+		curUser.damage(Math.max(0, Math.round(curUser.HT*(0.5f * (float)StrictMath.pow(0.9, targets.size())))), this);
 		if (curUser.isAlive()) {
 			Buff.prolong(curUser, Blindness.class, Blindness.DURATION);
 			Buff.prolong(curUser, Weakness.class, Weakness.DURATION*5f);

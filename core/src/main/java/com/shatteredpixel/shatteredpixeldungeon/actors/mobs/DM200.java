@@ -74,7 +74,7 @@ public class DM200 extends Mob {
 	public float lootChance(){
 		//each drop makes future drops 1/3 as likely
 		// so loot chance looks like: 1/5, 1/15, 1/45, 1/135, etc.
-		return super.lootChance() * (float)Math.pow(1/3f, Dungeon.LimitedDrops.DM200_EQUIP.count);
+		return super.lootChance() * (float)StrictMath.pow(1/3f, Dungeon.LimitedDrops.DM200_EQUIP.count);
 	}
 
 	public Item createLoot() {

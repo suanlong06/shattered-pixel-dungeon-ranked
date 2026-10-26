@@ -155,6 +155,7 @@ public class CellSelector extends ScrollArea {
 
 			switch (button){
 				default:
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordCell( cell ); // spd-ranked
 					listener.onSelect( cell );
 					break;
 				case PointerEvent.RIGHT:

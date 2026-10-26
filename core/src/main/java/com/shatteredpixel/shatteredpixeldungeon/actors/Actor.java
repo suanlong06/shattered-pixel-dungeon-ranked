@@ -401,5 +401,30 @@ public abstract class Actor implements Bundlable {
 		return new java.util.LinkedHashSet<>(all); // spd-ranked
 	}
 
+	// spd-ranked: single-threaded stepping for the headless runner (com.shatteredpixel.shatteredpixeldungeon.ranked.sim)
+	// same choice as process(): earliest time, then higher priority, then lower id
+	public static synchronized Actor nextToAct() {
+		Actor next = null;
+		for (Actor actor : all) {
+			if (next == null || actor.time < next.time || actor.time == next.time
+					&& (actor.actPriority > next.actPriority || actor.actPriority == next.actPriority && actor.id() < next.id())) {
+				next = actor;
+			}
+		}
+		return next;
+	}
+
+	// spd-ranked: what process() does for one actor; returns act()'s doNext
+	public static boolean actOnce( Actor actor ) {
+		now = actor.time;
+		current = actor;
+		return actor.act();
+	}
+
+	// spd-ranked: true while the actor that last acted has not yet called next()
+	public static boolean waitingOn( Actor actor ) {
+		return current == actor;
+	}
+
 	public static synchronized HashSet<Char> chars() { return new java.util.LinkedHashSet<>(chars); } // spd-ranked
 }

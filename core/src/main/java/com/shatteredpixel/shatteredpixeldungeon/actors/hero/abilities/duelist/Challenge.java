@@ -78,7 +78,7 @@ public class Challenge extends ArmorAbility {
 		float chargeUse = super.chargeUse(hero);
 		if (hero.buff(EliminationMatchTracker.class) != null){
 			//reduced charge use by 16%/30%/41%/50%
-			chargeUse *= Math.pow(0.84, hero.pointsInTalent(Talent.ELIMINATION_MATCH));
+			chargeUse *= StrictMath.pow(0.84, hero.pointsInTalent(Talent.ELIMINATION_MATCH));
 		}
 		return chargeUse;
 	}
@@ -266,7 +266,7 @@ public class Challenge extends ArmorAbility {
 						}
 
 						//heals for 30%/50%/65%/75% of taken damage plus 5/10/15/20 bonus, based on talent points
-						hpToHeal = (int)Math.round(hpToHeal * (1f - Math.pow(0.707f, Dungeon.hero.pointsInTalent(Talent.INVIGORATING_VICTORY))));
+						hpToHeal = (int)Math.round(hpToHeal * (1f - StrictMath.pow(0.707f, Dungeon.hero.pointsInTalent(Talent.INVIGORATING_VICTORY))));
 						hpToHeal += 5*Dungeon.hero.pointsInTalent(Talent.INVIGORATING_VICTORY);
 						hpToHeal = Math.min(hpToHeal, Dungeon.hero.HT - Dungeon.hero.HP);
 						if (hpToHeal > 0){

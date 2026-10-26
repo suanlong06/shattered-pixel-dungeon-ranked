@@ -60,6 +60,12 @@ public class Group extends Gizmo {
 	
 	@Override
 	public synchronized void update() {
+		updateMembers();
+	}
+
+	// spd-ranked: advance children only; the headless runner uses this to step a scene
+	// without running scene-level logic (e.g. GameScene starting the actor thread)
+	public synchronized void updateMembers() {
 		for (int i=0; i < length; i++) {
 			Gizmo g = members.get( i );
 			if (g != null && g.exists && g.active) {

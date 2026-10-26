@@ -36,10 +36,10 @@ public class RingOfSharpshooting extends Ring {
 	public String statsInfo() {
 		if (isIdentified()){
 			String info = Messages.get(this, "stats",
-					soloBuffedBonus(), Messages.decimalFormat("#.##", 100f * (Math.pow(1.2, soloBonus()) - 1f)));
+					soloBuffedBonus(), Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.2, soloBonus()) - 1f)));
 			if (isEquipped(Dungeon.hero) && soloBuffedBonus() != combinedBuffedBonus(Dungeon.hero)){
 				info += "\n\n" + Messages.get(this, "combined_stats",
-						combinedBuffedBonus(Dungeon.hero), Messages.decimalFormat("#.##", 100f * (Math.pow(1.2, combinedBonus(Dungeon.hero)) - 1f)));
+						combinedBuffedBonus(Dungeon.hero), Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.2, combinedBonus(Dungeon.hero)) - 1f)));
 			}
 			return info;
 		} else {
@@ -56,7 +56,7 @@ public class RingOfSharpshooting extends Ring {
 	@Override
 	public String upgradeStat2(int level) {
 		if (cursed && cursedKnown) level = Math.min(-1, level-3);
-		return Messages.decimalFormat("#.##", 100f * (Math.pow(1.2, level+1)-1f)) + "%";
+		return Messages.decimalFormat("#.##", 100f * (StrictMath.pow(1.2, level+1)-1f)) + "%";
 	}
 	
 	@Override
@@ -69,7 +69,7 @@ public class RingOfSharpshooting extends Ring {
 	}
 	
 	public static float durabilityMultiplier( Char target ){
-		return (float)(Math.pow(1.2, getBonus(target, Aim.class)));
+		return (float)(StrictMath.pow(1.2, getBonus(target, Aim.class)));
 	}
 
 	public class Aim extends RingBuff {

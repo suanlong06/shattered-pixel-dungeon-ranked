@@ -108,7 +108,7 @@ public class MineGiantRoom extends CaveRoom {
 						dist = Math.min(dist, Point.distance(p, d));
 					}
 					dist = GameMath.gate(1f, dist-0.5f, 3.1f);
-					float val = Random.Float((float) Math.pow(dist, 2));
+					float val = Random.Float((float) StrictMath.pow(dist, 2));
 					if (val <= 0.75f || dist <= 1) {
 						Painter.set(level, cell, Terrain.MINE_BOULDER);
 					} else if (val <= 5f && dist <= 3){
