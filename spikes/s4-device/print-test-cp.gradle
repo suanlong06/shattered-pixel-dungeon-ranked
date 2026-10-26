@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate { p ->
+        if (p.path == ':core') {
+            p.tasks.register('printTestCp') {
+                dependsOn 'testClasses'
+                doLast { println 'CP=' + p.sourceSets.test.runtimeClasspath.files.join(';') }
+            }
+        }
+    }
+}
