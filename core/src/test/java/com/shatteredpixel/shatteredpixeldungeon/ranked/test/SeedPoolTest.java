@@ -7,6 +7,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.wands.WandOfMagicMissile;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.melee.Longsword;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.seed.SeedPoolFile;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.seed.SeedScanner;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.seed.SeedScorer;
 
@@ -90,7 +91,11 @@ class SeedPoolTest {
 			assertTrue(r.min <= r.max);
 			if (r.inPool()) in++;
 		}
-		assertEquals(in, SeedScorer.pool(candidates).size());
+		List<SeedScorer.Result> pool = SeedScorer.pool(candidates);
+		assertEquals(in, pool.size());
+		List<Long> back = SeedPoolFile.read(SeedPoolFile.write(pool));
+		assertEquals(pool.size(), back.size());
+		for (int i = 0; i < pool.size(); i++) assertEquals(pool.get(i).seed, (long) back.get(i), "pool file round trip");
 		assertTrue(in > 0 && in < candidates.length, in + " of " + candidates.length + " in pool");
 	}
 }

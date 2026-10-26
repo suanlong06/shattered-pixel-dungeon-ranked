@@ -17,7 +17,11 @@ Code ở `ranked/seed`, không hook vào file gốc SPD, không đụng `Dungeon
 
 Ngưỡng hiện tại lấy từ 30 seed mẫu (điểm 11 đến 44, chênh giữa các class 0 đến 7): khoảng 23/30 seed lọt pool. Số liệu in ra ở test `poolFiltersSomeSeeds`.
 
+## Đợt 2
+- `SeedPoolFile`: file pool dạng text, mỗi dòng `seed min max`; dòng đầu là comment ghi phiên bản và ngưỡng đã dùng (`MIN`, `CAP`, độ sâu) để biết pool nào được tạo bằng ngưỡng cũ.
+- `SeedPoolMain` (test sources, như `GoldenMain`): quét `count` ứng viên `first + i*step` và ghi file pool. Test kiểm tra ghi rồi đọc lại ra đúng danh sách seed.
+
 ## Còn để sau
 - Chỉnh bảng điểm và ngưỡng khi có dữ liệu chơi thật (bot S5 chưa qua được boss).
-- Định dạng file pool và nơi lưu phía server (gắn với A1).
+- Nơi lưu file pool phía server và cách đánh dấu seed đã dùng (gắn với A1).
 - Tính cả đồ trong shop nếu mở rộng ra tầng 6 trở lên.
