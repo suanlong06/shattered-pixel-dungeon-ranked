@@ -254,7 +254,7 @@ public class MobSpawner extends Actor {
 		}
 	}
 
-	public static final HashMap<Class<?extends Mob>, Class<?extends Mob>> RARE_ALTS = new HashMap<>();
+	public static final HashMap<Class<?extends Mob>, Class<?extends Mob>> RARE_ALTS = new java.util.LinkedHashMap<>();
 	static {
 		RARE_ALTS.put(Rat.class,            Albino.class);
 		RARE_ALTS.put(Gnoll.class,          GnollExile.class);

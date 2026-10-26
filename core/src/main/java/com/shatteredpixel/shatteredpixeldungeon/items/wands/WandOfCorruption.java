@@ -87,7 +87,7 @@ public class WandOfCorruption extends Wand {
 	// for the purposes of reducing resistance, but does not actually apply them itself
 	
 	private static final float MINOR_DEBUFF_WEAKEN = 1/4f;
-	private static final HashMap<Class<? extends Buff>, Float> MINOR_DEBUFFS = new HashMap<>();
+	private static final HashMap<Class<? extends Buff>, Float> MINOR_DEBUFFS = new java.util.LinkedHashMap<>();
 	static{
 		MINOR_DEBUFFS.put(Weakness.class,       2f);
 		MINOR_DEBUFFS.put(Vulnerable.class,     2f);
@@ -106,7 +106,7 @@ public class WandOfCorruption extends Wand {
 	}
 
 	private static final float MAJOR_DEBUFF_WEAKEN = 1/2f;
-	private static final HashMap<Class<? extends Buff>, Float> MAJOR_DEBUFFS = new HashMap<>();
+	private static final HashMap<Class<? extends Buff>, Float> MAJOR_DEBUFFS = new java.util.LinkedHashMap<>();
 	static{
 		MAJOR_DEBUFFS.put(Amok.class,           3f);
 		MAJOR_DEBUFFS.put(Slow.class,           2f);
@@ -195,7 +195,7 @@ public class WandOfCorruption extends Wand {
 	private void debuffEnemy( Mob enemy, HashMap<Class<? extends Buff>, Float> category ){
 		
 		//do not consider buffs which are already assigned, or that the enemy is immune to.
-		HashMap<Class<? extends Buff>, Float> debuffs = new HashMap<>(category);
+		HashMap<Class<? extends Buff>, Float> debuffs = new java.util.LinkedHashMap<>(category);
 		for (Buff existing : enemy.buffs()){
 			if (debuffs.containsKey(existing.getClass())) {
 				debuffs.put(existing.getClass(), 0f);

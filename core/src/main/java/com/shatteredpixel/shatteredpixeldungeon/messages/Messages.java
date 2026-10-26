@@ -76,7 +76,7 @@ public class Messages {
 	};
 
 	static{
-		formatters = new HashMap<>();
+		formatters = new java.util.LinkedHashMap<>();
 		setup(SPDSettings.language());
 	}
 
@@ -189,7 +189,7 @@ public class Messages {
 
 	//Words which should not be capitalized in title case, mostly prepositions which appear ingame
 	//This list is not comprehensive!
-	private static final HashSet<String> noCaps = new HashSet<>(
+	private static final HashSet<String> noCaps = new java.util.LinkedHashSet<>(
 			Arrays.asList("a", "an", "and", "of", "by", "to", "the", "x", "for")
 	);
 

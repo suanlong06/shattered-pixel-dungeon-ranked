@@ -142,7 +142,7 @@ public class Ratmogrify extends ArmorAbility {
 			rat.pos = ch.pos;
 
 			//preserve some buffs
-			HashSet<Buff> persistentBuffs = new HashSet<>();
+			HashSet<Buff> persistentBuffs = new java.util.LinkedHashSet<>();
 			for (Buff b : ch.buffs()){
 				if (b.revivePersists){
 					persistentBuffs.add(b);

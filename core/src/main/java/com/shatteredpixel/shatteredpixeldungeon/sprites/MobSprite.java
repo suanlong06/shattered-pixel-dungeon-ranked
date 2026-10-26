@@ -27,7 +27,7 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.tweeners.AlphaTweener;
 import com.watabou.noosa.tweeners.ScaleTweener;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 
 public class MobSprite extends CharSprite {
 

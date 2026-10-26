@@ -1165,12 +1165,12 @@ public enum Talent {
 		bundle.put("replacements", replacementsBundle);
 	}
 
-	private static final HashSet<String> removedTalents = new HashSet<>();
+	private static final HashSet<String> removedTalents = new java.util.LinkedHashSet<>();
 	static{
 		//nothing atm
 	}
 
-	private static final HashMap<String, String> renamedTalents = new HashMap<>();
+	private static final HashMap<String, String> renamedTalents = new java.util.LinkedHashMap<>();
 	static{
 		//nothing atm
 	}

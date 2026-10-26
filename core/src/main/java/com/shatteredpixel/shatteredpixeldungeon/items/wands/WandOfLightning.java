@@ -203,11 +203,11 @@ public class WandOfLightning extends DamageWand {
 		particle.am = 0.6f;
 		particle.setLifespan(0.6f);
 		particle.acc.set(0, +10);
-		particle.speed.polar(-Random.Float(3.1415926f), 6f);
+		particle.speed.polar(-com.watabou.utils.fx.Random.Float(3.1415926f), 6f);
 		particle.setSize(0f, 1.5f);
 		particle.sizeJitter = 1f;
 		particle.shuffleXY(1f);
-		float dst = Random.Float(1f);
+		float dst = com.watabou.utils.fx.Random.Float(1f);
 		particle.x -= dst;
 		particle.y += dst;
 	}

@@ -168,10 +168,10 @@ public class WandOfPrismaticLight extends DamageWand {
 
 	@Override
 	public void staffFx(MagesStaff.StaffParticle particle) {
-		particle.color( Random.Int( 0x1000000 ) );
+		particle.color( com.watabou.utils.fx.Random.Int( 0x1000000 ) );
 		particle.am = 0.5f;
 		particle.setLifespan(1f);
-		particle.speed.polar(Random.Float(PointF.PI2), 2f);
+		particle.speed.polar(com.watabou.utils.fx.Random.Float(PointF.PI2), 2f);
 		particle.setSize( 1f, 2f);
 		particle.radiateXY( 0.5f);
 	}

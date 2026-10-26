@@ -69,7 +69,7 @@ public class RingOfElements extends Ring {
 		return new Resistance();
 	}
 
-	public static final HashSet<Class> RESISTS = new HashSet<>();
+	public static final HashSet<Class> RESISTS = new java.util.LinkedHashSet<>();
 	static {
 		RESISTS.add( Burning.class );
 		RESISTS.add( Chill.class );

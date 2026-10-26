@@ -236,7 +236,7 @@ public class VaultLevel extends CityLevel {
 	//cannot generate two of the same equipment item (except armor)
 	// note that this does currently result in infinite loops if too many items are generated
 	// currently we're designing around a theoretical max of about 12 genereated from each tier, which is almost 2x the actual max
-	private HashSet<Class<? extends Item>> generatedClasses = new HashSet<>();
+	private HashSet<Class<? extends Item>> generatedClasses = new java.util.LinkedHashSet<>();
 
 	public void setupEquipmentAtTier(int lootTier){
 
@@ -443,7 +443,7 @@ public class VaultLevel extends CityLevel {
 					Reflection.newInstance(Random.oneOf(Mageroyal.Seed.class, Icecap.Seed.class, Stormvine.Seed.class)),
 					Reflection.newInstance(Random.oneOf(ScrollOfMirrorImage.class, ScrollOfTeleportation.class)),
 					Reflection.newInstance(Random.oneOf(StoneOfFlock.class, StoneOfShock.class, StoneOfFear.class))));
-			Collections.shuffle(consumableLoot.get(0));
+			Random.shuffle(consumableLoot.get(0)); // spd-ranked: was Collections.shuffle (unseeded)
 			//first item in each tier is always a potion of healing (except T3, which has one randomly)
 			consumableLoot.get(0).add(0, new PotionOfHealing());
 		}
@@ -455,7 +455,7 @@ public class VaultLevel extends CityLevel {
 					Reflection.newInstance(Random.oneOf(Firebloom.Seed.class, Sorrowmoss.Seed.class, Blindweed.Seed.class)),
 					Reflection.newInstance(Random.oneOf(ScrollOfRecharging.class, ScrollOfTerror.class)),
 					Reflection.newInstance(Random.oneOf(StoneOfDeepSleep.class, StoneOfClairvoyance.class, StoneOfAggression.class))));
-			Collections.shuffle(consumableLoot.get(1));
+			Random.shuffle(consumableLoot.get(1)); // spd-ranked: was Collections.shuffle (unseeded)
 			consumableLoot.get(1).add(0, new PotionOfHealing());
 		}
 
@@ -466,7 +466,7 @@ public class VaultLevel extends CityLevel {
 					Reflection.newInstance(Random.oneOf(Swiftthistle.Seed.class, Sungrass.Seed.class)),
 					Reflection.newInstance(Random.oneOf(ScrollOfLullaby.class, ScrollOfMagicMapping.class)),
 					Reflection.newInstance(Random.oneOf(StoneOfBlast.class, StoneOfBlink.class))));
-			Collections.shuffle(consumableLoot.get(2));
+			Random.shuffle(consumableLoot.get(2)); // spd-ranked: was Collections.shuffle (unseeded)
 			consumableLoot.get(2).add(0, new PotionOfHealing());
 		}
 
@@ -478,7 +478,7 @@ public class VaultLevel extends CityLevel {
 					Reflection.newInstance(Random.oneOf(ScrollOfRetribution.class, ScrollOfTransmutation.class)),
 					Reflection.newInstance(Random.oneOf(StoneOfEnchantment.class, StoneOfAugmentation.class)),
 					new PotionOfHealing()));
-			Collections.shuffle(consumableLoot.get(3));
+			Random.shuffle(consumableLoot.get(3)); // spd-ranked: was Collections.shuffle (unseeded)
 		}
 	}
 

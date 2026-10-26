@@ -268,7 +268,7 @@ public enum Bestiary {
 	}
 
 	//some mobs and traps have different internal classes in some cases, so need to convert here
-	private static final HashMap<Class<?>, Class<?>> classConversions = new HashMap<>();
+	private static final HashMap<Class<?>, Class<?>> classConversions = new java.util.LinkedHashMap<>();
 	static {
 		classConversions.put(CorpseDust.DustWraith.class,       Wraith.class);
 

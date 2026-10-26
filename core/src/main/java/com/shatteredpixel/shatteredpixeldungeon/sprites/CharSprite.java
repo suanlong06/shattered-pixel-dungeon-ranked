@@ -55,7 +55,7 @@ import com.watabou.noosa.tweeners.PosTweener;
 import com.watabou.noosa.tweeners.Tweener;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 
 import java.nio.Buffer;
 import java.util.HashSet;

@@ -244,7 +244,7 @@ public class WandOfLivingEarth extends DamageWand {
 	
 	@Override
 	public void staffFx(MagesStaff.StaffParticle particle) {
-		if (Random.Int(10) == 0){
+		if (com.watabou.utils.fx.Random.Int(10) == 0){
 			particle.color(ColorMath.random(0xFFF568, 0x80791A));
 		} else {
 			particle.color(ColorMath.random(0x805500, 0x332500));
@@ -253,7 +253,7 @@ public class WandOfLivingEarth extends DamageWand {
 		particle.setLifespan(2f);
 		particle.setSize( 1f, 2f);
 		particle.shuffleXY(0.5f);
-		float dst = Random.Float(11f);
+		float dst = com.watabou.utils.fx.Random.Float(11f);
 		particle.x -= dst;
 		particle.y += dst;
 	}

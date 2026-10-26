@@ -238,6 +238,7 @@ public class Dungeon {
 
 		Actor.clear();
 		Actor.resetNextID();
+		com.shatteredpixel.shatteredpixeldungeon.items.weapon.missiles.MissileWeapon.nextSetID = 1; // spd-ranked
 
 		//offset seed slightly to avoid output patterns
 		Random.pushGenerator( seed+1 );
@@ -251,7 +252,7 @@ public class Dungeon {
 
 			Generator.fullReset();
 
-		Random.resetGenerators();
+		Random.resetGenerators( seed+2 ); // spd-ranked: gameplay rolls follow the run seed
 		
 		Statistics.reset();
 		Notes.reset();
@@ -271,7 +272,7 @@ public class Dungeon {
 
 		LimitedDrops.reset();
 		
-		chapters = new HashSet<>();
+		chapters = new java.util.LinkedHashSet<>();
 		
 		Ghost.Quest.reset();
 		Wandmaker.Quest.reset();
@@ -755,7 +756,7 @@ public class Dungeon {
 			
 			LimitedDrops.restore( bundle.getBundle(LIMDROPS) );
 
-			chapters = new HashSet<>();
+			chapters = new java.util.LinkedHashSet<>();
 			int ids[] = bundle.getIntArray( CHAPTERS );
 			if (ids != null) {
 				for (int id : ids) {

@@ -105,7 +105,7 @@ public class Potion extends Item {
 		}
 	};
 
-	protected static final HashSet<Class<?extends Potion>> mustThrowPots = new HashSet<>();
+	protected static final HashSet<Class<?extends Potion>> mustThrowPots = new java.util.LinkedHashSet<>();
 	static{
 		mustThrowPots.add(PotionOfToxicGas.class);
 		mustThrowPots.add(PotionOfLiquidFlame.class);
@@ -121,7 +121,7 @@ public class Potion extends Item {
 		//also all brews except unstable, hardcoded
 	}
 	
-	protected static final HashSet<Class<?extends Potion>> canThrowPots = new HashSet<>();
+	protected static final HashSet<Class<?extends Potion>> canThrowPots = new java.util.LinkedHashSet<>();
 	static{
 		canThrowPots.add(PotionOfPurity.class);
 		canThrowPots.add(PotionOfLevitation.class);
@@ -467,7 +467,7 @@ public class Potion extends Item {
 	
 	public static class SeedToPotion extends Recipe {
 		
-		public static HashMap<Class<?extends Plant.Seed>, Class<?extends Potion>> types = new HashMap<>();
+		public static HashMap<Class<?extends Plant.Seed>, Class<?extends Potion>> types = new java.util.LinkedHashMap<>();
 		static {
 			types.put(Blindweed.Seed.class,     PotionOfInvisibility.class);
 			types.put(Mageroyal.Seed.class,     PotionOfPurity.class);

@@ -58,7 +58,7 @@ public class HeroDisguise extends FlavourBuff {
 		if (target instanceof Hero && target.sprite instanceof HeroSprite){
 			if (cls == null) {
 				do {
-					cls = Random.oneOf(HeroClass.values());
+					cls = com.watabou.utils.fx.Random.oneOf(HeroClass.values());
 				} while (cls == ((Hero) target).heroClass);
 			}
 

@@ -357,7 +357,7 @@ public class PowerOfMany extends ArmorAbility {
 		public LightAllySprite() {
 			super();
 
-			setup(HeroClass.values()[Random.Int(5)]);
+			setup(HeroClass.values()[com.watabou.utils.fx.Random.Int(5)]);
 		}
 
 		public void setup(HeroClass cls){

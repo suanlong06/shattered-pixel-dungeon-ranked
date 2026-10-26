@@ -66,7 +66,7 @@ import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameMath;
 import com.watabou.utils.PlatformSupport;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 import com.watabou.utils.RectF;
 
 import java.text.SimpleDateFormat;

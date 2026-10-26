@@ -64,7 +64,7 @@ public class UnstableBrew extends Brew {
 		return AC_CHOOSE;
 	}
 
-	private static HashMap<Class<? extends Potion>, Float> potionChances = new HashMap<>();
+	private static HashMap<Class<? extends Potion>, Float> potionChances = new java.util.LinkedHashMap<>();
 	static {
 		potionChances.put(PotionOfHealing.class, 3f);
 		potionChances.put(PotionOfMindVision.class, 2f);

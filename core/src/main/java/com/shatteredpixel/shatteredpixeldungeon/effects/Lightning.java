@@ -28,7 +28,7 @@ import com.watabou.noosa.Group;
 import com.watabou.noosa.Image;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 
 import java.util.Arrays;
 import java.util.List;

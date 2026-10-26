@@ -38,7 +38,7 @@ public class GamesInProgress {
 	public static final int MAX_SLOTS = HeroClass.values().length;
 	
 	//null means we have loaded info and it is empty, no entry means unknown.
-	private static HashMap<Integer, Info> slotStates = new HashMap<>();
+	private static HashMap<Integer, Info> slotStates = new java.util.LinkedHashMap<>();
 	public static int curSlot;
 	
 	public static HeroClass selectedClass;

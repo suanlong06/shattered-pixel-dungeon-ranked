@@ -31,7 +31,7 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.watabou.input.GameAction;
 import com.watabou.noosa.Game;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;

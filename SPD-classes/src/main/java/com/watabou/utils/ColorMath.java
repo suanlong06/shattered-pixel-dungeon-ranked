@@ -21,6 +21,8 @@
 
 package com.watabou.utils;
 
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
+
 public class ColorMath {
 	
 	public static int interpolate( int A, int B, float p ) {

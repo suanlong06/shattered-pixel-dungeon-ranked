@@ -25,7 +25,7 @@ import com.badlogic.gdx.Gdx;
 import com.watabou.noosa.Game;
 import com.watabou.utils.Callback;
 import com.watabou.utils.DeviceCompat;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 
 import java.util.ArrayList;
 import java.util.Collections;

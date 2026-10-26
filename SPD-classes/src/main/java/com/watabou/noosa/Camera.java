@@ -24,7 +24,7 @@ package com.watabou.noosa;
 import com.watabou.glwrap.Matrix;
 import com.watabou.utils.Point;
 import com.watabou.utils.PointF;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 
 import java.util.ArrayList;
 

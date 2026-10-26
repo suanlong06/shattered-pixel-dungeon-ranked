@@ -207,7 +207,7 @@ public class WandOfWarding extends Wand {
 		particle.color( 0x8822FF );
 		particle.am = 0.3f;
 		particle.setLifespan(3f);
-		particle.speed.polar(Random.Float(PointF.PI2), 0.3f);
+		particle.speed.polar(com.watabou.utils.fx.Random.Float(PointF.PI2), 0.3f);
 		particle.setSize( 1f, 2f);
 		particle.radiateXY(2.5f);
 	}

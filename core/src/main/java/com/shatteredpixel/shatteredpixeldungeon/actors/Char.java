@@ -1076,7 +1076,7 @@ public abstract class Char extends Actor {
 	}
 
 	//these are misc. sources of physical damage which do not apply armor, they get a different icon
-	private static HashSet<Class> NO_ARMOR_PHYSICAL_SOURCES = new HashSet<>();
+	private static HashSet<Class> NO_ARMOR_PHYSICAL_SOURCES = new java.util.LinkedHashSet<>();
 	{
 		NO_ARMOR_PHYSICAL_SOURCES.add(CrystalSpire.SpireSpike.class);
 		NO_ARMOR_PHYSICAL_SOURCES.add(GnollGeomancer.Boulder.class);
@@ -1188,7 +1188,7 @@ public abstract class Char extends Actor {
 	@SuppressWarnings("unchecked")
 	//returns all buffs assignable from the given buff class
 	public synchronized <T extends Buff> HashSet<T> buffs( Class<T> c ) {
-		HashSet<T> filtered = new HashSet<>();
+		HashSet<T> filtered = new java.util.LinkedHashSet<>();
 		for (Buff b : buffs) {
 			if (c.isInstance( b )) {
 				filtered.add( (T)b );
@@ -1353,12 +1353,12 @@ public abstract class Char extends Actor {
 		next();
 	}
 	
-	protected final HashSet<Class> resistances = new HashSet<>();
+	protected final HashSet<Class> resistances = new java.util.LinkedHashSet<>();
 	
 	//returns percent effectiveness after resistances
 	//TODO currently resistances reduce effectiveness by a static 50%, and do not stack.
 	public float resist( Class effect ){
-		HashSet<Class> resists = new HashSet<>(resistances);
+		HashSet<Class> resists = new java.util.LinkedHashSet<>(resistances);
 		for (Property p : properties()){
 			resists.addAll(p.resistances());
 		}
@@ -1375,10 +1375,10 @@ public abstract class Char extends Actor {
 		return result * RingOfElements.resist(this, effect);
 	}
 	
-	protected final HashSet<Class> immunities = new HashSet<>();
+	protected final HashSet<Class> immunities = new java.util.LinkedHashSet<>();
 	
 	public boolean isImmune(Class effect ){
-		HashSet<Class> immunes = new HashSet<>(immunities);
+		HashSet<Class> immunes = new java.util.LinkedHashSet<>(immunities);
 		for (Property p : properties()){
 			immunes.addAll(p.immunities());
 		}
@@ -1403,10 +1403,10 @@ public abstract class Char extends Actor {
 		return buff(Challenge.SpectatorFreeze.class) != null || buff(Invulnerability.class) != null;
 	}
 
-	protected HashSet<Property> properties = new HashSet<>();
+	protected HashSet<Property> properties = new java.util.LinkedHashSet<>();
 
 	public HashSet<Property> properties() {
-		HashSet<Property> props = new HashSet<>(properties);
+		HashSet<Property> props = new java.util.LinkedHashSet<>(properties);
 		//TODO any more of these and we should make it a property of the buff, like with resistances/immunities
 		if (buff(ChampionEnemy.Giant.class) != null) {
 			props.add(Property.LARGE);
@@ -1415,40 +1415,40 @@ public abstract class Char extends Actor {
 	}
 
 	public enum Property{
-		BOSS ( new HashSet<Class>( Arrays.asList(Grim.class, GrimTrap.class, ScrollOfRetribution.class, ScrollOfPsionicBlast.class)),
-				new HashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
-		MINIBOSS ( new HashSet<Class>(),
-				new HashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
+		BOSS ( new java.util.LinkedHashSet<Class>( Arrays.asList(Grim.class, GrimTrap.class, ScrollOfRetribution.class, ScrollOfPsionicBlast.class)),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
+		MINIBOSS ( new java.util.LinkedHashSet<Class>(),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class) )),
 		BOSS_MINION,
 		UNDEAD,
 		DEMONIC,
-		INORGANIC ( new HashSet<Class>(),
-				new HashSet<Class>( Arrays.asList(Bleeding.class, ToxicGas.class, Poison.class) )),
-		FIERY ( new HashSet<Class>( Arrays.asList(WandOfFireblast.class, Elemental.FireElemental.class)),
-				new HashSet<Class>( Arrays.asList(Burning.class, Blazing.class))),
-		ICY ( new HashSet<Class>( Arrays.asList(WandOfFrost.class, Elemental.FrostElemental.class)),
-				new HashSet<Class>( Arrays.asList(Frost.class, Chill.class))),
-		ACIDIC ( new HashSet<Class>( Arrays.asList(Corrosion.class)),
-				new HashSet<Class>( Arrays.asList(Ooze.class))),
-		ELECTRIC ( new HashSet<Class>( Arrays.asList(WandOfLightning.class, Shocking.class, Potential.class,
+		INORGANIC ( new java.util.LinkedHashSet<Class>(),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(Bleeding.class, ToxicGas.class, Poison.class) )),
+		FIERY ( new java.util.LinkedHashSet<Class>( Arrays.asList(WandOfFireblast.class, Elemental.FireElemental.class)),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(Burning.class, Blazing.class))),
+		ICY ( new java.util.LinkedHashSet<Class>( Arrays.asList(WandOfFrost.class, Elemental.FrostElemental.class)),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(Frost.class, Chill.class))),
+		ACIDIC ( new java.util.LinkedHashSet<Class>( Arrays.asList(Corrosion.class)),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(Ooze.class))),
+		ELECTRIC ( new java.util.LinkedHashSet<Class>( Arrays.asList(WandOfLightning.class, Shocking.class, Potential.class,
 										Electricity.class, ShockingDart.class, Elemental.ShockElemental.class )),
-				new HashSet<Class>()),
+				new java.util.LinkedHashSet<Class>()),
 		LARGE,
-		IMMOVABLE ( new HashSet<Class>(),
-				new HashSet<Class>( Arrays.asList(Vertigo.class) )),
+		IMMOVABLE ( new java.util.LinkedHashSet<Class>(),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(Vertigo.class) )),
 		//A character that is functionally an interactable object or piece of scenery
 		// (or a mimic that is effectively pretending to be one with the help of a mimic tooth)
 		OBJECT,
 		//A character that acts in an unchanging manner. immune to AI state debuffs or stuns/slows
-		STATIC( new HashSet<Class>(),
-				new HashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class, Terror.class, Amok.class, Charm.class, Sleep.class,
+		STATIC( new java.util.LinkedHashSet<Class>(),
+				new java.util.LinkedHashSet<Class>( Arrays.asList(AllyBuff.class, Dread.class, Terror.class, Amok.class, Charm.class, Sleep.class,
 									Paralysis.class, Frost.class, Chill.class, Slow.class, Speed.class) ));
 
 		private HashSet<Class> resistances;
 		private HashSet<Class> immunities;
 		
 		Property(){
-			this(new HashSet<Class>(), new HashSet<Class>());
+			this(new java.util.LinkedHashSet<Class>(), new java.util.LinkedHashSet<Class>());
 		}
 		
 		Property( HashSet<Class> resistances, HashSet<Class> immunities){
@@ -1457,11 +1457,11 @@ public abstract class Char extends Actor {
 		}
 		
 		public HashSet<Class> resistances(){
-			return new HashSet<>(resistances);
+			return new java.util.LinkedHashSet<>(resistances);
 		}
 		
 		public HashSet<Class> immunities(){
-			return new HashSet<>(immunities);
+			return new java.util.LinkedHashSet<>(immunities);
 		}
 
 	}
