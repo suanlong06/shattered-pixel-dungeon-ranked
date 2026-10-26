@@ -27,7 +27,9 @@ public final class Headless {
 		try {
 			File prefs = Files.createTempDirectory("spdr-prefs").toFile();
 			HeadlessApplicationConfiguration cfg = new HeadlessApplicationConfiguration();
-			cfg.preferencesDirectory = prefs.getAbsolutePath() + File.separator;
+			// headless prefs are always FileType.External, i.e. resolved against user.home,
+			// so the directory must be given relative to it (an absolute path gets doubled on Windows)
+			cfg.preferencesDirectory = relativeToHome(prefs) + File.separator;
 			cfg.updatesPerSecond = -1; // no render loop
 			new HeadlessApplication(new ApplicationAdapter(){}, cfg);
 			// fresh, empty save/profile directory: no badges, no bones, no catalog
@@ -63,6 +65,19 @@ public final class Headless {
 
 	public static void newRun(long seed, HeroClass cls){
 		newRun(seed, cls, Profile.FRESH);
+	}
+
+	private static String relativeToHome(File dir) throws java.io.IOException {
+		java.nio.file.Path home = new File(System.getProperty("user.home")).getCanonicalFile().toPath();
+		java.nio.file.Path target = dir.getCanonicalFile().toPath();
+		if (home.getRoot() != null && home.getRoot().equals(target.getRoot())){
+			return home.relativize(target).toString();
+		}
+		// different drive: fall back to a folder inside the home directory
+		File inHome = new File(home.toFile(), ".spdr-test-prefs" + File.separator + dir.getName());
+		inHome.mkdirs();
+		inHome.deleteOnExit();
+		return home.relativize(inHome.toPath()).toString();
 	}
 
 	/** Starts a fresh run exactly like InterlevelScene.descend() does for a new game. */
