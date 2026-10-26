@@ -69,7 +69,7 @@ import java.util.HashMap;
 
 public class AscensionChallenge extends Buff {
 
-	private static HashMap<Class<?extends Mob>, Float> modifiers = new HashMap<>();
+	private static HashMap<Class<?extends Mob>, Float> modifiers = new java.util.LinkedHashMap<>();
 	static {
 		modifiers.put(Rat.class,            10f);
 		modifiers.put(Snake.class,          9f);

@@ -89,7 +89,7 @@ import java.util.HashMap;
 
 public class ElementalBlast extends ArmorAbility {
 
-	private static final HashMap<Class<?extends Wand>, Integer> effectTypes = new HashMap<>();
+	private static final HashMap<Class<?extends Wand>, Integer> effectTypes = new java.util.LinkedHashMap<>();
 	static {
 		effectTypes.put(WandOfMagicMissile.class,   MagicMissile.MAGIC_MISS_CONE);
 		effectTypes.put(WandOfLightning.class,      MagicMissile.SPARK_CONE);
@@ -106,7 +106,7 @@ public class ElementalBlast extends ArmorAbility {
 		effectTypes.put(WandOfRegrowth.class,       MagicMissile.FOLIAGE_CONE);
 	}
 
-	private static final HashMap<Class<?extends Wand>, Float> damageFactors = new HashMap<>();
+	private static final HashMap<Class<?extends Wand>, Float> damageFactors = new java.util.LinkedHashMap<>();
 	static {
 		damageFactors.put(WandOfMagicMissile.class,     0.5f);
 		damageFactors.put(WandOfLightning.class,        1f);

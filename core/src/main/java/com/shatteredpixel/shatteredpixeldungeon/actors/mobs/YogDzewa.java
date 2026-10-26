@@ -193,7 +193,7 @@ public class YogDzewa extends Mob {
 			//delay fire on a rooted hero
 			if (!targetedCells.isEmpty() && !Dungeon.hero.rooted) {
 				boolean terrainAffected = false;
-				HashSet<Char> affected = new HashSet<>();
+				HashSet<Char> affected = new java.util.LinkedHashSet<>();
 				for (int i : targetedCells) {
 					Ballistica b = new Ballistica(pos, i, Ballistica.WONT_STOP);
 					//shoot beams
@@ -246,7 +246,7 @@ public class YogDzewa extends Mob {
 			if (abilityCooldown <= 0){
 
 				int beams = 1 + (HT - HP)/400;
-				HashSet<Integer> affectedCells = new HashSet<>();
+				HashSet<Integer> affectedCells = new java.util.LinkedHashSet<>();
 				for (int i = 0; i < beams; i++){
 
 					int targetPos = Dungeon.hero.pos;

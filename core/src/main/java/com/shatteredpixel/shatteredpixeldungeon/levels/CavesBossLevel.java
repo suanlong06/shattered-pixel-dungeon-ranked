@@ -959,7 +959,7 @@ public class CavesBossLevel extends Level {
 				float dist = (float)Math.max( Math.abs(energySourceSprite.x - x), Math.abs(energySourceSprite.y - y) );
 				dist = GameMath.gate(0, dist-40, 320);
 				//more sparks closer up
-				if (Random.Float(360) > dist) {
+				if (com.watabou.utils.fx.Random.Float(360) > dist) {
 
 					SparkParticle s = ((SparkParticle) emitter.recycle(SparkParticle.class));
 					s.resetAttracting(x, y, energySourceSprite);

@@ -307,7 +307,7 @@ public abstract class Scroll extends Item {
 	
 	public static class ScrollToStone extends Recipe {
 		
-		private static HashMap<Class<?extends Scroll>, Class<?extends Runestone>> stones = new HashMap<>();
+		private static HashMap<Class<?extends Scroll>, Class<?extends Runestone>> stones = new java.util.LinkedHashMap<>();
 		static {
 			stones.put(ScrollOfIdentify.class,      StoneOfIntuition.class);
 			stones.put(ScrollOfLullaby.class,       StoneOfDeepSleep.class);

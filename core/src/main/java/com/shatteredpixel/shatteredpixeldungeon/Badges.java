@@ -237,7 +237,7 @@ public class Badges {
 	}
 	
 	private static HashSet<Badge> global;
-	private static HashSet<Badge> local = new HashSet<>();
+	private static HashSet<Badge> local = new java.util.LinkedHashSet<>();
 	
 	private static boolean saveNeeded = false;
 
@@ -249,7 +249,7 @@ public class Badges {
 	public static final String BADGES_FILE	= "badges.dat";
 	private static final String BADGES		= "badges";
 	
-	private static final HashSet<String> removedBadges = new HashSet<>();
+	private static final HashSet<String> removedBadges = new java.util.LinkedHashSet<>();
 	static{
 		//used only for save conversion since v2.5.0, actually removed in v4.0.0
 		removedBadges.add("ALL_WEAPONS_IDENTIFIED");
@@ -262,13 +262,13 @@ public class Badges {
 		removedBadges.add("ALL_ITEMS_IDENTIFIED");
 	}
 
-	private static final HashMap<String, String> renamedBadges = new HashMap<>();
+	private static final HashMap<String, String> renamedBadges = new java.util.LinkedHashMap<>();
 	static{
 		//no renamed badges currently
 	}
 
 	public static HashSet<Badge> restore( Bundle bundle ) {
-		HashSet<Badge> badges = new HashSet<>();
+		HashSet<Badge> badges = new java.util.LinkedHashSet<>();
 		if (bundle == null) return badges;
 		
 		String[] names = bundle.getStringArray( BADGES );
@@ -319,7 +319,7 @@ public class Badges {
 				global = restore( bundle );
 
 			} catch (IOException e) {
-				global = new HashSet<>();
+				global = new java.util.LinkedHashSet<>();
 			}
 		}
 	}
@@ -1197,7 +1197,7 @@ public class Badges {
 	
 	public static HashSet<Badge> allUnlocked(){
 		loadGlobal();
-		return new HashSet<>(global);
+		return new java.util.LinkedHashSet<>(global);
 	}
 	
 	public static void disown( Badge badge ) {

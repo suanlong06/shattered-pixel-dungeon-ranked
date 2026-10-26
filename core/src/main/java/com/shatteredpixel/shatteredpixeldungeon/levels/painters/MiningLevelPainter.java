@@ -119,7 +119,7 @@ public class MiningLevelPainter extends CavesPainter {
 
 	@Override
 	protected void paintDoors(Level l, ArrayList<Room> rooms) {
-		HashMap<Room, Room> roomMerges = new HashMap<>();
+		HashMap<Room, Room> roomMerges = new java.util.LinkedHashMap<>();
 
 		float hiddenDoorChance = 0.90f;
 

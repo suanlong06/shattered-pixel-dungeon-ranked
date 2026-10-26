@@ -55,7 +55,7 @@ public class SecretLibraryRoom extends SecretRoom {
 		return Math.max(7, super.minHeight());
 	}
 	
-	private static HashMap<Class<? extends Scroll>, Float> scrollChances = new HashMap<>();
+	private static HashMap<Class<? extends Scroll>, Float> scrollChances = new java.util.LinkedHashMap<>();
 	static{
 		scrollChances.put( ScrollOfIdentify.class,      1f );
 		scrollChances.put( ScrollOfRemoveCurse.class,   2f );
@@ -86,7 +86,7 @@ public class SecretLibraryRoom extends SecretRoom {
 		entrance.set( Door.Type.HIDDEN );
 		
 		int n = Random.IntRange( 2, 3 );
-		HashMap<Class<? extends Scroll>, Float> chances = new HashMap<>(scrollChances);
+		HashMap<Class<? extends Scroll>, Float> chances = new java.util.LinkedHashMap<>(scrollChances);
 		for (int i=0; i < n; i++) {
 			int pos;
 			do {

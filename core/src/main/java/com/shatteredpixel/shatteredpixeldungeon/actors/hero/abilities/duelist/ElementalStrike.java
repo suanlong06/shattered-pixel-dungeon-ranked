@@ -114,7 +114,7 @@ import java.util.HashMap;
 public class ElementalStrike extends ArmorAbility {
 
 	//TODO a few duplicates here (curse duplicates are fine)
-	private static final HashMap<Class<?extends Weapon.Enchantment>, Integer> effectTypes = new HashMap<>();
+	private static final HashMap<Class<?extends Weapon.Enchantment>, Integer> effectTypes = new java.util.LinkedHashMap<>();
 	static {
 		effectTypes.put(Blazing.class,      MagicMissile.FIRE_CONE);
 		effectTypes.put(Chilling.class,     MagicMissile.FROST_CONE);

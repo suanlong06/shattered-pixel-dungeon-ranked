@@ -174,7 +174,7 @@ public class ChaoticCenser extends Trinket {
 				break;
 		}
 
-		HashMap<Integer, Float> candidateCells = new HashMap<>();
+		HashMap<Integer, Float> candidateCells = new java.util.LinkedHashMap<>();
 		PathFinder.buildDistanceMap(Dungeon.hero.pos, BArray.not(Dungeon.level.solid, null), 6);
 
 		//spawn gas in a random visible cell 2-6 tiles away
@@ -305,7 +305,7 @@ public class ChaoticCenser extends Trinket {
 		GAS_CAT_CHANCES[3] = new float[]{40, 20, 40};
 	}
 
-	private static final HashMap<Class<? extends Blob>, Float> COMMON_GASSES = new HashMap<>();
+	private static final HashMap<Class<? extends Blob>, Float> COMMON_GASSES = new java.util.LinkedHashMap<>();
 	static {
 		COMMON_GASSES.put(ToxicGas.class, 300f);
 		COMMON_GASSES.put(ConfusionGas.class, 300f);
@@ -313,21 +313,21 @@ public class ChaoticCenser extends Trinket {
 	}
 
 	//all non-harmful, don't scale as well as rares
-	private static final HashMap<Class<? extends Blob>, Float> UNCOMMON_GASSES = new HashMap<>();
+	private static final HashMap<Class<? extends Blob>, Float> UNCOMMON_GASSES = new java.util.LinkedHashMap<>();
 	static {
 		UNCOMMON_GASSES.put(StormCloud.class, 300f);
 		UNCOMMON_GASSES.put(SmokeScreen.class, 300f);
 		UNCOMMON_GASSES.put(Regrowth.class, 200f);
 	}
 
-	private static final HashMap<Class<? extends Blob>, Float> RARE_GASSES = new HashMap<>();
+	private static final HashMap<Class<? extends Blob>, Float> RARE_GASSES = new java.util.LinkedHashMap<>();
 	static {
 		RARE_GASSES.put(Inferno.class, 300f);
 		RARE_GASSES.put(Blizzard.class, 300f);
 		RARE_GASSES.put(CorrosiveGas.class, 200f);
 	}
 
-	private static final HashMap<Class<? extends Blob>, Integer> MISSILE_VFX = new HashMap<>();
+	private static final HashMap<Class<? extends Blob>, Integer> MISSILE_VFX = new java.util.LinkedHashMap<>();
 	static {
 		MISSILE_VFX.put(ToxicGas.class, MagicMissile.SPECK + Speck.TOXIC);
 		MISSILE_VFX.put(ConfusionGas.class, MagicMissile.SPECK + Speck.CONFUSION);

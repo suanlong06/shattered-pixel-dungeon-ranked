@@ -101,7 +101,7 @@ public class EntranceRoom extends StandardRoom {
 
 	public static void placeEarlyGuidePages(Level level, Room r){
 		//use a separate generator here so meta progression doesn't affect levelgen
-		Random.pushGenerator();
+		Random.pushGenerator( Dungeon.seedCurDepth()+3 ); // spd-ranked: was unseeded
 
 		//places the first guidebook page on floor 1
 		if (Dungeon.depth == 1 &&

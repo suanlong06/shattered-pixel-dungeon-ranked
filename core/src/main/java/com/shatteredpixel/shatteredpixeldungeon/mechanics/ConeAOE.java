@@ -37,7 +37,7 @@ public class ConeAOE {
 
 	public ArrayList<Ballistica> outerRays = new ArrayList<>();
 	public ArrayList<Ballistica> rays = new ArrayList<>();
-	public HashSet<Integer> cells = new HashSet<>();
+	public HashSet<Integer> cells = new java.util.LinkedHashSet<>();
 
 	public ConeAOE( Ballistica core, float degrees ){
 		this( core, Float.POSITIVE_INFINITY, degrees, core.collisionProperties );

@@ -65,7 +65,7 @@ public class SpectralBlades extends ArmorAbility {
 		}
 
 		Ballistica b = new Ballistica(hero.pos, target, Ballistica.WONT_STOP);
-		final HashSet<Char> targets = new HashSet<>();
+		final HashSet<Char> targets = new java.util.LinkedHashSet<>();
 
 		Char enemy = findChar(b, hero, 2*hero.pointsInTalent(Talent.PROJECTING_BLADES), targets);
 
@@ -103,7 +103,7 @@ public class SpectralBlades extends ArmorAbility {
 
 		Item proto = new Shuriken();
 
-		final HashSet<Callback> callbacks = new HashSet<>();
+		final HashSet<Callback> callbacks = new java.util.LinkedHashSet<>();
 
 		for (Char ch : targets) {
 			Callback callback = new Callback() {

@@ -450,7 +450,7 @@ public abstract class Wand extends Item {
 	public void staffFx( MagesStaff.StaffParticle particle ){
 		particle.color(0xFFFFFF); particle.am = 0.3f;
 		particle.setLifespan( 1f);
-		particle.speed.polar( Random.Float(PointF.PI2), 2f );
+		particle.speed.polar( com.watabou.utils.fx.Random.Float(PointF.PI2), 2f );
 		particle.setSize( 1f, 2f );
 		particle.radiateXY(0.5f);
 	}

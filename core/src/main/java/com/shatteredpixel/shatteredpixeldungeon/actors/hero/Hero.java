@@ -2274,7 +2274,7 @@ public class Hero extends Char {
 				passable.add( cell );
 			}
 		}
-		Collections.shuffle( passable );
+		Random.shuffle(passable); // spd-ranked: was Collections.shuffle (unseeded)
 
 		ArrayList<Item> items = new ArrayList<>(Dungeon.hero.belongings.backpack.items);
 		for (Integer cell : passable) {

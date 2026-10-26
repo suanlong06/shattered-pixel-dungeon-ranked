@@ -413,7 +413,7 @@ public abstract class Mob extends Char {
 
 		if ( newEnemy ) {
 
-			HashSet<Char> enemies = new HashSet<>();
+			HashSet<Char> enemies = new java.util.LinkedHashSet<>();
 
 			//if we are amoked...
 			if ( buff(Amok.class) != null) {
@@ -1758,7 +1758,7 @@ public abstract class Mob extends Char {
 
 			//gravitate pos sets a preferred location for allies to be closer to
 			if (gravitatePos == -1) {
-				Collections.shuffle(candidatePositions);
+				Random.shuffle(candidatePositions); // spd-ranked: was Collections.shuffle (unseeded)
 			} else {
 				Collections.sort(candidatePositions, new Comparator<Integer>() {
 					@Override

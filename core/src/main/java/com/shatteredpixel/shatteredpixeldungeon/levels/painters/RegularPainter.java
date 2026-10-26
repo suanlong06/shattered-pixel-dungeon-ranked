@@ -200,7 +200,7 @@ public abstract class RegularPainter extends Painter {
 
 		float hiddenDoorChance = hiddenDoorChance(l);
 
-		HashMap<Room, Room> roomMerges = new HashMap<>();
+		HashMap<Room, Room> roomMerges = new java.util.LinkedHashMap<>();
 
 		for (Room r : rooms) {
 			for (Room n : r.connected.keySet()) {

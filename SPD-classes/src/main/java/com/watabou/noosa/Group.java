@@ -21,7 +21,7 @@
 
 package com.watabou.noosa;
 
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 import com.watabou.utils.Reflection;
 
 import java.util.ArrayList;

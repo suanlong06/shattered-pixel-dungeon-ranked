@@ -41,7 +41,7 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.tweeners.Delayer;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 import com.watabou.utils.RectF;
 
 public class AmuletScene extends PixelScene {

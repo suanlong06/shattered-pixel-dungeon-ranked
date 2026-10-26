@@ -52,6 +52,12 @@ public class Random {
 		generators.push(make(null));
 	}
 
+	// spd-ranked: base generator seeded from the run seed, so gameplay rolls are reproducible
+	public static synchronized void resetGenerators( long seed ){
+		generators = new ArrayDeque<>();
+		generators.push(make( scrambleSeed(seed) ));
+	}
+
 	public static synchronized void pushGenerator(){
 		generators.push( make(null) );
 	}

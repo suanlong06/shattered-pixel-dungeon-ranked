@@ -371,7 +371,7 @@ public class Bomb extends Item {
 			validIngredients.put(MetalShard.class,              ShrapnelBomb.class);
 		}
 		
-		private static final HashMap<Class<?extends Bomb>, Integer> bombCosts = new HashMap<>();
+		private static final HashMap<Class<?extends Bomb>, Integer> bombCosts = new java.util.LinkedHashMap<>();
 		static {
 			bombCosts.put(FrostBomb.class,      0);
 			bombCosts.put(WoollyBomb.class,     0);

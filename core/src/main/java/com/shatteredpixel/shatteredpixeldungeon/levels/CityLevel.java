@@ -346,7 +346,7 @@ public class CityLevel extends RegularLevel {
 			super();
 			
 			color( 0x000000 );
-			speed.set( Random.Float( -2, 4 ), -Random.Float( 3, 6 ) );
+			speed.set( com.watabou.utils.fx.Random.Float( -2, 4 ), -com.watabou.utils.fx.Random.Float( 3, 6 ) );
 		}
 		
 		public void reset( float x, float y ) {

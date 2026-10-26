@@ -335,7 +335,7 @@ public class DwarfKing extends Mob {
 	}
 
 	private HashSet<Mob> getSubjects(){
-		HashSet<Mob> subjects = new HashSet<>();
+		HashSet<Mob> subjects = new java.util.LinkedHashSet<>();
 		for (Mob m : Dungeon.level.mobs){
 			if (m.alignment == alignment && (m instanceof Ghoul || m instanceof Monk || m instanceof Warlock || m instanceof Golem)){
 				subjects.add(m);

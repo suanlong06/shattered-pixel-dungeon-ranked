@@ -27,7 +27,13 @@ public final class TurnSim {
 		public int heroTurns, actorSteps, floorsReached = 1;
 		public long genNanos, simNanos;
 		public String stop = "turn limit";
+		/** per floor: hero decisions spent, generation ms, simulation ms, whether the bot was moved on */
+		public final List<String> floors = new ArrayList<>();
 	}
+
+	/** S5 options: hero cannot die (timing only), and a floor is skipped after this many decisions (0 = never) */
+	public static boolean godMode = false;
+	public static int stuckLimit = 0;
 
 	private static final Field ALL, CURRENT, NOW;
 	static {
@@ -51,7 +57,7 @@ public final class TurnSim {
 		synchronized (Actor.class){
 			for (Actor a : (Collection<Actor>) ALL.get(null)){
 				float t = time(a);
-				if (t < earliest || t == earliest && (cur == null || priority(a) > priority(cur))){
+				if (t < earliest || t == earliest && (cur == null || priority(a) > priority(cur) || priority(a) == priority(cur) && a.id() < cur.id())){
 					earliest = t;
 					cur = a;
 				}
@@ -111,6 +117,9 @@ public final class TurnSim {
 		enter(l, -1);
 		long s0 = System.nanoTime();
 		int lastHeroTurn = -1;
+		int floorStartTurn = 0;
+		long floorStartNanos = System.nanoTime();
+		long floorGenNanos = r.genNanos;
 		while (r.heroTurns < maxHeroTurns){
 			if (!Dungeon.hero.isAlive()){ r.stop = "hero died depth " + Dungeon.depth; break; }
 			Actor a = pickNext();
@@ -124,8 +133,12 @@ public final class TurnSim {
 					r.turnDigests.add(stateDigest());
 					lastHeroTurn = r.heroTurns;
 				}
+				if (godMode){ Dungeon.hero.HT = 1_000_000; Dungeon.hero.HP = Dungeon.hero.HT; }
 				int exit = exitCell();
-				if (Dungeon.hero.pos == exit){
+				boolean stuck = stuckLimit > 0 && r.heroTurns - floorStartTurn >= stuckLimit;
+				if (Dungeon.hero.pos == exit || stuck){
+					r.floors.add(Dungeon.depth + " turns=" + (r.heroTurns - floorStartTurn) + " genMs=" + floorGenNanos / 1_000_000
+							+ " simMs=" + (System.nanoTime() - floorStartNanos) / 1_000_000 + (stuck ? " SKIPPED" : ""));
 					if (Dungeon.depth >= maxDepth){ r.stop = "reached depth " + maxDepth; break; }
 					RngLog.mark("descend " + (Dungeon.depth + 1));
 					// like InterlevelScene: leave GameScene before the next floor is generated
@@ -136,8 +149,11 @@ public final class TurnSim {
 					Dungeon.depth++;
 					Level next = Dungeon.newLevel();
 					r.genNanos += System.nanoTime() - g;
+					floorGenNanos = System.nanoTime() - g;
 					enter(next, -1);
 					r.floorsReached = Dungeon.depth;
+					floorStartTurn = r.heroTurns;
+					floorStartNanos = System.nanoTime();
 					continue;
 				}
 				HeroAction act = choose(exit);
@@ -191,15 +207,14 @@ public final class TurnSim {
 		if (a instanceof Char && ((Char) a).sprite != null){
 			for (int f = 0; f < MAX_FRAMES && ((Char) a).sprite.isMoving; f++) frame();
 		}
-		float before = time(a);
-		act(a);
+		CURRENT.set(null, a);
+		boolean doNext = act(a);
 		r.actorSteps++;
-		for (int f = 0; f < MAX_FRAMES && time(a) == before && pendingCallback(a); f++) frame();
-	}
-
-	private static boolean pendingCallback(Actor a){
-		if (a == Dungeon.hero) return Dungeon.hero.curAction != null || !Dungeon.hero.ready;
-		return a instanceof Char && ((Char) a).isAlive();
+		if (!doNext){
+			// Actor.process() would now wait until the actor calls next() (from a sprite callback),
+			// or, for the hero, until it is ready for input
+			for (int f = 0; f < MAX_FRAMES && CURRENT.get(null) == a && !(a == Dungeon.hero && Dungeon.hero.ready); f++) frame();
+		}
 	}
 
 	private static final Field MEMBERS;

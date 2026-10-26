@@ -102,10 +102,10 @@ public class CursingTrap extends Trap {
 		}
 
 		if (!priorityCurse.isEmpty()){
-			Collections.shuffle(priorityCurse);
+			com.watabou.utils.Random.shuffle(priorityCurse); // spd-ranked: was Collections.shuffle (unseeded)
 			curse(priorityCurse.remove(0));
 		} else if (!canCurse.isEmpty()){
-			Collections.shuffle(canCurse);
+			com.watabou.utils.Random.shuffle(canCurse); // spd-ranked: was Collections.shuffle (unseeded)
 			curse(canCurse.remove(0));
 		}
 

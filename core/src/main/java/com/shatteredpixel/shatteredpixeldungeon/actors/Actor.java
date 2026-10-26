@@ -149,8 +149,9 @@ public abstract class Actor implements Bundlable {
 	// *** Static members ***
 	// **********************
 	
-	private static HashSet<Actor> all = new HashSet<>();
-	private static HashSet<Char> chars = new HashSet<>();
+	// spd-ranked: insertion-ordered, so iteration never depends on identity hashes
+	private static HashSet<Actor> all = new java.util.LinkedHashSet<>();
+	private static HashSet<Char> chars = new java.util.LinkedHashSet<>();
 	private static volatile Actor current;
 
 	private static SparseArray<Actor> ids = new SparseArray<>();
@@ -262,8 +263,10 @@ public abstract class Actor implements Bundlable {
 					for (Actor actor : all) {
 
 						//some actors will always go before others if time is equal.
+						// spd-ranked: full tie-break on id, so the order is (time, priority, id)
 						if (actor.time < earliest ||
-								actor.time == earliest && (current == null || actor.actPriority > current.actPriority)) {
+								actor.time == earliest && (current == null || actor.actPriority > current.actPriority
+										|| actor.actPriority == current.actPriority && actor.id() < current.id())) {
 							earliest = actor.time;
 							current = actor;
 						}
@@ -395,8 +398,8 @@ public abstract class Actor implements Bundlable {
 	}
 
 	public static synchronized HashSet<Actor> all() {
-		return new HashSet<>(all);
+		return new java.util.LinkedHashSet<>(all); // spd-ranked
 	}
 
-	public static synchronized HashSet<Char> chars() { return new HashSet<>(chars); }
+	public static synchronized HashSet<Char> chars() { return new java.util.LinkedHashSet<>(chars); } // spd-ranked
 }

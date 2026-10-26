@@ -768,7 +768,7 @@ public class Tengu extends Mob {
 		public int direction;
 		private int[] curCells;
 		
-		HashSet<Integer> toCells = new HashSet<>();
+		HashSet<Integer> toCells = new java.util.LinkedHashSet<>();
 		
 		@Override
 		public boolean act() {

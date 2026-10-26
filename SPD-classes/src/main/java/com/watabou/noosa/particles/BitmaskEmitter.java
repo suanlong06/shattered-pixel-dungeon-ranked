@@ -23,7 +23,7 @@ package com.watabou.noosa.particles;
 
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.noosa.Image;
-import com.watabou.utils.Random;
+import com.watabou.utils.fx.Random; // spd-ranked: visual-only RNG stream
 import com.watabou.utils.RectF;
 
 public class BitmaskEmitter extends Emitter {
