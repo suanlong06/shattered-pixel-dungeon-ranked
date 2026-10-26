@@ -227,6 +227,7 @@ public class ItemSlot extends Button {
 		if (item == null){
 			status.visible = extra.visible = level.visible = false;
 			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.RunValueStar.update( this, null ); // spd-ranked: B4
+			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ItemNoteMarkers.update( this, null ); // spd-ranked: C2
 			return;
 		} else {
 			status.visible = extra.visible = level.visible = true;
@@ -303,6 +304,7 @@ public class ItemSlot extends Button {
 		}
 
 		com.shatteredpixel.shatteredpixeldungeon.ranked.qol.RunValueStar.update( this, item ); // spd-ranked: B4
+		com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ItemNoteMarkers.update( this, item ); // spd-ranked: C2
 		layout();
 	}
 	

@@ -10,7 +10,11 @@ public enum Feature {
 	FOOD_FORECAST        ( true, false ), // B5
 	SMART_INVENTORY      ( true, false ), // B4
 	DEATH_ANALYSIS       ( true, false ), // B1
-	CONTEXTUAL_KNOWLEDGE ( true, false ); // B2
+	CONTEXTUAL_KNOWLEDGE ( true, false ), // B2
+	//display/camera only, safe in Ranked (docs/C-research.md)
+	ITEM_NOTE_MARKERS    ( true, true ),  // C2
+	CAMERA_KEYS          ( true, true ),  // C1
+	TILE_INDICATOR       ( true, true );  // C1
 
 	/** value in Solo until the player changes it */
 	public final boolean soloDefault;

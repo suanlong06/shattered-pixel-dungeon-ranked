@@ -279,6 +279,8 @@ public class CellSelector extends ScrollArea {
 			GameAction action = KeyBindings.getActionForKey( event );
 			if (!event.pressed){
 
+				if (com.shatteredpixel.shatteredpixeldungeon.ranked.qol.CameraKeys.handle( action, camera )) return true; // spd-ranked: C1
+
 				if (action == SPDAction.ZOOM_IN){
 					zoom( camera.zoom+1 );
 					mouseZoom = camera.zoom;
