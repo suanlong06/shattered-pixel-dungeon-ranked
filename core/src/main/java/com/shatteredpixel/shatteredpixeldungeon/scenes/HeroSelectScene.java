@@ -795,6 +795,7 @@ public class HeroSelectScene extends PixelScene {
 			add(dailyButton);
 			buttons.add(dailyButton);
 			{ StyledButton practice = com.shatteredpixel.shatteredpixeldungeon.ranked.practice.BossPracticeMenu.button(); buttons.add(practice); add(practice); } // spd-ranked: B6
+			{ StyledButton ranked = com.shatteredpixel.shatteredpixeldungeon.ranked.net.WndRankedQueue.button(); buttons.add(ranked); add(ranked); } // spd-ranked: A1 client
 
 			challengeButton = new StyledButton(Chrome.Type.BLANK, Messages.get(WndChallenges.class, "title"), 6){
 				@Override

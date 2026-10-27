@@ -482,6 +482,8 @@ public class GameScene extends PixelScene {
 			add(blocker);
 		}
 
+		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.net.RankedHud() ); // spd-ranked: A1 client
+
 		status = new StatusPane( SPDSettings.interfaceSize() > 0 );
 		status.camera = uiCamera;
 		StatusPane.heroPaneExtraWidth = heroPaneExtraWidth;
