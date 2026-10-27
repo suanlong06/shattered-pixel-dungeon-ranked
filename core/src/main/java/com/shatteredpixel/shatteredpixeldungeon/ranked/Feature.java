@@ -11,6 +11,7 @@ public enum Feature {
 	SMART_INVENTORY      ( true, false ), // B4
 	DEATH_ANALYSIS       ( true, false ), // B1
 	CONTEXTUAL_KNOWLEDGE ( true, false ), // B2
+	GHOST_RACE           ( true, false ), // A5, Solo: race your best run on the same seed
 	//display/camera only, safe in Ranked (docs/C-research.md)
 	ITEM_NOTE_MARKERS    ( true, true ),  // C2
 	CAMERA_KEYS          ( true, true ),  // C1

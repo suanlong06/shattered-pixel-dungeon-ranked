@@ -174,4 +174,58 @@ class RaceReplaySkinTest {
 		PixmapIO.writePNG(f, p);
 		p.dispose();
 	}
+
+	@Test
+	void bestRunIsStoredAsGhostAndRacedNextTime(){
+		Headless.boot();
+		Features.setMode(GameMode.SOLO);
+		com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.storage = true;
+		long seed = 987654321L;
+		FileHandle f = Gdx.files.local(com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.DIR + seed + ".txt");
+		f.delete();
+		long oldSeed = Dungeon.seed;
+		try {
+			Dungeon.seed = seed;
+			com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.reset();
+			Splits first = new Splits();
+			first.arrive(1, 0f);
+			first.arrive(2, 200f);
+			com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.offer(first);
+			assertNull(com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.racing(), "no ghost when the run started");
+			assertTrue(f.exists());
+
+			com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.reset(); // next run on the seed
+			Ghost g = com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.racing();
+			assertEquals(first, g.splits);
+			Splits now = new Splits();
+			now.arrive(1, 0f);
+			now.arrive(2, 150f);
+			assertEquals("50 turns ahead (depth 2)", Splits.raceLine(g, now));
+
+			Splits worse = new Splits();
+			worse.arrive(1, 0f);
+			com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.offer(worse);
+			assertEquals(first, com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.load(seed).splits, "a worse run does not replace the best");
+
+			Features.setMode(GameMode.RANKED);
+			assertNull(com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.racing(), "no solo ghost in Ranked");
+		} finally {
+			Dungeon.seed = oldSeed;
+			com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.storage = null;
+			f.delete();
+			Gdx.files.local(com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.DIR).deleteDirectory();
+		}
+	}
+
+	@Test
+	void vietnameseBundleHasTheSkinsAndGhostStrings() throws Exception {
+		Headless.boot();
+		java.util.Properties en = new java.util.Properties(), vi = new java.util.Properties();
+		try (java.io.Reader r = Gdx.files.internal("messages/ranked/ranked.properties").reader("UTF-8")){ en.load(r); }
+		try (java.io.Reader r = Gdx.files.internal("messages/ranked/ranked_vi.properties").reader("UTF-8")){ vi.load(r); }
+		for (String k : en.stringPropertyNames()){
+			if (k.startsWith("ranked.skins.") || k.startsWith("ranked.race.")) assertTrue(vi.containsKey(k), k);
+		}
+		for (String k : vi.stringPropertyNames()) assertTrue(en.containsKey(k), "no English source for " + k);
+	}
 }

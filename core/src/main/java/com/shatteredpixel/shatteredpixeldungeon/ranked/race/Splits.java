@@ -33,20 +33,35 @@ public final class Splits {
 		lastDepth = 0;
 	}
 
-	/** only the first arrival counts: going back up and down again is not a new split */
-	public void arrive( int depth, float time ){
-		if (!arrived.containsKey( depth )) arrived.put( depth, time );
+	/** only the first arrival counts: going back up and down again is not a new split; true if new */
+	public boolean arrive( int depth, float time ){
 		lastDepth = depth;
+		if (arrived.containsKey( depth )) return false;
+		arrived.put( depth, time );
+		return true;
 	}
 
-	public void death( Char ch, float time ){
+	/** true if this was a new boss split */
+	public boolean death( Char ch, float time ){
 		if (ch != null && ch.properties().contains( Char.Property.BOSS ) && !bosses.containsKey( lastDepth )){
 			bosses.put( lastDepth, time );
+			return true;
 		}
+		return false;
 	}
 
 	public void boss( int depth, float time ){
 		if (!bosses.containsKey( depth )) bosses.put( depth, time );
+	}
+
+	/** one line for the hero window: how this run stands against a ghost, or null */
+	public static String raceLine( Ghost g, Splits now ){
+		if (g == null) return null;
+		Ghost.Delta d = g.compare( now );
+		if (d == null) return null;
+		int turns = Math.round( Math.abs( d.delta ) );
+		String key = turns == 0 ? "even" : d.ahead() ? "ahead" : "behind";
+		return com.shatteredpixel.shatteredpixeldungeon.messages.Messages.get( Ghost.class, d.boss ? key + "_boss" : key, turns, d.depth );
 	}
 
 	public Map<Integer, Float> arrived(){

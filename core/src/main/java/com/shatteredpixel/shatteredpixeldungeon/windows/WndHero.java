@@ -194,6 +194,8 @@ public class WndHero extends WndTabbed {
 			else                        statSlot( Messages.get(this, "health"), (hero.HP) + "/" + hero.HT );
 			statSlot( Messages.get(this, "exp"), hero.exp + "/" + hero.maxExp() );
 			if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.enabled( com.shatteredpixel.shatteredpixeldungeon.ranked.Feature.FOOD_FORECAST )) statSlot( com.shatteredpixel.shatteredpixeldungeon.messages.Messages.get( com.shatteredpixel.shatteredpixeldungeon.ranked.qol.FoodForecast.class, "label" ), com.shatteredpixel.shatteredpixeldungeon.ranked.qol.FoodForecast.of( hero ).summary() ); // spd-ranked: B5
+			String ghostLine = com.shatteredpixel.shatteredpixeldungeon.ranked.race.Splits.raceLine( com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts.racing(), com.shatteredpixel.shatteredpixeldungeon.ranked.race.Splits.current() ); // spd-ranked: A5
+			if (ghostLine != null) statSlot( com.shatteredpixel.shatteredpixeldungeon.messages.Messages.get( com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghost.class, "label" ), ghostLine ); // spd-ranked: A5
 
 			pos += GAP;
 

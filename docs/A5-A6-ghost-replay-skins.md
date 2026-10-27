@@ -12,7 +12,9 @@ Test: `core/src/test/java/.../ranked/test/RaceReplaySkinTest.java` (headless). T
 | Telemetry | `ranked/telemetry/Telemetry` | Tóm tắt run từ event log: số sự kiện theo loại, sát thương nhận và gây theo nguồn, đồ đã dùng, hồi máu, số lượt ở mỗi tầng. Chỉ cục bộ, không gửi đi đâu. |
 | Event log | `EventLog` thêm loại `DEPTH` ở cuối enum | Ghi ở lượt đầu của hero trên một tầng. Trình đọc cũ gặp `DEPTH` sẽ báo lỗi dòng đó; định dạng dòng không đổi nên vẫn là v1. |
 
-Còn để sau: hiển thị ghost trong trận (dòng chữ hoặc bóng mờ), cửa sổ xem replay trong game, lưu ghost tốt nhất theo seed ra tệp, gửi telemetry lên server (cần user quyết định có gửi không và gửi gì).
+Đợt 2: **ghost trong trận** (Solo, cờ `GHOST_RACE`): run tốt nhất mỗi seed lưu ở `ghosts/<seed>.txt` (`ranked/race/Ghosts`), cập nhật ở mỗi mốc mới nếu tốt hơn. Run đang chơi so với ghost đã có lúc bắt đầu và hiện một dòng "Ghost" trong cửa sổ nhân vật (hook `WndHero`), ví dụ "50 turns ahead (depth 2)". Ranked và Boss Practice không dùng ghost Solo. Khi chạy headless (test, server) không ghi file.
+
+Còn để sau: cửa sổ xem replay trong game (cần chạy lệnh trong GameScene có tạm dừng và chỉnh tốc độ, chưa làm), ghost của đối thủ trong Ranked, gửi telemetry lên server (chờ user quyết định; hiện chỉ cục bộ).
 
 ## A6
 
@@ -28,4 +30,4 @@ Xác minh trên v4.0.2: mọi texture nạp theo đường dẫn đi qua `Textur
 
 Danh sách chặn lấy từ thiết kế repo cũ (18 vùng, quy về 10 mục ở đây). Nếu muốn chặn thêm hoặc bớt, chỉ cần sửa file properties.
 
-Còn để sau: chặn theo khung cho đúng cả các gói có kích thước ảnh khác bản gốc, gửi mã băm skin cho server, tải gói từ trong game, bản dịch tiếng Việt cho tab.
+Còn để sau: chặn theo khung cho đúng cả các gói có kích thước ảnh khác bản gốc, gửi mã băm skin cho server, tải gói từ trong game. Bản dịch tiếng Việt cho tab Skins và dòng Ghost đã có ở `messages/ranked/ranked_vi.properties`.

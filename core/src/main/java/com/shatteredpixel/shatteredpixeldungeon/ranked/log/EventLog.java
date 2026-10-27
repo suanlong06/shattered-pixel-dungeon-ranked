@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.race.Ghosts;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.race.Splits;
 
 import java.util.ArrayDeque;
@@ -83,6 +84,7 @@ public final class EventLog {
 		lastHeroHP = -1;
 		lastDepth = -1;
 		Splits.current().clear();
+		Ghosts.reset();
 	}
 
 	public static List<Event> events(){
@@ -116,7 +118,7 @@ public final class EventLog {
 
 	public static void death( Char ch, Object src ){
 		add( Type.DEATH, name( ch ), name( src ), 0 );
-		Splits.current().death( ch, Statistics.duration );
+		if (Splits.current().death( ch, Statistics.duration )) Ghosts.offer( Splits.current() );
 	}
 
 	public static void move( Char ch, int cell ){
@@ -132,7 +134,7 @@ public final class EventLog {
 		if (Dungeon.depth != lastDepth){
 			lastDepth = Dungeon.depth;
 			add( Type.DEPTH, name( hero ), "-", lastDepth );
-			Splits.current().arrive( lastDepth, Statistics.duration );
+			if (Splits.current().arrive( lastDepth, Statistics.duration )) Ghosts.offer( Splits.current() );
 		}
 		if (lastHeroHP >= 0 && hero.HP > lastHeroHP){
 			add( Type.HEAL, name( hero ), "-", hero.HP - lastHeroHP );
