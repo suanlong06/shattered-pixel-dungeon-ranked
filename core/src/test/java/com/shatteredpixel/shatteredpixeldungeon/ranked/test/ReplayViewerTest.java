@@ -56,6 +56,8 @@ class ReplayViewerTest {
 	@AfterEach
 	void tearDown(){
 		CommandLog.stop();
+		// later tests build levels without a game scene (SeedScanner)
+		if (Gdx.app != null) TurnRunner.leaveScene();
 		Features.setViewingReplay( false );
 		Features.setMode( GameMode.SOLO );
 		TurnRunner.frameSeconds = 1 / 30f;

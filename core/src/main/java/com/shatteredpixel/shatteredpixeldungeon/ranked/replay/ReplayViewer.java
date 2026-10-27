@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked.replay;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
@@ -43,6 +44,7 @@ public final class ReplayViewer {
 	private final ReplayPlayback playback;
 	private final int prevSlot;
 	private final HeroClass prevClass;
+	private final int prevLastClass;
 	private Scene lastScene;
 	private ReplayControls controls;
 	private boolean exiting;
@@ -51,6 +53,7 @@ public final class ReplayViewer {
 		this.playback = playback;
 		prevSlot = GamesInProgress.curSlot;
 		prevClass = GamesInProgress.selectedClass;
+		prevLastClass = SPDSettings.lastClass();
 	}
 
 	/** true from start() until the viewer has left the game scene */
@@ -172,6 +175,8 @@ public final class ReplayViewer {
 		Dungeon.deleteGame( SLOT, true );
 		GamesInProgress.curSlot = v.prevSlot;
 		GamesInProgress.selectedClass = v.prevClass;
+		// GameScene.create remembers the hero class as the player's last one
+		SPDSettings.lastClass( v.prevLastClass );
 		current = null;
 	}
 

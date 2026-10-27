@@ -71,7 +71,7 @@ public final class WndReplays {
 	static String label( Replays.Entry e ){
 		String date = new SimpleDateFormat( "yyyy-MM-dd HH:mm", Locale.ROOT ).format( new Date( e.modified ) );
 		if (e.replay == null) return date + " - " + Messages.get( ReplayViewer.class, "broken" );
-		String s = date + " - " + e.replay.heroClass.title();
+		String s = date + " - " + Messages.titleCase( e.replay.heroClass.title() );
 		if (!e.replay.label.isEmpty()) s += " - " + e.replay.label;
 		return s;
 	}
@@ -91,7 +91,7 @@ public final class WndReplays {
 		}
 		ReplayFile r = e.replay;
 		StringBuilder desc = new StringBuilder( Messages.get( ReplayViewer.class, "details",
-				r.heroClass.title(), r.mode.name(), r.seed, r.commands.size() ) );
+				Messages.titleCase( r.heroClass.title() ), r.mode.name(), r.seed, r.commands.size() ) );
 		if (r.gameVersion != Game.versionCode){
 			desc.append( "\n\n" ).append( Messages.get( ReplayViewer.class, "other_version", r.gameVersion, Game.versionCode ) );
 		}
