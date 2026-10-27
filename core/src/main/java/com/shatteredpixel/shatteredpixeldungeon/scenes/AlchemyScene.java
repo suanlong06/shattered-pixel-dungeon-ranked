@@ -121,6 +121,7 @@ public class AlchemyScene extends PixelScene {
 	@Override
 	public void create() {
 		super.create();
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemyOpened(); // spd-ranked: T0.8
 
 		int w = Camera.main.width;
 		int h = Camera.main.height;
@@ -304,21 +305,7 @@ public class AlchemyScene extends PixelScene {
 										public void onSelect(int idx, boolean alt) {
 											super.onSelect(idx, alt);
 											Item item = items.get(idx);
-											synchronized (inputs) {
-												if (item != null && inputs[0] != null) {
-													for (int i = 0; i < inputs.length; i++) {
-														if (inputs[i].item() == null) {
-															if (item instanceof LiquidMetal || item instanceof MissileWeapon){
-																inputs[i].item(item.detachAll(Dungeon.hero.belongings.backpack));
-															} else {
-																inputs[i].item(item.detach(Dungeon.hero.belongings.backpack));
-															}
-															break;
-														}
-													}
-													updateState();
-												}
-											}
+											addInput(item); // spd-ranked: T0.8
 
 										}
 									});
@@ -554,6 +541,7 @@ public class AlchemyScene extends PixelScene {
 	public void update() {
 		super.update();
 		water.offset( 0, -5 * Game.elapsed );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.update( this ); // spd-ranked: A5 a replay steps alchemy inputs too
 	}
 	
 	@Override
@@ -575,14 +563,25 @@ public class AlchemyScene extends PixelScene {
 
 		@Override
 		public void onSelect( Item item ) {
+			addInput(item); // spd-ranked: T0.8
+		}
+	};
+
+	// spd-ranked: T0.8 what the player does here that changes the game is recorded as ALCH
+	// commands (ranked.sim.Command) and replayed through these same methods
+
+	/** puts the item in the first empty input, as picking it from the bag does; returns what went in */
+	public Item addInput( Item item ){
+		Item[] in = new Item[1];
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemyInput( item, () -> {
 			synchronized (inputs) {
 				if (item != null && inputs[0] != null) {
 					for (int i = 0; i < inputs.length; i++) {
 						if (inputs[i].item() == null) {
 							if (item instanceof LiquidMetal || item instanceof MissileWeapon){
-								inputs[i].item(item.detachAll(Dungeon.hero.belongings.backpack));
+								inputs[i].item(in[0] = item.detachAll(Dungeon.hero.belongings.backpack));
 							} else {
-								inputs[i].item(item.detach(Dungeon.hero.belongings.backpack));
+								inputs[i].item(in[0] = item.detach(Dungeon.hero.belongings.backpack));
 							}
 							break;
 						}
@@ -590,8 +589,35 @@ public class AlchemyScene extends PixelScene {
 					updateState();
 				}
 			}
+		} );
+		return in[0];
+	}
+
+	/** takes the item in input slot back, as tapping that slot does */
+	public void removeInput( int slot ){
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemy( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.alchemy( "OUT", slot ), () -> {
+			Item item = inputs[slot].item();
+			if (item != null) {
+				if (!item.collect()) {
+					Dungeon.level.drop(item, Dungeon.hero.pos);
+				}
+				inputs[slot].item(null);
+				updateState();
+			}
+		} );
+	}
+
+	/** whether the craft button of this output is enabled (a recipe, and enough energy) */
+	public boolean combineEnabled( int slot ){
+		return slot >= 0 && slot < combines.length && combines[slot] != null && combines[slot].visible && combines[slot].active;
+	}
+
+	/** replay of a client that was closed in here: the save it came back to has no input items */
+	public static void abandonInputs(){
+		synchronized (inputs) {
+			for (int i = 0; i < inputs.length; i++) inputs[i] = null;
 		}
-	};
+	}
 	
 	private<T extends Item> ArrayList<T> filterInput(Class<? extends T> itemClass){
 		ArrayList<T> filtered = new ArrayList<>();
@@ -674,7 +700,12 @@ public class AlchemyScene extends PixelScene {
 
 	}
 	
-	private void combine( int slot ){
+	// spd-ranked: T0.8 recorded as ALCH COMBINE
+	public void combine( int slot ){
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemy( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.alchemy( "COMBINE", slot ), () -> doCombine( slot ) );
+	}
+
+	private void doCombine( int slot ){
 		
 		ArrayList<Item> ingredients = filterInput(Item.class);
 		if (ingredients.isEmpty()) return;
@@ -795,19 +826,13 @@ public class AlchemyScene extends PixelScene {
 	public void populate(ArrayList<Item> toFind, Belongings inventory){
 		clearSlots();
 		
-		int curslot = 0;
 		for (Item finding : toFind){
 			int needed = finding.quantity();
 			ArrayList<Item> found = inventory.getAllSimilar(finding);
 			while (!found.isEmpty() && needed > 0){
-				Item detached;
-				if (finding instanceof LiquidMetal || finding instanceof MissileWeapon) {
-					detached = found.get(0).detachAll(inventory.backpack);
-				} else {
-					detached = found.get(0).detach(inventory.backpack);
-				}
-				inputs[curslot].item(detached);
-				curslot++;
+				// spd-ranked: T0.8 one recorded input each (isSimilar items are of the finding's class)
+				Item detached = addInput(found.get(0));
+				if (detached == null) break;
 				needed -= detached.quantity();
 				if (detached == found.get(0)) {
 					found.remove(0);
@@ -821,7 +846,8 @@ public class AlchemyScene extends PixelScene {
 
 	@Override
 	public void onPause() {
-		if (saveNeeded) {
+		if (saveNeeded && !com.shatteredpixel.shatteredpixeldungeon.ranked.Features.viewingReplay()) { // spd-ranked: A5 a replay only gives inputs back where the recording did (ALCH PAUSE)
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemyPaused(); // spd-ranked: T0.8
 			saveNeeded = false;
 			clearSlots();
 			updateState();
@@ -837,6 +863,7 @@ public class AlchemyScene extends PixelScene {
 
 	@Override
 	public void destroy() {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemyClosing(); // spd-ranked: T0.8
 		synchronized ( inputs ) {
 			clearSlots();
 			for (int i = 0; i < inputs.length; i++) {
@@ -855,7 +882,12 @@ public class AlchemyScene extends PixelScene {
 		super.destroy();
 	}
 	
+	// spd-ranked: T0.8 recorded as ALCH CLEAR
 	public void clearSlots(){
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemy( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.alchemy( "CLEAR", 0 ), this::doClearSlots );
+	}
+
+	private void doClearSlots(){
 		synchronized ( inputs ) {
 			for (int i = 0; i < inputs.length; i++) {
 				if (inputs[i] != null && inputs[i].item() != null) {
@@ -997,13 +1029,8 @@ public class AlchemyScene extends PixelScene {
 				@Override
 				protected void onClick() {
 					super.onClick();
-					Item item = InputButton.this.item;
-					if (item != null) {
-						if (!item.collect()) {
-							Dungeon.level.drop(item, Dungeon.hero.pos);
-						}
-						InputButton.this.item(null);
-						updateState();
+					if (InputButton.this.item != null) {
+						removeInput(java.util.Arrays.asList(inputs).indexOf(InputButton.this)); // spd-ranked: T0.8
 					}
 					AlchemyScene.this.addToFront(WndBag.getBag( itemSelector ));
 				}

@@ -214,6 +214,7 @@ public class Game implements ApplicationListener {
 	}
 	
 	public static void switchScene(Class<? extends Scene> c, SceneChangeCallback callback) {
+		if (switchHook != null) switchHook.accept(c); // spd-ranked
 		instance.sceneClass = c;
 		instance.requestedReset = true;
 		instance.onChange = callback;
@@ -312,6 +313,8 @@ public class Game implements ApplicationListener {
 	// spd-ranked: T0.8 lets the command log tell player input (pointer and key events) from game code
 	public static java.util.function.UnaryOperator<Callback> renderCallbackHook;
 	public static java.util.function.Consumer<Runnable> inputHook;
+	/** spd-ranked: told of every scene switch request, before it is made */
+	public static java.util.function.Consumer<Class<? extends Scene>> switchHook;
 
 	public static void runOnRenderThread(Callback c){
 		if (renderCallbackHook != null) c = renderCallbackHook.apply(c); // spd-ranked

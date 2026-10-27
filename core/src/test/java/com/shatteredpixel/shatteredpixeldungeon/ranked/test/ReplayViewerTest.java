@@ -84,6 +84,8 @@ class ReplayViewerTest {
 				ReplayPlayback.Result res = pb.frame();
 				if (res == ReplayPlayback.Result.ENDED) return pb;
 				if (res == ReplayPlayback.Result.SWITCH){
+					// the viewer follows the game there (InterlevelScene, AlchemyScene) or stops
+					assertNull( ReplayViewer.unfollowable( Game.pendingScene() ) );
 					assertTrue( pb.runner.transitionHeadless(), pb.runner.stop );
 					pb.sceneBuilt();
 					continue;
@@ -98,7 +100,7 @@ class ReplayViewerTest {
 	}
 
 	/** a live Ranked game from ChoiceReplayTest's scripts, then watched as the viewer does */
-	private static void liveThenWatch( HeroClass cls, Runnable setup, Player player, long viewerSeed ){
+	static void liveThenWatch( HeroClass cls, Runnable setup, Player player, long viewerSeed ){
 		ChoiceReplayTest.Played p = ChoiceReplayTest.playAndReplay( cls, setup, player );
 		ChoiceReplayTest.assertSameGame( p );
 
@@ -174,6 +176,30 @@ class ReplayViewerTest {
 				.step( r -> tap( freeNeighbour() ) );
 		liveThenWatch( HeroClass.CLERIC, setup, pl, 3 );
 		assertTrue( Dungeon.hero.isAlive() );
+	}
+
+	@Test
+	void brewingInTheAlchemySceneWatches(){
+		Player pl = new Player()
+				.step( r -> tap( AlchemyReplayTest.POT[0] ) )
+				.step( r -> AlchemyReplayTest.putIn( r, 0, AlchemyReplayTest.seed() ) )
+				.step( r -> AlchemyReplayTest.putIn( r, 1, AlchemyReplayTest.seed() ) )
+				.step( r -> AlchemyReplayTest.putIn( r, 2, AlchemyReplayTest.seed() ) )
+				.step( r -> click( r, AlchemyReplayTest.craftButton( 0 ) ) )
+				.step( r -> com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon.seamlessResetScene() ) // alchemy guide: RESET
+				.step( r -> AlchemyReplayTest.exit( r ) )
+				.step( r -> tap( freeNeighbour() ) );
+		liveThenWatch( HeroClass.WARRIOR, AlchemyReplayTest.SETUP, pl, 4 );
+		assertEquals( 1, AlchemyReplayTest.potions(), "the watched game brewed it too" );
+		assertTrue( Game.scene() instanceof GameScene );
+	}
+
+	@Test
+	void theSurfaceAndAClientClosedInAlchemyAreNotFollowed(){
+		Headless.boot();
+		assertNull( ReplayViewer.unfollowable( com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene.class ) );
+		assertTrue( ReplayViewer.unfollowable( com.shatteredpixel.shatteredpixeldungeon.scenes.SurfaceScene.class ) != null );
+		assertTrue( ReplayViewer.unfollowable( com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene.class ) != null );
 	}
 
 	@Test

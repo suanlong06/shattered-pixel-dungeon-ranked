@@ -16,7 +16,7 @@ import java.util.List;
  * (headless backend) and {@link HeadlessGame#install}; one replay at a time, the game is static.
  *
  * What T0.8 cannot replay yet is reported in {@link Facts#unsupported} instead of being guessed:
- * a switch to a scene other than a level (alchemy), a command that cannot be applied, a window
+ * a switch to a scene other than a level or alchemy (the surface), a command that cannot be applied, a window
  * still open when a command that needs none comes (the client closed it in a way that was not
  * recorded), a NOTE the client logged, or any other runner stop than running out of commands or
  * the hero's death.

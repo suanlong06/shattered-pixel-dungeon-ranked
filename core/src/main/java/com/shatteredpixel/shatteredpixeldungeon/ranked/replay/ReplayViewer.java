@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.net.RankedSession;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.TurnRunner;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
@@ -30,7 +31,8 @@ import com.watabou.utils.Signal;
  * like the recorded run started (seed, class, mode, challenges); then, instead of the actor
  * thread, {@link #update} steps the game from GameScene.update() with a {@link ReplayPlayback},
  * which feeds the recorded commands in exactly as the server's replay check does. Level changes
- * go through the game's own InterlevelScene. The player's taps and keys do not reach the game
+ * go through the game's own InterlevelScene; alchemy inputs are stepped from AlchemyScene.update()
+ * the same way. The player's taps and keys do not reach the game
  * while watching (only the replay controls), and nothing of the replay is kept: no badges,
  * rankings, journal, bones or ghosts, and the save slot is deleted on exit.
  */
@@ -112,12 +114,29 @@ public final class ReplayViewer {
 		return current != null;
 	}
 
-	/** GameScene.update, every frame while watching */
-	public static void update( GameScene scene ){
+	/** GameScene.update and AlchemyScene.update, every frame while watching */
+	public static void update( Scene scene ){
 		if (current != null) current.frame( scene );
 	}
 
-	private void frame( GameScene scene ){
+	/** the scenes the replay runs in; the input gate and the controls only work there */
+	static boolean playsIn( Scene s ){
+		return s instanceof GameScene || s instanceof AlchemyScene;
+	}
+
+	/**
+	 * Whether the viewer can follow the game to the scene it asked for, as the server's replay does:
+	 * a level change, into alchemy, its reset, and back to the level. (A client closed in alchemy
+	 * comes back from its save without the scene's destroy; the real game cannot do that here.)
+	 */
+	public static String unfollowable( Class<?> next ){
+		if (next == AlchemyScene.class) return null;
+		if (next == GameScene.class && Game.scene() instanceof AlchemyScene) return null;
+		if (Game.scene() instanceof AlchemyScene && next == InterlevelScene.class) return "client closed in alchemy";
+		return TurnRunner.unsupportedSwitch( next );
+	}
+
+	private void frame( Scene scene ){
 		// leaving: the switch to the title screen happens next frame, the run must not request another
 		if (exiting) return;
 		if (scene != lastScene){
@@ -127,9 +146,9 @@ public final class ReplayViewer {
 			scene.add( controls );
 		}
 		if (playback.frame() == ReplayPlayback.Result.SWITCH && Game.switchingScene()){
-			String unsupported = TurnRunner.unsupportedSwitch( Game.pendingScene() );
+			String unsupported = unfollowable( Game.pendingScene() );
 			if (unsupported != null){
-				// the game went somewhere replay cannot follow (alchemy, the amulet...)
+				// the game went somewhere replay cannot follow (the surface, the amulet...)
 				playback.end( unsupported );
 				exit( Messages.get( ReplayViewer.class, "unsupported_scene" ) );
 			}
@@ -187,7 +206,7 @@ public final class ReplayViewer {
 		public boolean onSignal( PointerEvent e ){
 			// moves, releases and hovers pass: nothing clicks without a press it saw
 			if (current == null || e == null || e.type != PointerEvent.Type.DOWN) return false;
-			if (!(Game.scene() instanceof GameScene)) return false;
+			if (!playsIn( Game.scene() )) return false;
 			ReplayControls c = current.controls;
 			return c == null || !c.hits( e );
 		}
@@ -196,7 +215,7 @@ public final class ReplayViewer {
 	private static final Signal.Listener<KeyEvent> KEY_GATE = new Signal.Listener<KeyEvent>(){
 		@Override
 		public boolean onSignal( KeyEvent e ){
-			if (current == null || !(Game.scene() instanceof GameScene)) return false;
+			if (current == null || !playsIn( Game.scene() )) return false;
 			if (e.pressed && KeyBindings.getActionForKey( e ) == GameAction.BACK) exit( null );
 			return true;
 		}

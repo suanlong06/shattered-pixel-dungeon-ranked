@@ -60,8 +60,11 @@ public final class CommandLog {
 		heroActs.set( 0 );
 		scope = 0;
 		inputDepth = 0;
+		inAlchemy = false;
+		alchemySwitch = null;
 		Game.renderCallbackHook = CommandLog::wrapCallback;
 		Game.inputHook = CommandLog::asInput;
+		Game.switchHook = CommandLog::sceneRequested;
 	}
 
 	public static synchronized List<Command> stop(){
@@ -69,6 +72,7 @@ public final class CommandLog {
 		recording = null;
 		if (!suspended) Game.renderCallbackHook = null;
 		Game.inputHook = null;
+		Game.switchHook = null;
 		return r;
 	}
 
@@ -86,9 +90,11 @@ public final class CommandLog {
 			heroActs.set( 0 );
 			Game.renderCallbackHook = null;
 			Game.inputHook = null;
+			Game.switchHook = null;
 		} else if (recording != null) {
 			Game.renderCallbackHook = CommandLog::wrapCallback;
 			Game.inputHook = CommandLog::asInput;
+			Game.switchHook = CommandLog::sceneRequested;
 		}
 	}
 
@@ -249,10 +255,11 @@ public final class CommandLog {
 			add( i >= 0 ? Command.select( i ) : Command.note( "selected an item outside the belongings" ) );
 			return asGameplay( body );
 		}
-		List<Button> buttons = buttons( w );
+		String cls = buttonName( b );
+		List<Button> buttons = buttons( w, cls );
 		int i = buttons.indexOf( b );
 		if (i < 0) return body.getAsBoolean();
-		Command c = Command.button( kind, i, buttons.size(), windowName( w ) );
+		Command c = Command.button( kind, i, buttons.size(), windowName( w ), cls );
 		// a long press that is not handled is no click at all
 		if (kind == 3){
 			synchronized (CommandLog.class){
@@ -321,6 +328,17 @@ public final class CommandLog {
 		return out;
 	}
 
+	/** the buttons of one class in the window, depth first in member order */
+	public static List<Button> buttons( Window w, String buttonClass ){
+		List<Button> out = new ArrayList<>();
+		for (Button b : buttons( w )) if (buttonName( b ).equals( buttonClass )) out.add( b );
+		return out;
+	}
+
+	public static String buttonName( Button b ){
+		return b.getClass().getName().replace( "com.shatteredpixel.shatteredpixeldungeon.", "" );
+	}
+
 	private static void collect( Group g, List<Button> out ){
 		for (Gizmo m : g.membersCopy()){
 			if (m == null) continue;
@@ -331,6 +349,83 @@ public final class CommandLog {
 
 	public static String windowName( Window w ){
 		return w.getClass().getName().replace( "com.shatteredpixel.shatteredpixeldungeon.", "" );
+	}
+
+	// alchemy: AlchemyScene is no window, and the player's inputs there change the game. They are
+	// recorded where they take effect (ALCH, ENERGIZE), whichever button, key, radial menu or guide
+	// recipe led there; the windows on the way (item selectors, energize) are UI only.
+
+	/** an AlchemyScene is up (true from its create to the destroy that leaves alchemy) */
+	private static boolean inAlchemy = false;
+	/** the scene a recorded EXIT or RESET switches to, until the switch is made */
+	private static Class<?> alchemySwitch = null;
+
+	/** AlchemyScene: an input that changes the game; recorded if the player gave it */
+	public static void alchemy( Command c, Runnable body ){
+		if (canRecord()){
+			add( c );
+			runAsGameplay( body );
+		} else {
+			body.run();
+		}
+	}
+
+	/** AlchemyScene.addInput: the item is addressed by its index in the belongings */
+	public static void alchemyInput( Item item, Runnable body ){
+		if (canRecord() && item != null){
+			int i = Command.indexOf( Dungeon.hero, item );
+			add( i >= 0 ? Command.alchemy( "IN", i ) : Command.note( "alchemy input outside the belongings" ) );
+			runAsGameplay( body );
+		} else {
+			body.run();
+		}
+	}
+
+	/** WndEnergizeItem.energizeAll / energizeOne */
+	public static void energize( Item item, boolean all, Runnable body ){
+		if (canRecord() && Dungeon.hero != null){
+			int i = Command.indexOf( Dungeon.hero, item );
+			add( i >= 0 ? Command.energize( i, all ) : Command.note( "energized an item outside the belongings" ) );
+			runAsGameplay( body );
+		} else {
+			body.run();
+		}
+	}
+
+	/** AlchemyScene.create */
+	public static synchronized void alchemyOpened(){
+		if (!recording()) return;
+		inAlchemy = true;
+		alchemySwitch = null;
+	}
+
+	/**
+	 * Game.switchScene: leaving alchemy (exit button, back key) and resetting its scene (alchemy
+	 * guide, rotation, window size) are inputs, whoever asked; entering it is the game's doing.
+	 */
+	private static synchronized void sceneRequested( Class<?> next ){
+		if (!recording() || scope > 0 || !inAlchemy || alchemySwitch != null) return;
+		if (next == com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene.class){
+			add( Command.alchemy( "RESET", 0 ) );
+		} else if (next == com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene.class){
+			add( Command.alchemy( "EXIT", 0 ) );
+		} else {
+			add( Command.note( "left alchemy for " + (next == null ? "none" : next.getSimpleName()) ) );
+		}
+		alchemySwitch = next;
+	}
+
+	/** AlchemyScene.destroy, before it gives the inputs back and saves */
+	public static synchronized void alchemyClosing(){
+		if (!recording() || !inAlchemy) return;
+		// closed without a switch: the app is closing, and the save it makes has left alchemy
+		if (alchemySwitch == null) sceneRequested( com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene.class );
+		inAlchemy = alchemySwitch == com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene.class;
+	}
+
+	/** AlchemyScene.onPause: with energy just made, pausing gives the inputs back and saves */
+	public static synchronized void alchemyPaused(){
+		if (recording() && inAlchemy) add( Command.alchemy( "PAUSE", 0 ) );
 	}
 
 	// old hooks, kept for the item and hero call sites
@@ -360,6 +455,7 @@ public final class CommandLog {
 	private static final String LOG = "spdr_command_log";
 	private static final String ACTS = "spdr_command_log_acts";
 	private static final String BUSY = "spdr_command_log_busy";
+	private static final String ALCH = "spdr_command_log_alchemy";
 
 	/** Dungeon.saveGame */
 	public static synchronized void store( Bundle bundle ){
@@ -368,6 +464,8 @@ public final class CommandLog {
 		bundle.put( ACTS, heroActs.get() );
 		// what loading drops: the hero's current action and resting (a level change has neither)
 		bundle.put( BUSY, Dungeon.hero != null && (Dungeon.hero.curAction != null || Dungeon.hero.resting) );
+		// saved in alchemy (not on the way out): loading it comes back to the level, without the inputs
+		bundle.put( ALCH, inAlchemy );
 	}
 
 	/**
@@ -382,6 +480,7 @@ public final class CommandLog {
 			recording.add( Command.cancel( false ).at( bundle.getInt( ACTS ) ) );
 			recording.add( Command.note( "resumed from a save made while the hero was acting" ) );
 		}
+		if (bundle.getBoolean( ALCH )) recording.add( Command.alchemy( "LOAD", 0 ) );
 	}
 
 	public static String toText( List<Command> cmds ){
