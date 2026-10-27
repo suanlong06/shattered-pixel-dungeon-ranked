@@ -131,7 +131,12 @@ public class WndEnergizeItem extends WndInfoItem {
 		}
 	}
 
+	// spd-ranked: T0.8 recorded as ENERGIZE i all
 	public static void energizeAll(Item item ) {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.energize( item, true, () -> doEnergizeAll( item ) );
+	}
+
+	private static void doEnergizeAll(Item item ) {
 
 		if (item.isEquipped( Dungeon.hero ) && !((EquipableItem)item).doUnequip( Dungeon.hero, false )) {
 			return;
@@ -140,7 +145,12 @@ public class WndEnergizeItem extends WndInfoItem {
 		energize(item);
 	}
 
+	// spd-ranked: T0.8 recorded as ENERGIZE i one
 	public static void energizeOne( Item item ) {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.energize( item, false, () -> doEnergizeOne( item ) );
+	}
+
+	private static void doEnergizeOne( Item item ) {
 
 		if (item.quantity() <= 1) {
 			energizeAll( item );

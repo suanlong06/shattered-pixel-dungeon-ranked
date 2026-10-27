@@ -273,7 +273,7 @@ public class SPDSettings extends GameSettings {
 	}
 
 	public static boolean supportNagged() {
-		return getBoolean(KEY_SUPPORT_NAGGED, false);
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.supportNagged( getBoolean(KEY_SUPPORT_NAGGED, false) ); // spd-ranked: T0.8
 	}
 
 	public static void victoryNagged( boolean value ) {
@@ -289,7 +289,7 @@ public class SPDSettings extends GameSettings {
 	}
 
 	public static int vaultInjureWarns() {
-		return getInt(KEY_VAULT_INJURE_WARNS, 0);
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.CleanProfile.vaultInjureWarns( getInt(KEY_VAULT_INJURE_WARNS, 0) ); // spd-ranked: T0.8
 	}
 
 	//Input
