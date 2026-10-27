@@ -10,31 +10,109 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * spd-ranked (A1): the server's game logic, independent of sockets. Every call takes the
  * current server time, so tests drive it with a fake clock. Calls are serialised.
  *
  * Match lifecycle (T0.5 2.1): QUEUED -> PREPARING (seed taken, waiting for READY) ->
- * COUNTDOWN (START sent with t0) -> RUNNING -> FINISHED or VOIDED.
+ * COUNTDOWN (START sent with t0) -> RUNNING -> VERIFYING -> FINISHED or VOIDED.
  * The server owns time and the verdict: clients only report progress, and a report is
  * a claim until replay verification (A3) accepts it through {@link Verifier}.
+ *
+ * Command log (A3, docs/A3-replay-verifier.md): each client streams its commands in LOG frames,
+ * {@code {from, cmds, cls}}: {@code from} is the index of the first command in {@code cmds}
+ * (one command per line), {@code cls} the hero class (required with from = 0). A part that
+ * starts past the end of the log is refused with {@code expected}; commands already received
+ * are skipped, so a client can resend after RESUME (RESUMED carries {@code logCount}).
+ * Every PROGRESS, DIED and CLEARED must follow the LOG part that brings the log up to it: the
+ * verifier replays the log to its end and compares the result with the side's last report.
  *
  * Not built on purpose (rules the user has not settled): mid-match seed reroll vote and
  * the shared 180 s pause budget. Both would be new frame types plus a Match field.
  */
 public final class Hub {
 
-	public enum State { PREPARING, COUNTDOWN, RUNNING, FINISHED, VOIDED }
+	public enum State { PREPARING, COUNTDOWN, RUNNING, VERIFYING, FINISHED, VOIDED }
 
 	/** one connection; the transport decides how frames get there */
 	public interface Link {
 		void send(Frame f);
 	}
 
-	/** A3 hook: decides whether a verdict stands before ratings change. */
+	/** A3 hook: decides whether a verdict stands before ratings change. May answer later, from any thread. */
 	public interface Verifier {
-		boolean accept(String matchId, MatchEnd.Verdict verdict);
+		void verify(Evidence e, Consumer<Check> done);
+	}
+
+	public enum Result {
+		/** replay agrees with every claim the verdict uses */
+		ACCEPT,
+		/** replay contradicts a claim: the match is voided */
+		REJECT,
+		/** the log uses something replay cannot follow yet (T0.8 limits); see Config.acceptUnverifiable */
+		UNVERIFIABLE
+	}
+
+	public static final class Check {
+		public final Result result;
+		/** per side: null if not replayed, else what replay found (stored with the log) */
+		public final String[] detail;
+
+		public Check(Result result, String detailA, String detailB) {
+			this.result = result;
+			this.detail = new String[]{detailA, detailB};
+		}
+	}
+
+	/** everything a verifier needs; copies, so the hub does not wait on it */
+	public static final class Evidence {
+		public final String matchId;
+		public final long seed;
+		public final MatchEnd.Verdict verdict;
+		public final MatchEnd.Rules rules;
+		public final SideLog[] sides;
+
+		Evidence(String matchId, long seed, MatchEnd.Verdict verdict, MatchEnd.Rules rules, SideLog a, SideLog b) {
+			this.matchId = matchId;
+			this.seed = seed;
+			this.verdict = verdict;
+			this.rules = rules;
+			this.sides = new SideLog[]{a, b};
+		}
+
+		/** forfeit and disconnect are facts the server saw itself; every other verdict rests on reports */
+		public boolean needsReplay() {
+			return needsReplay(verdict);
+		}
+
+		static boolean needsReplay(MatchEnd.Verdict v) {
+			return v.reason != MatchEnd.Reason.FORFEIT && v.reason != MatchEnd.Reason.DISCONNECT;
+		}
+	}
+
+	/** one side's log and last report */
+	public static final class SideLog {
+		public final String heroClass;
+		public final List<String> commands;
+		public final int depth, bossesKilled;
+		public final long turns;
+		public final boolean dead, cleared;
+
+		public SideLog(String heroClass, List<String> commands, int depth, int bossesKilled, long turns, boolean dead, boolean cleared) {
+			this.heroClass = heroClass;
+			this.commands = commands;
+			this.depth = depth;
+			this.bossesKilled = bossesKilled;
+			this.turns = turns;
+			this.dead = dead;
+			this.cleared = cleared;
+		}
+
+		SideLog(Side s) {
+			this(s.heroClass, new ArrayList<>(s.log), s.p.depth, s.p.bossesKilled, s.p.turns, s.p.deathAt >= 0, s.p.clearedAt >= 0);
+		}
 	}
 
 	public static final class Config {
@@ -45,7 +123,11 @@ public final class Hub {
 		public int strikeLimit = 3;
 		public long strikeWindowMs = 24L * 3600_000L;
 		public MatchEnd.Rules rules = MatchEnd.Rules.defaults();
-		public Verifier verifier = (id, v) -> true;
+		public Verifier verifier = (e, done) -> done.accept(new Check(Result.ACCEPT, null, null));
+		/** what an UNVERIFIABLE check does: void the match (default, ratings unchanged) or count the verdict */
+		public boolean acceptUnverifiable = false;
+		/** longest command log per side */
+		public int maxLogCommands = 500_000;
 	}
 
 	static final class Side {
@@ -56,6 +138,8 @@ public final class Hub {
 		Link link;
 		boolean ready;
 		final MatchEnd.Player p = new MatchEnd.Player();
+		String heroClass;
+		final List<String> log = new ArrayList<>();
 
 		Side(long player, String name, double rating, String token) {
 			this.player = player;
@@ -73,6 +157,7 @@ public final class Hub {
 		final Side[] sides;
 		State state = State.PREPARING;
 		long t0;
+		MatchEnd.Verdict pending;
 
 		Match(String id, String platform, long seed, long created, Side a, Side b) {
 			this.id = id;
@@ -105,6 +190,8 @@ public final class Hub {
 	private final Map<String, Match> byToken = new HashMap<>();
 	private final SecureRandom tokens = new SecureRandom();
 	private long nextMatch = 1;
+	/** latest server time seen, for verifier answers that arrive between calls */
+	private long lastNow;
 
 	public Hub(Config cfg, Storage db, long now) throws SQLException {
 		this.cfg = cfg;
@@ -117,6 +204,7 @@ public final class Hub {
 	}
 
 	public synchronized void disconnect(Link link, long now) throws SQLException {
+		lastNow = Math.max(lastNow, now);
 		Client c = clients.remove(link);
 		if (c == null || c.player < 0) return;
 		if (byPlayer.get(c.player) == c) byPlayer.remove(c.player);
@@ -136,6 +224,7 @@ public final class Hub {
 	}
 
 	public synchronized void receive(Link link, Frame f, long now) throws SQLException {
+		lastNow = Math.max(lastNow, now);
 		Client c = clients.get(link);
 		if (c == null) return;
 		if (f.type.equals(Frame.PING)) {
@@ -156,12 +245,14 @@ public final class Hub {
 			case Frame.RESUME: resume(c, f); break;
 			case Frame.READY: ready(c, now); break;
 			case Frame.PROGRESS: case Frame.DIED: case Frame.CLEARED: case Frame.RESIGN: report(c, f, now); break;
+			case Frame.LOG: log(c, f); break;
 			default: error(link, "unknown type " + f.type);
 		}
 	}
 
 	/** pairs the queue, starts and times out matches; call about once a second */
 	public synchronized void tick(long now) throws SQLException {
+		lastNow = Math.max(lastNow, now);
 		for (Matchmaker.Entry[] pair : queue.pair(now)) {
 			start(pair[0], pair[1], now);
 		}
@@ -291,9 +382,59 @@ public final class Hub {
 		JsonObject d = startData(m);
 		d.addProperty("depth", s.p.depth);
 		d.addProperty("turns", s.p.turns);
+		d.addProperty("logCount", s.log.size());
 		c.link.send(new Frame(Frame.RESUMED, 0, m.id, d));
 		opponent(m, s);
 		opponent(m, other(m, s));
+	}
+
+	private void log(Client c, Frame f) {
+		Match m = c.match;
+		// the first part (hero class, no commands yet) comes with START, during the countdown
+		if (m == null || (m.state != State.RUNNING && m.state != State.COUNTDOWN) || (f.matchId != null && !f.matchId.equals(m.id))) {
+			error(c.link, "no running match");
+			return;
+		}
+		Side s = side(m, c.player);
+		if (s.p.deathAt >= 0 || s.p.clearedAt >= 0) {
+			error(c.link, "log is closed");
+			return;
+		}
+		int from = f.i("from", -1);
+		String cls = f.s("cls"), text = f.s("cmds");
+		if (from < 0 || text == null) {
+			error(c.link, "LOG needs from and cmds");
+			return;
+		}
+		if (s.heroClass == null) {
+			if (from != 0 || cls == null) {
+				error(c.link, "first LOG needs from 0 and cls");
+				return;
+			}
+			s.heroClass = cls;
+		} else if (cls != null && !cls.equals(s.heroClass)) {
+			error(c.link, "hero class changed");
+			return;
+		}
+		if (from > s.log.size()) {
+			JsonObject d = new JsonObject();
+			d.addProperty("message", "log gap");
+			d.addProperty("expected", s.log.size());
+			c.link.send(new Frame(Frame.ERROR, 0, m.id, d));
+			return;
+		}
+		int i = from;
+		for (String line : text.split("\n")) {
+			line = line.trim();
+			if (line.isEmpty()) continue;
+			// commands already received (a resend) are skipped
+			if (i++ < s.log.size()) continue;
+			if (s.log.size() >= cfg.maxLogCommands) {
+				error(c.link, "log too long");
+				return;
+			}
+			s.log.add(line);
+		}
 	}
 
 	private void report(Client c, Frame f, long now) throws SQLException {
@@ -350,11 +491,30 @@ public final class Hub {
 			voidMatch(m, now, "BOTH_DISCONNECTED", -1);
 			return;
 		}
-		if (!cfg.verifier.accept(m.id, v)) {
-			voidMatch(m, now, "REJECTED", -1);
-			return;
+		m.state = State.VERIFYING;
+		m.pending = v;
+		Evidence e = new Evidence(m.id, m.seed, v, cfg.rules, new SideLog(m.sides[0]), new SideLog(m.sides[1]));
+		cfg.verifier.verify(e, check -> verified(m, check));
+	}
+
+	/** the verifier's answer, right away (inside judge) or later from the verifier's thread */
+	private synchronized void verified(Match m, Check check) {
+		if (m.state != State.VERIFYING || matches.get(m.id) != m) return;
+		try {
+			if (Evidence.needsReplay(m.pending)) {
+				for (int i = 0; i < 2; i++) {
+					Side s = m.sides[i];
+					db.saveReplay(m.id, i, s.heroClass, String.join("\n", s.log), check.result.name(), check.detail[i]);
+				}
+			}
+			if (check.result == Result.ACCEPT || (check.result == Result.UNVERIFIABLE && cfg.acceptUnverifiable)) {
+				finish(m, m.pending, lastNow);
+			} else {
+				voidMatch(m, lastNow, check.result == Result.REJECT ? "REJECTED" : "UNVERIFIABLE", -1);
+			}
+		} catch (SQLException ex) {
+			throw new RuntimeException(ex);
 		}
-		finish(m, v, now);
 	}
 
 	private void finish(Match m, MatchEnd.Verdict v, long now) throws SQLException {

@@ -21,6 +21,11 @@ public final class CommandLog {
 
 	public static void start(){ recording = new ArrayList<>(); }
 	public static List<Command> stop(){ List<Command> r = recording; recording = null; return r; }
+	/** what was recorded since start(), read-only; empty when not recording */
+	public static List<Command> recorded(){
+		return recording == null ? java.util.Collections.<Command>emptyList() : java.util.Collections.unmodifiableList( recording );
+	}
+
 	public static boolean recording(){ return recording != null && !suspended; }
 
 	static void suspend( boolean s ){ suspended = s; }

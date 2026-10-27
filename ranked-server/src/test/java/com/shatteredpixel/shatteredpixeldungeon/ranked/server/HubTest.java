@@ -244,7 +244,7 @@ class HubTest {
 
 	@Test
 	void verifierCanRejectAVerdict() throws Exception {
-		cfg.verifier = (id, v) -> false;
+		cfg.verifier = (e, done) -> done.accept(new Hub.Check(Hub.Result.REJECT, "x", "y"));
 		FakeLink[] p = running();
 		send(p[1], Frame.DIED, "depth", 2, "turns", 50);
 		assertEquals("VOID", p[0].last(Frame.RESULT).s("outcome"));
