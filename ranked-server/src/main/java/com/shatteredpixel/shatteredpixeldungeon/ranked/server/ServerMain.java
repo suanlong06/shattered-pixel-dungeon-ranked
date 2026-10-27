@@ -18,7 +18,8 @@ import javax.net.ssl.SSLContext;
  * <pre>
  *   spdr.port      (default 7420)
  *   spdr.db        (default ranked.db)
- *   spdr.build     build fingerprint clients must send (required)
+ *   spdr.build     build fingerprint clients must send (default: the bytecode hash in core's
+ *                  ranked/build-fingerprint.txt, the same one the game sends)
  *   spdr.season    (default 1)
  *   spdr.seedpool  A4 pool file to load; known seeds keep their used state
  *   spdr.keystore / spdr.keystorePass   PKCS12 keystore; without it the server runs plain TCP
@@ -28,8 +29,8 @@ public final class ServerMain {
 
 	public static void main(String[] args) throws Exception {
 		Hub.Config cfg = new Hub.Config();
-		cfg.build = System.getProperty("spdr.build");
-		if (cfg.build == null) throw new IllegalArgumentException("set -Dspdr.build=<fingerprint>");
+		cfg.build = System.getProperty("spdr.build", coreFingerprint());
+		if (cfg.build == null) throw new IllegalArgumentException("no fingerprint in core; set -Dspdr.build=<fingerprint>");
 		cfg.season = Integer.getInteger("spdr.season", 1);
 		int port = Integer.getInteger("spdr.port", 7420);
 
@@ -62,5 +63,20 @@ public final class ServerMain {
 		server.start();
 		System.out.println("spd-ranked server on port " + server.port() + ", build " + cfg.build + ", season " + cfg.season);
 		Thread.currentThread().join();
+	}
+
+	/** the bytecode hash core's build wrote (core/build.gradle, rankedFingerprint), or null */
+	static String coreFingerprint() {
+		try (java.io.InputStream in = ServerMain.class.getResourceAsStream("/ranked/build-fingerprint.txt")) {
+			if (in == null) return null;
+			java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+			byte[] buf = new byte[256];
+			int n;
+			while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+			String fp = new String(b.toByteArray(), StandardCharsets.UTF_8).trim();
+			return fp.isEmpty() ? null : fp;
+		} catch (java.io.IOException e) {
+			return null;
+		}
 	}
 }

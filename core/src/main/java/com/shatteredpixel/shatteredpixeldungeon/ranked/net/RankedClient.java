@@ -77,6 +77,7 @@ public final class RankedClient {
 	private volatile NetFrame lastReport;
 	private volatile int rating = -1;
 	private volatile long playerId = -1;
+	private volatile long resumeLostAt = -1;
 
 	public RankedClient( Config cfg, Listener listener ){
 		this.cfg = cfg;
@@ -97,6 +98,24 @@ public final class RankedClient {
 		thread.setDaemon( true );
 		thread.start();
 	}
+
+	/**
+	 * Rejoins a match after the app was closed: connects, then HELLO + RESUME with the saved
+	 * token. {@code lostAt} is when the link went away, so the 5 minute window is not restarted.
+	 */
+	public synchronized void resume( String matchId, String resumeToken, long lostAt ){
+		if (thread != null) return;
+		this.matchId = matchId;
+		this.resumeToken = resumeToken;
+		this.resumeLostAt = lostAt;
+		closed = false;
+		setState( State.RECONNECTING );
+		thread = new Thread( this::run, "ranked-net" );
+		thread.setDaemon( true );
+		thread.start();
+	}
+
+	public String resumeToken(){ return resumeToken; }
 
 	public void queue(){ send( new NetFrame( NetFrame.QUEUE, null ) ); }
 
@@ -156,7 +175,7 @@ public final class RankedClient {
 	}
 
 	private void run(){
-		long lostAt = -1;
+		long lostAt = resumeLostAt;
 		long backoff = cfg.firstBackoffMs;
 		while (!closed){
 			try {

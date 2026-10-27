@@ -115,6 +115,84 @@ class ClientInteropTest {
 		}
 	}
 
+	/** the app closed mid-match: a new client with the saved token rejoins, then resigns */
+	@Test
+	void rejoinAfterRestartThenResign() throws Exception {
+		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
+			db.addSeeds(Arrays.asList(7L));
+			Hub.Config cfg = new Hub.Config();
+			cfg.countdownMs = 0;
+			try (Server server = new Server(new Hub(cfg, db, System.currentTimeMillis()), new ServerSocket(0))) {
+				server.start();
+				Probe pa = new Probe(), pb = new Probe(), pa2 = new Probe();
+				RankedClient a = client(server.port(), "dev", "alice", pa), b = client(server.port(), "dev", "bob", pb);
+				RankedClient a2 = client(server.port(), "dev", "alice", pa2);
+				try {
+					a.start();
+					b.start();
+					pa.awaitState(State.IDLE);
+					pb.awaitState(State.IDLE);
+					a.queue();
+					b.queue();
+					pa.await(NetFrame.MATCH_FOUND);
+					pb.await(NetFrame.MATCH_FOUND);
+					a.ready();
+					b.ready();
+					pa.await(NetFrame.START);
+					Thread.sleep(1500);
+					a.progress(2, 50, 0);
+					pb.awaitOpponent(true, 2);
+
+					// what RankedSession saves, then the app is killed
+					String matchId = a.matchId(), token = a.resumeToken();
+					long seen = System.currentTimeMillis();
+					a.close();
+					pb.awaitOpponent(false, 2);
+
+					a2.resume(matchId, token, seen);
+					NetFrame resumed = pa2.await(NetFrame.RESUMED);
+					assertEquals(7L, resumed.l("seed", -1));
+					assertEquals(2, resumed.i("depth", -1));
+					assertEquals(State.STARTED, a2.state());
+					pb.awaitOpponent(true, 2);
+
+					a2.resign();
+					assertEquals("LOSS", pa2.await(NetFrame.RESULT).s("outcome"));
+					assertEquals("WIN", pb.await(NetFrame.RESULT).s("outcome"));
+				} finally {
+					a.close();
+					a2.close();
+					b.close();
+				}
+			}
+		}
+	}
+
+	@Test
+	void staleTokenIsRefused() throws Exception {
+		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
+			try (Server server = new Server(new Hub(new Hub.Config(), db, System.currentTimeMillis()), new ServerSocket(0))) {
+				server.start();
+				Probe p = new Probe();
+				RankedClient c = client(server.port(), "dev", "dave", p);
+				try {
+					c.resume("m-gone", "no-such-token", System.currentTimeMillis());
+					assertEquals("nothing to resume", p.errors.poll(10, TimeUnit.SECONDS));
+					p.awaitState(State.OFFLINE);
+				} finally {
+					c.close();
+				}
+			}
+		}
+	}
+
+	@Test
+	void coreCarriesBytecodeFingerprint() {
+		String fp = ServerMain.coreFingerprint();
+		assertNotNull(fp, "core/build.gradle rankedFingerprint did not run");
+		assertTrue(fp.matches("spdr-[0-9a-f]{16}"), fp);
+	}
+
 	@Test
 	void buildMismatchIsReported() throws Exception {
 		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
