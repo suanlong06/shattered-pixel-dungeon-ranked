@@ -137,7 +137,7 @@ public class ActionIndicator extends Tag {
 	protected void onClick() {
 		super.onClick();
 		if (action != null && Dungeon.hero.ready) {
-			action.doAction();
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.action() ); // spd-ranked: action.doAction()
 		}
 	}
 

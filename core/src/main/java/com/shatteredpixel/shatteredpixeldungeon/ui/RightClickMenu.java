@@ -126,8 +126,8 @@ public class RightClickMenu extends Component {
 						GameScene.nextWndOffset(childOffset);
 					}
 					if (item != null){
-						com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, options[finalI] ); // spd-ranked
-						item.execute(Dungeon.hero, options[finalI]);
+						final Item spdrItem = item; final String spdrAction = options[finalI]; // spd-ranked: recorded as Command ITEM
+						com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 
 						if (options[finalI].equals(item.defaultAction()) && item.usesTargeting){
 							InventoryPane.useTargeting();

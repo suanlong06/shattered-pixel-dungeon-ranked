@@ -49,8 +49,8 @@ public class LootIndicator extends Tag {
 		slot = new ItemSlot() {
 			protected void onClick() {
 				LootIndicator.this.onClick();
-				if (Dungeon.hero.ready && Dungeon.hero.handle(Dungeon.hero.pos)){
-					Dungeon.hero.next();
+				if (Dungeon.hero.ready){
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.move( Dungeon.hero.pos ) ); // spd-ranked: hero.handle + next
 				}
 
 			}

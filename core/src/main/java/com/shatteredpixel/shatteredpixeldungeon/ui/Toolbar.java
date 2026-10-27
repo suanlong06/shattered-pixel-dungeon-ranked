@@ -177,8 +177,8 @@ public class Toolbar extends Component {
 								});
 							} else {
 
-								com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
-								item.execute(Dungeon.hero);
+								final Item spdrItem = item; final String spdrAction = item.defaultAction(); // spd-ranked: recorded as Command ITEM
+								com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 								if (item.usesTargeting) {
 									QuickSlotButton.useTargeting(idx);
 								}
@@ -252,21 +252,8 @@ public class Toolbar extends Component {
 			@Override
 			protected void onClick() {
 				if (Dungeon.hero != null && Dungeon.hero.ready && !GameScene.cancel()) {
-					Dungeon.hero.waitOrPickup = true;
-					if ((Dungeon.level.heaps.get(Dungeon.hero.pos) != null || Dungeon.hero.canSelfTrample())
-						&& Dungeon.hero.handle(Dungeon.hero.pos)){
-						//trigger hold fast and patient strike here, even if the hero didn't specifically wait
-						if (Dungeon.hero.hasTalent(Talent.HOLD_FAST)){
-							Buff.affect(Dungeon.hero, HoldFast.class).pos = Dungeon.hero.pos;
-						}
-						if (Dungeon.hero.hasTalent(Talent.PATIENT_STRIKE)){
-							Buff.affect(Dungeon.hero, Talent.PatientStrikeTracker.class).pos = Dungeon.hero.pos;
-						}
-						Dungeon.hero.next();
-					} else {
-						examining = false;
-						Dungeon.hero.rest(false);
-					}
+					examining = false;
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.pickup() ); // spd-ranked: waitOrPickup()
 				}
 			}
 
@@ -463,8 +450,8 @@ public class Toolbar extends Component {
 									super.onSelect(idx, alt);
 									Item item = items.get(idx);
 									if (alt && item.defaultAction() != null) {
-										com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
-										item.execute(Dungeon.hero);
+										final Item spdrItem = item; final String spdrAction = item.defaultAction(); // spd-ranked: recorded as Command ITEM
+										com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 									} else {
 										InventoryPane.clearTargetingSlot();
 										Game.scene().addToFront(new WndUseItem(null, item));
@@ -687,6 +674,24 @@ public class Toolbar extends Component {
 			btnInventory.centerY());
 	}
 	
+	// spd-ranked: T0.8 the wait-or-pickup key, also replayed (Command PICKUP)
+	public static void waitOrPickup(){
+		Dungeon.hero.waitOrPickup = true;
+		if ((Dungeon.level.heaps.get(Dungeon.hero.pos) != null || Dungeon.hero.canSelfTrample())
+			&& Dungeon.hero.handle(Dungeon.hero.pos)){
+			//trigger hold fast and patient strike here, even if the hero didn't specifically wait
+			if (Dungeon.hero.hasTalent(Talent.HOLD_FAST)){
+				Buff.affect(Dungeon.hero, HoldFast.class).pos = Dungeon.hero.pos;
+			}
+			if (Dungeon.hero.hasTalent(Talent.PATIENT_STRIKE)){
+				Buff.affect(Dungeon.hero, Talent.PatientStrikeTracker.class).pos = Dungeon.hero.pos;
+			}
+			Dungeon.hero.next();
+		} else {
+			Dungeon.hero.rest(false);
+		}
+	}
+
 	private static CellSelector.Listener informer = new CellSelector.Listener() {
 		@Override
 		public void onSelect( Integer cell ) {

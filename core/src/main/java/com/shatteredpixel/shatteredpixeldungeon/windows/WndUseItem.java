@@ -59,8 +59,7 @@ public class WndUseItem extends WndInfoItem {
 						hide();
 						if (owner != null && owner.parent != null) owner.hide();
 						if (Dungeon.hero.isAlive() && Dungeon.hero.belongings.contains(item)) {
-							com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, action ); // spd-ranked
-							item.execute(Dungeon.hero, action);
+							com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( item, action, () -> item.execute(Dungeon.hero, action) ); // spd-ranked
 						}
 						Item.updateQuickslot();
 						if (action.equals(item.defaultAction()) && item.usesTargeting && owner == null) {

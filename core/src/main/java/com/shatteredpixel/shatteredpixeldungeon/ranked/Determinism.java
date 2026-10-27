@@ -19,6 +19,7 @@ public final class Determinism {
 	public static void store( Bundle bundle ){
 		bundle.put( RNG_STATE, Random.getStackState() );
 		bundle.put( NEXT_SET_ID, MissileWeapon.nextSetID );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.store( bundle );
 	}
 
 	/** Saves from before T0.8 have no state: they keep the generator they were given. */
@@ -29,5 +30,6 @@ public final class Determinism {
 		if (bundle.contains( NEXT_SET_ID )){
 			MissileWeapon.nextSetID = bundle.getLong( NEXT_SET_ID );
 		}
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.restore( bundle );
 	}
 }

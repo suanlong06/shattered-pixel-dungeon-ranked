@@ -366,7 +366,7 @@ public class WndBag extends WndTabbed {
 	@Override
 	public boolean onSignal(KeyEvent event) {
 		if (event.pressed && KeyBindings.getActionForKey( event ) == SPDAction.INVENTORY) {
-			onBackPressed();
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.back( this, this::onBackPressed ); // spd-ranked
 			return true;
 		} else {
 			return super.onSignal(event);

@@ -191,11 +191,19 @@ class DeterministicCoreTest {
 		r.run(new Bot(new Bot.Scenario(false, 0, 1)), 1); // play until the hero first waits for input
 		CommandLog.start();
 		int target = Dungeon.hero.pos + 1;
-		GameScene.handleCell(target);
-		Dungeon.hero.rest(false);
-		Dungeon.hero.search(true);
+		// as pointer and key events do, one input each time the hero waits; game code is never recorded
+		List<Runnable> inputs = Arrays.asList(() -> Dungeon.hero.rest(false), () -> Dungeon.hero.search(true), () -> GameScene.handleCell(target));
+		r.live = true;
+		r.run(new TurnRunner.Input(){
+			int i;
+			@Override public Command next(TurnRunner t){
+				if (i >= inputs.size()) return null;
+				CommandLog.asInput(inputs.get(i++));
+				return Command.search();
+			}
+		}, Integer.MAX_VALUE);
 		List<Command> got = CommandLog.stop();
-		assertEquals(Arrays.asList(Command.cell(target), Command.rest(false), Command.search()), got);
+		assertEquals(Arrays.asList(Command.rest(false), Command.search(), Command.cell(target)), got);
 		assertEquals(got, CommandLog.fromText(CommandLog.toText(got)));
 		assertFalse(CommandLog.recording());
 	}

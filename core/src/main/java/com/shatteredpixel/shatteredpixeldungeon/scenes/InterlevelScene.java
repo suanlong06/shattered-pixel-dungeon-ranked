@@ -417,31 +417,7 @@ public class InterlevelScene extends PixelScene {
 					
 					try {
 
-						Actor.fixTime();
-
-						switch (mode) {
-							case DESCEND:
-								descend();
-								break;
-							case ASCEND:
-								ascend();
-								break;
-							case CONTINUE:
-								restore();
-								break;
-							case RESURRECT:
-								resurrect();
-								break;
-							case RETURN:
-								returnTo();
-								break;
-							case FALL:
-								fall();
-								break;
-							case RESET:
-								reset();
-								break;
-						}
+						load(); // spd-ranked: moved into load(), which the headless runner calls too
 						
 					} catch (Exception e) {
 						
@@ -605,6 +581,36 @@ public class InterlevelScene extends PixelScene {
 		}
 	}
 
+	// spd-ranked: T0.8 what the loading thread does, also used by ranked.sim.TurnRunner
+	public static void load() throws IOException {
+
+		Actor.fixTime();
+
+		switch (mode) {
+			case DESCEND:
+				descend();
+				break;
+			case ASCEND:
+				ascend();
+				break;
+			case CONTINUE:
+				restore();
+				break;
+			case RESURRECT:
+				resurrect();
+				break;
+			case RETURN:
+				returnTo();
+				break;
+			case FALL:
+				fall();
+				break;
+			case RESET:
+				reset();
+				break;
+		}
+	}
+
 	private void afterLoading(){
 		if (btnContinue != null){
 			btnContinue.visible = true;
@@ -619,7 +625,7 @@ public class InterlevelScene extends PixelScene {
 
 	}
 
-	private void descend() throws IOException {
+	private static void descend() throws IOException { // spd-ranked: static
 
 		if (Dungeon.hero == null) {
 			Mob.clearHeldAllies();
@@ -674,7 +680,7 @@ public class InterlevelScene extends PixelScene {
 	}
 
 	//TODO atm falling always just increments depth by 1, do we eventually want to roll it into the transition system?
-	private void fall() throws IOException {
+	private static void fall() throws IOException { // spd-ranked: static
 		
 		Mob.holdAllies( Dungeon.level );
 		
@@ -691,7 +697,7 @@ public class InterlevelScene extends PixelScene {
 		Dungeon.switchLevel( level, level.fallCell( fallIntoPit ));
 	}
 
-	private void ascend() throws IOException {
+	private static void ascend() throws IOException { // spd-ranked: static
 		if (curTransition.destBranch != Dungeon.branch && Dungeon.depth >= 16 && Dungeon.depth <= 20) {
 			//FIXME avoids holding allies when entering city quest area, this is very sloppy though
 			// perhaps holding allies could be a property of the transition?
@@ -715,7 +721,7 @@ public class InterlevelScene extends PixelScene {
 		Dungeon.switchLevel( level, destTransition.cell() );
 	}
 	
-	private void returnTo() throws IOException {
+	private static void returnTo() throws IOException { // spd-ranked: static
 		Mob.holdAllies( Dungeon.level );
 		Dungeon.saveAll();
 
@@ -731,7 +737,7 @@ public class InterlevelScene extends PixelScene {
 		Dungeon.switchLevel( level, returnPos );
 	}
 	
-	private void restore() throws IOException {
+	private static void restore() throws IOException { // spd-ranked: static
 		
 		Mob.clearHeldAllies();
 
@@ -747,7 +753,7 @@ public class InterlevelScene extends PixelScene {
 		}
 	}
 	
-	private void resurrect() {
+	private static void resurrect() { // spd-ranked: static
 		
 		Mob.holdAllies( Dungeon.level );
 
@@ -803,7 +809,7 @@ public class InterlevelScene extends PixelScene {
 		Dungeon.switchLevel( level, Dungeon.hero.pos );
 	}
 
-	private void reset() throws IOException {
+	private static void reset() throws IOException { // spd-ranked: static
 		
 		Mob.holdAllies( Dungeon.level );
 

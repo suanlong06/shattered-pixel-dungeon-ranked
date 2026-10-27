@@ -98,6 +98,11 @@ public class Group extends Gizmo {
 		super.kill();
 	}
 	
+	// spd-ranked: T0.8 a copy of the members, for the command log (finding windows and buttons)
+	public synchronized Gizmo[] membersCopy() {
+		return members.toArray( new Gizmo[0] );
+	}
+
 	public synchronized int indexOf( Gizmo g ) {
 		return members.indexOf( g );
 	}

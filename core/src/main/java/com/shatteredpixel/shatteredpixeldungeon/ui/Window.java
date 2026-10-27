@@ -72,7 +72,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 					(int) event.current.x,
 					(int) event.current.y )) {
 					
-					onBackPressed();
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.back( Window.this, Window.this::onBackPressed ); // spd-ranked
 				}
 			}
 		};
@@ -117,6 +117,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 				chrome.width(), chrome.height );
 
 		KeyEvent.addKeyListener( this );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.windowCreated( this ); // spd-ranked: T0.8
 	}
 	
 	public void resize( int w, int h ) {
@@ -213,7 +214,7 @@ public class Window extends Group implements Signal.Listener<KeyEvent> {
 		if (event.pressed) {
 			if (KeyBindings.getActionForKey( event ) == SPDAction.BACK
 				|| KeyBindings.getActionForKey( event ) == SPDAction.WAIT){
-				onBackPressed();
+				com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.back( this, this::onBackPressed ); // spd-ranked
 			}
 		}
 		

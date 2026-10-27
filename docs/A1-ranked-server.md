@@ -51,7 +51,7 @@ Test: `ProgressTrackerTest` (core) và `ClientInteropTest` (ranked-server): `Ran
 
 ## Đợt 3
 - **Bỏ cuộc**: nút Resign dưới dòng đối thủ khi trận đang chạy, hỏi lại trước (thua và tính strike).
-- **Vào lại sau khi tắt app**: khi `START`, `RankedSession` lưu `ranked_resume` (matchId, token, đối thủ, tầng boss cuối, `seen` cập nhật mỗi 10 s) vào GameSettings; xóa khi có `RESULT` hoặc server báo không còn gì để resume. Nếu còn trong 5 phút tính từ `seen` và slot ranked còn save, nút ở màn chọn nhân vật thành "Rejoin ranked duel": `RankedClient.resume` nối lại với cửa sổ tính từ `seen`, khi `RESUMED` thì tải run từ slot như Continue. Log lệnh A3 được ghi tiếp từ lúc tải lại, nhưng các lệnh sau `LOG` cuối trước khi tắt app đã mất, nên trận vào lại kiểu này sẽ không qua được phát lại của Verifier (void). Muốn giữ được cần lưu log chưa gửi cùng save.
+- **Vào lại sau khi tắt app**: khi `START`, `RankedSession` lưu `ranked_resume` (matchId, token, đối thủ, tầng boss cuối, `seen` cập nhật mỗi 10 s) vào GameSettings; xóa khi có `RESULT` hoặc server báo không còn gì để resume. Nếu còn trong 5 phút tính từ `seen` và slot ranked còn save, nút ở màn chọn nhân vật thành "Rejoin ranked duel": `RankedClient.resume` nối lại với cửa sổ tính từ `seen`, khi `RESUMED` thì tải run từ slot như Continue. Log lệnh A3 lưu cùng save và quay về khi tải lại, rồi được gửi lại từ đầu (server giữ phần còn thiếu); client lưu game trước mỗi `LOG` nên save không bao giờ cũ hơn log server đã có (27/10, xem `docs/T0.8-deterministic-core.md`).
 - Test thêm trong `ClientInteropTest`: client mới vào lại bằng token đã lưu rồi bỏ cuộc (thua/thắng đúng), token cũ bị từ chối, core có fingerprint đúng dạng.
 
-Chưa làm: lưu log lệnh chưa gửi khi tắt app (xem trên), chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).
+Chưa làm: chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).
