@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndResurrect;
@@ -101,7 +102,9 @@ public final class TurnRunner {
 				// dead with an unblessed ankh: the game waits for the player's choice in WndResurrect
 				boolean dead = !Dungeon.hero.isAlive();
 				if (dead && WndResurrect.instance == null){ stop = "hero died depth " + Dungeon.depth; return; }
-				if (awaiting || dead){
+				// no actor acts while the alchemy scene is up: everything there is the player's input
+				boolean alchemy = Game.scene() instanceof AlchemyScene;
+				if (awaiting || dead || alchemy){
 					// the render loop keeps running while the game waits for the player
 					runPostedCallbacks();
 					if (HeadlessGame.get().switchRequested()) continue;
@@ -181,22 +184,54 @@ public final class TurnRunner {
 		frames++;
 	}
 
-	/** Leaves any GameScene, as switching to InterlevelScene does; levels must be built without one. */
+	/** Leaves any GameScene or AlchemyScene, as switching scenes does; levels must be built without one. */
 	public static void leaveScene(){
-		if (Game.instance instanceof HeadlessGame && Game.scene() instanceof GameScene){
+		if (Game.instance instanceof HeadlessGame && (Game.scene() instanceof GameScene || Game.scene() instanceof AlchemyScene)){
 			Game.scene().destroy();
 			HeadlessGame.get().setScene( new Scene() );
 		}
 	}
 
+	/** The scene goes as with a killed process: without its destroy() (which may give items back and save). */
+	public static void dropScene(){
+		if (Game.instance instanceof HeadlessGame) HeadlessGame.get().setScene( new Scene() );
+	}
+
 	/**
 	 * A level change, done as InterlevelScene's loading thread does it (InterlevelScene.load):
 	 * stairs, falling, Return (beacons, passage, Fadeleaf, warp), resurrection, reset.
-	 * Other scenes (alchemy, the surface, the amulet) are not supported yet.
+	 * Alchemy: into it, its reset, back to the level, and a client that was closed in it and went on
+	 * from its save (ALCH LOAD). Other scenes (the surface, the amulet) are not supported yet.
 	 */
 	private boolean transition(){
 		Class<?> next = HeadlessGame.get().requestedScene();
 		InterlevelScene.Mode mode = InterlevelScene.mode;
+		if (next == AlchemyScene.class){
+			leaveScene();
+			AlchemyScene s = new AlchemyScene();
+			HeadlessGame.get().setScene( s );
+			s.create();
+			HeadlessGame.get().consumeSceneSwitch();
+			return true;
+		}
+		if (Game.scene() instanceof AlchemyScene){
+			if (next == GameScene.class){
+				leaveScene();
+				buildScene( InterlevelScene.Mode.NONE );
+				return true;
+			}
+			if (next == InterlevelScene.class && mode == InterlevelScene.Mode.CONTINUE){
+				// ALCH LOAD: the client's scene went with its process, it neither gave the inputs back nor saved
+				dropScene();
+				try {
+					InterlevelScene.load();
+				} catch (IOException e){
+					throw new RuntimeException( e );
+				}
+				buildScene( mode );
+				return true;
+			}
+		}
 		if (next != InterlevelScene.class){
 			stop = "unsupported scene switch: " + (next == null ? "none" : next.getSimpleName());
 			return false;

@@ -15,6 +15,9 @@ import com.shatteredpixel.shatteredpixeldungeon.items.trinkets.ExoticCrystals;
  *   <li>a "veteran" profile: intro off, every journal page found and read, so no guide or lore
  *       pages are placed and levelgen never reads the profile ({@code SPDSettings.intro},
  *       {@code Document.isPageFound/isPageRead})</li>
+ *   <li>windows the game opens by a device counter, which the server's replay must open too: the
+ *       support prompt on picking up Goo's key never shows ({@code SPDSettings.supportNagged}), the
+ *       vault injury warning shows once every run ({@code SPDSettings.vaultInjureWarns})</li>
  *   <li>Exotic Crystals is out of the trinket deck and has no effect: it changes the potions and
  *       scrolls of every later floor ({@code ExoticCrystals}, {@link #applyGeneratorRules})</li>
  * </ul>
@@ -40,6 +43,14 @@ public final class CleanProfile {
 
 	public static boolean pageKnown( boolean solo ){
 		return Features.isRanked() || solo;
+	}
+
+	public static boolean supportNagged( boolean solo ){
+		return Features.isRanked() || solo;
+	}
+
+	public static int vaultInjureWarns( int solo ){
+		return Features.isRanked() ? 0 : solo;
 	}
 
 	public static float exoticChance( float solo ){

@@ -27,10 +27,18 @@ import java.util.List;
  *  TALENT name   - spend a talent point
  *  CANCEL [sel]  - GameScene.cancel(), or with sel GameScene.cancelCellSelector(): stops the hero's
  *                  action or rest, or cancels a pending cell selection
- *  BTN k i n cls - click kind k (0 left, 1 right, 2 middle, 3 long) on button i of the n buttons of
- *                  the top window, whose class is cls (CHOICE in a window: options, shop, talents...)
+ *  BTN k i n cls b - click kind k (0 left, 1 right, 2 middle, 3 long) on button i of the n buttons of
+ *                  class b (depth first in the tree) in the top window, whose class is cls (CHOICE in a
+ *                  window: options, shop, talents...). Counting only buttons of one class keeps the
+ *                  address if a window ever adds other buttons by device or settings.
+ *                  The older form without b counts every button of the window.
  *  BACK cls      - back / tap outside on the top window
  *  SELECT i      - item i (belongings index) picked in the top item selector window
+ *  ALCH op [n]   - an input in the alchemy scene: IN i (belongings item i into the first empty input),
+ *                  OUT s (input s back), CLEAR, COMBINE s (craft output s), EXIT (back to the level),
+ *                  RESET (the scene is rebuilt: guide, rotation), PAUSE (the app paused with energy just
+ *                  made), LOAD (the client was closed in alchemy and came back from its last save)
+ *  ENERGIZE i all|one - turn item i (or one of its stack) into alchemical energy
  *  NOTE text     - the client saw something replay cannot follow; the replay is then not trusted
  * A command given while the hero was acting (not waiting for input) is prefixed "@k ", where k is
  * the number of hero turns since the previous command: replay applies it right before turn k+1.
@@ -38,7 +46,16 @@ import java.util.List;
  */
 public final class Command {
 
-	public enum Type { CELL, REST, SEARCH, ITEM, MOVE, PICKUP, ACTION, RESUME, TALENT, CANCEL, BTN, BACK, SELECT, NOTE }
+	public enum Type { CELL, REST, SEARCH, ITEM, MOVE, PICKUP, ACTION, RESUME, TALENT, CANCEL, BTN, BACK, SELECT, ALCH, ENERGIZE, NOTE }
+
+	/** ALCH operations, with whether they take a number */
+	private static final java.util.Map<String, Boolean> ALCH_OPS = new java.util.LinkedHashMap<>();
+	static {
+		for (String op : new String[]{ "IN", "OUT", "COMBINE" }) ALCH_OPS.put( op, true );
+		for (String op : new String[]{ "CLEAR", "EXIT", "RESET", "PAUSE", "LOAD" }) ALCH_OPS.put( op, false );
+	}
+	/** ALCH operations that do not come from the scene itself: they may come with any window open */
+	private static final java.util.Set<String> ALCH_ANY_WINDOW = new java.util.LinkedHashSet<>( java.util.Arrays.asList( "EXIT", "RESET", "PAUSE", "LOAD" ) );
 
 	/** commands that answer a window, or need no particular game state */
 	private static final java.util.EnumSet<Type> WINDOW_OK = java.util.EnumSet.of( Type.BTN, Type.BACK, Type.SELECT, Type.TALENT, Type.CANCEL, Type.NOTE );
@@ -70,6 +87,15 @@ public final class Command {
 	public static Command button( int kind, int index, int count, String windowClass ){
 		return new Command(Type.BTN, index, kind + " " + index + " " + count + " " + windowClass, -1);
 	}
+	public static Command button( int kind, int index, int count, String windowClass, String buttonClass ){
+		return new Command(Type.BTN, index, kind + " " + index + " " + count + " " + windowClass + " " + buttonClass, -1);
+	}
+	public static Command alchemy( String op, int n ){
+		Boolean numbered = ALCH_OPS.get( op );
+		if (numbered == null || n < 0) throw new IllegalArgumentException("bad alchemy input: " + op + " " + n);
+		return new Command(Type.ALCH, numbered ? n : 0, op, -1);
+	}
+	public static Command energize( int index, boolean all ){ return new Command(Type.ENERGIZE, index, all ? "all" : "one", -1); }
 	public static Command back( String windowClass ){ return new Command(Type.BACK, 0, windowClass, -1); }
 	public static Command select( int index ){ return new Command(Type.SELECT, index, null, -1); }
 	public static Command note( String text ){ return new Command(Type.NOTE, 0, text.replace( '\n', ' ' ).trim(), -1); }
@@ -78,7 +104,9 @@ public final class Command {
 	public Command at( int k ){ return new Command(type, arg, action, k); }
 
 	/** true if the command may be given while a window is open (all others mean a window was closed unseen) */
-	public boolean answersWindow(){ return WINDOW_OK.contains( type ); }
+	public boolean answersWindow(){
+		return WINDOW_OK.contains( type ) || (type == Type.ALCH && ALCH_ANY_WINDOW.contains( action ));
+	}
 
 	/** Applies the input the same way the UI does. */
 	public void apply(){
@@ -124,7 +152,7 @@ public final class Command {
 			case BTN: {
 				String[] p = action.split( " " );
 				Window w = topWindow( p[3] );
-				List<Button> buttons = CommandLog.buttons( w );
+				List<Button> buttons = p.length > 4 ? CommandLog.buttons( w, p[4] ) : CommandLog.buttons( w );
 				if (buttons.size() != Integer.parseInt( p[2] )) throw new IllegalStateException(buttons.size() + " buttons, not " + p[2] + ", for " + this);
 				buttons.get( arg ).replayClick( Integer.parseInt( p[0] ) );
 				break;
@@ -143,7 +171,64 @@ public final class Command {
 				selector.onSelect( item );
 				break;
 			}
+			case ALCH:
+				applyAlchemy( hero );
+				break;
+			case ENERGIZE: {
+				Item item = itemAt( hero, arg );
+				// as WndEnergizeItem's selector allows
+				if (item == null || item.energyVal() <= 0) throw new IllegalStateException("nothing to energize for " + this);
+				if (action.equals( "all" )) com.shatteredpixel.shatteredpixeldungeon.windows.WndEnergizeItem.energizeAll( item );
+				else com.shatteredpixel.shatteredpixeldungeon.windows.WndEnergizeItem.energizeOne( item );
+				break;
+			}
 			case NOTE:
+				break;
+		}
+	}
+
+	/** as the alchemy scene's buttons do; the checks are the ones its UI makes before them */
+	private void applyAlchemy( Hero hero ){
+		if (!(com.watabou.noosa.Game.scene() instanceof com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene)){
+			throw new IllegalStateException("not in alchemy for " + this);
+		}
+		com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene scene = (com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene) com.watabou.noosa.Game.scene();
+		switch (action){
+			case "IN": {
+				Item item = itemAt( hero, arg );
+				if (item == null || !com.shatteredpixel.shatteredpixeldungeon.items.Recipe.usableInRecipe( item )
+						|| (hero.belongings.lostInventory() && !item.keptThroughLostInventory())){
+					throw new IllegalStateException("no usable item at index " + arg + " for " + this);
+				}
+				if (scene.addInput( item ) == null) throw new IllegalStateException("no empty input for " + this);
+				break;
+			}
+			case "OUT":
+				if (arg > 2) throw new IllegalStateException("no input " + arg + " for " + this);
+				scene.removeInput( arg );
+				break;
+			case "CLEAR":
+				scene.clearSlots();
+				break;
+			case "COMBINE":
+				if (!scene.combineEnabled( arg )) throw new IllegalStateException("cannot craft output " + arg + " for " + this);
+				scene.combine( arg );
+				break;
+			case "EXIT":
+				com.watabou.noosa.Game.switchScene( GameScene.class );
+				break;
+			case "RESET":
+				com.watabou.noosa.Game.switchScene( com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene.class );
+				break;
+			case "PAUSE":
+				scene.onPause();
+				break;
+			case "LOAD":
+				// what the client lost when it closed: the scene and its inputs; it went on from its last save
+				com.shatteredpixel.shatteredpixeldungeon.scenes.AlchemyScene.abandonInputs();
+				ActionIndicator.clearAction();
+				com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.mode = com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.Mode.CONTINUE;
+				com.watabou.noosa.Game.switchScene( com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene.class );
 				break;
 		}
 	}
@@ -191,6 +276,8 @@ public final class Command {
 			case MOVE:   s = "MOVE " + arg; break;
 			case SELECT: s = "SELECT " + arg; break;
 			case CANCEL: s = action == null ? "CANCEL" : "CANCEL " + action; break;
+			case ALCH:   s = ALCH_OPS.get( action ) ? "ALCH " + action + " " + arg : "ALCH " + action; break;
+			case ENERGIZE: s = "ENERGIZE " + arg + " " + action; break;
 			case TALENT: case BTN: case BACK: case NOTE:
 				s = type + " " + action; break;
 			default:     s = type.name(); break;
@@ -225,15 +312,23 @@ public final class Command {
 				if (p.length > 1 && !p[1].equals("sel")) throw new IllegalArgumentException("bad cancel: " + s);
 				c = cancel(p.length > 1); break;
 			case BTN: {
-				if (p.length != 5) throw new IllegalArgumentException("bad button: " + s);
+				if (p.length != 5 && p.length != 6) throw new IllegalArgumentException("bad button: " + s);
 				int kind = Integer.parseInt(p[1]), index = Integer.parseInt(p[2]), count = Integer.parseInt(p[3]);
 				if (kind < 0 || kind > 3 || index < 0 || index >= count) throw new IllegalArgumentException("bad button: " + s);
-				c = button(kind, index, count, p[4]); break;
+				c = p.length == 6 ? button(kind, index, count, p[4], p[5]) : button(kind, index, count, p[4]); break;
 			}
 			case BACK:
 				if (p.length != 2) throw new IllegalArgumentException("bad back: " + s);
 				c = back(p[1]); break;
 			case SELECT: c = select(Integer.parseInt(p[1])); break;
+			case ALCH: {
+				Boolean numbered = p.length > 1 ? ALCH_OPS.get( p[1] ) : null;
+				if (numbered == null || p.length != (numbered ? 3 : 2)) throw new IllegalArgumentException("bad alchemy input: " + s);
+				c = alchemy(p[1], numbered ? Integer.parseInt(p[2]) : 0); break;
+			}
+			case ENERGIZE:
+				if (p.length != 3 || !(p[2].equals("all") || p[2].equals("one"))) throw new IllegalArgumentException("bad energize: " + s);
+				c = energize(Integer.parseInt(p[1]), p[2].equals("all")); break;
 			default:     c = note(rest); break;
 		}
 		return at >= 0 ? c.at( at ) : c;
