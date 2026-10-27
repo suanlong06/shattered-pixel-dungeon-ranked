@@ -22,6 +22,7 @@ import javax.net.ssl.SSLContext;
  *                  ranked/build-fingerprint.txt, the same one the game sends)
  *   spdr.season    (default 1)
  *   spdr.seedpool  A4 pool file to load; known seeds keep their used state
+ *   spdr.retireStalePools  true: stop using unused seeds from pools built with other thresholds
  *   spdr.keystore / spdr.keystorePass   PKCS12 keystore; without it the server runs plain TCP
  *   spdr.verify    replay (default): replay command logs before rating (A3); none: accept every verdict
  *   spdr.acceptUnverifiable  true: count verdicts replay cannot follow yet instead of voiding them
@@ -41,9 +42,20 @@ public final class ServerMain {
 		Storage db = new Storage("jdbc:sqlite:" + System.getProperty("spdr.db", "ranked.db"));
 		String pool = System.getProperty("spdr.seedpool");
 		if (pool != null) {
-			int added = db.addSeeds(SeedPoolFile.read(new String(Files.readAllBytes(Paths.get(pool)), StandardCharsets.UTF_8)));
+			String text = new String(Files.readAllBytes(Paths.get(pool)), StandardCharsets.UTF_8);
+			String header = SeedPoolFile.header(text);
+			if (!SeedPoolFile.currentHeader().equals(header)) {
+				System.out.println("WARNING: seed pool built with '" + header + "', scorer now '" + SeedPoolFile.currentHeader() + "'");
+			}
+			int added = db.addSeeds(SeedPoolFile.entries(text), header, System.currentTimeMillis());
 			System.out.println("seed pool: " + added + " new seeds");
 		}
+		if (Boolean.getBoolean("spdr.retireStalePools")) {
+			System.out.println("seed pool: retired " + db.retireOtherPools(SeedPoolFile.currentHeader()) + " stale seeds");
+		}
+		int left = db.seedsLeft();
+		System.out.println("seed pool: " + left + " unused seeds");
+		if (left == 0) System.out.println("WARNING: seed pool empty, no match can start (set -Dspdr.seedpool=<file>)");
 
 		ServerSocket socket;
 		String ks = System.getProperty("spdr.keystore");

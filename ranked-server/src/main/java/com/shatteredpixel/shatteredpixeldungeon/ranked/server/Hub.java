@@ -316,13 +316,13 @@ public final class Hub {
 	private void start(Matchmaker.Entry a, Matchmaker.Entry b, long now) throws SQLException {
 		Client ca = byPlayer.get(a.playerId), cb = byPlayer.get(b.playerId);
 		String id = "m" + now + "-" + (nextMatch++);
-		Long seed = db.takeSeed(id);
+		Long seed = db.startMatch(id, cfg.season, a.platform, a.playerId, b.playerId, now);
 		if (seed == null) {
+			System.err.println("seed pool empty: match not started");
 			error(ca.link, "seed pool empty");
 			error(cb.link, "seed pool empty");
 			return;
 		}
-		db.createMatch(id, cfg.season, a.platform, a.playerId, b.playerId, seed, now);
 		Match m = new Match(id, a.platform, seed, now,
 				new Side(a.playerId, ca.name, a.rating, token()), new Side(b.playerId, cb.name, b.rating, token()));
 		matches.put(id, m);
