@@ -26,7 +26,7 @@ Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-
 
 ## Cố ý chưa làm
 - **Vote đổi seed giữa trận** và **pause 180 s**: user chưa chốt (L6/L19). Nếu cần sẽ là thêm loại frame và một trường trong `Hub.Match`, không đổi phần còn lại.
-- **Xác minh bằng phát lại (A3)**: `Hub.Verifier` là chỗ nối; hiện chấp nhận mọi kết quả nên rating được ghi ngay. Khi có A3 thì `Verifier` phát lại log lệnh trước khi chấp nhận.
+- ~~Xác minh bằng phát lại~~: đã làm ở A3 (`docs/A3-replay-verifier.md`), giao thức lên phiên bản 2 với frame `LOG`.
 - Log lệnh theo đoạn và lệnh `CHOICE` (T0.5 mục 4), phía client (UI hàng chờ, gửi báo cáo), bảng xếp hạng, đổi mùa.
 - Giới hạn tổng 90 phút vẫn là số tạm của A2.
 

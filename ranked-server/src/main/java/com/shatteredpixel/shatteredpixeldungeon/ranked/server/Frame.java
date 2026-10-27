@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 public final class Frame {
 
 	/** bump on any incompatible change; HELLO with another version is refused */
-	public static final int PROTOCOL = 1;
+	public static final int PROTOCOL = 2; // 2: LOG (A3)
 
 	// client -> server
 	public static final String HELLO = "HELLO";
@@ -20,6 +20,8 @@ public final class Frame {
 	public static final String DIED = "DIED";
 	public static final String CLEARED = "CLEARED";
 	public static final String RESIGN = "RESIGN";
+	/** A3: next part of the command log, {@code {from, cmds, cls}}; see Hub */
+	public static final String LOG = "LOG";
 	public static final String RESUME = "RESUME";
 	public static final String PING = "PING";
 
