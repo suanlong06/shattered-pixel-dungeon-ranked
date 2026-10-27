@@ -50,3 +50,34 @@ tasks.register('determinismTest', Test) {
     maxHeapSize = '2g'
     testLogging { events 'passed', 'failed', 'skipped'; exceptionFormat 'full' }
 }
+
+// spd-ranked (A1): build fingerprint = SHA-256 over core's compiled classes (sorted path + bytes).
+// Replay (A3) only holds on the same bytecode, so client and server compare this, not the version.
+// Written as a resource: the game reads it from its core jar, the server from the same jar.
+def rankedFingerprintDir = layout.buildDirectory.dir('generated/ranked-fingerprint')
+tasks.register('rankedFingerprint') {
+    description = 'Hashes compiled core classes into ranked/build-fingerprint.txt.'
+    def classes = sourceSets.main.output.classesDirs
+    inputs.files(classes).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(rankedFingerprintDir)
+    dependsOn tasks.named('compileJava')
+    doLast {
+        def md = java.security.MessageDigest.getInstance('SHA-256')
+        def files = []
+        classes.each { root ->
+            if (root.exists()) root.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+                files << [root.toPath().relativize(f.toPath()).toString().replace(File.separatorChar, (char) '/'), f]
+            }
+        }
+        files.sort { it[0] }.each { entry ->
+            md.update(entry[0].getBytes('UTF-8'))
+            md.update((byte) 0)
+            md.update(entry[1].bytes)
+        }
+        def out = rankedFingerprintDir.get().file('ranked/build-fingerprint.txt').asFile
+        out.parentFile.mkdirs()
+        out.text = 'spdr-' + md.digest().encodeHex().toString().substring(0, 16) + '\n'
+    }
+}
+sourceSets.main.resources.srcDir(rankedFingerprintDir)
+tasks.named('processResources') { dependsOn 'rankedFingerprint' }

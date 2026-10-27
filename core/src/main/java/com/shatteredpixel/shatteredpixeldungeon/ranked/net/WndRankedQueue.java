@@ -27,10 +27,16 @@ public class WndRankedQueue extends Window {
 
 	/** the Ranked Duel entry in the hero select options pane */
 	public static StyledButton button(){
-		StyledButton b = new StyledButton( Chrome.Type.BLANK, Messages.get( RankedSession.class, "button" ), 6 ){
+		// a match left running when the app closed takes the button's place until it is over
+		final boolean rejoin = RankedSession.canRejoin();
+		StyledButton b = new StyledButton( Chrome.Type.BLANK, Messages.get( RankedSession.class, rejoin ? "rejoin" : "button" ), 6 ){
 			@Override
 			protected void onClick(){
 				super.onClick();
+				if (rejoin && RankedSession.canRejoin()){
+					ShatteredPixelDungeon.scene().addToFront( new WndRankedQueue( RankedSession.rejoin() ) );
+					return;
+				}
 				if (GamesInProgress.selectedClass == null){
 					ShatteredPixelDungeon.scene().addToFront( new WndMessage( Messages.get( RankedSession.class, "need_class" ) ) );
 					return;
@@ -103,6 +109,7 @@ public class WndRankedQueue extends Window {
 				s.append( Messages.get( RankedSession.class, "queued", session.rating() ) ); break;
 			case MATCH_FOUND:
 				s.append( Messages.get( RankedSession.class, "found", session.opponent(), session.opponentRating() ) ); break;
+			case RECONNECTING: s.append( Messages.get( RankedSession.class, "rejoining" ) ); break;
 			case STARTED: s.append( Messages.get( RankedSession.class, "starting" ) ); break;
 			default: s.append( Messages.get( RankedSession.class, "offline" ) ); break;
 		}

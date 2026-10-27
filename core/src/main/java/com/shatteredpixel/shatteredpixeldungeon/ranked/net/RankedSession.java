@@ -14,6 +14,9 @@ import com.watabou.noosa.Game;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameSettings;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +40,12 @@ public final class RankedSession {
 	private static final String KEY_SERVER = "ranked_server";
 	private static final String KEY_DEVICE = "ranked_device_key";
 	private static final String KEY_NAME = "ranked_name";
+	/** the running match, kept so it can be rejoined after the app was closed (JSON) */
+	private static final String KEY_RESUME = "ranked_resume";
+	/** the server forfeits a side after 5 minutes away */
+	static final long RESUME_WINDOW_MS = 5L * 60_000L;
+	/** how often the saved match is stamped as still alive */
+	private static final long SEEN_EVERY_MS = 10_000;
 	public static final String DEFAULT_SERVER = "127.0.0.1:7420";
 
 	private static RankedSession current;
@@ -61,6 +70,8 @@ public final class RankedSession {
 	private int logged;
 	private String heroClass;
 	private String result;
+	private boolean rejoining;
+	private long seenSaved;
 
 	private RankedSession( RankedClient.Config cfg ){
 		client = new RankedClient( cfg, new RankedClient.Listener(){
@@ -77,6 +88,26 @@ public final class RankedSession {
 		if (current != null) current.client.close();
 		current = new RankedSession( config() );
 		current.client.start();
+		return current;
+	}
+
+	/** true if a ranked match was left running when the app closed, and can still be resumed */
+	public static boolean canRejoin(){
+		JSONObject saved = saved();
+		return saved != null
+				&& System.currentTimeMillis() - saved.optLong( "seen", 0 ) < RESUME_WINDOW_MS
+				&& GamesInProgress.check( SLOT ) != null;
+	}
+
+	/** reconnects to the saved match; the saved run loads once the server answers RESUMED */
+	public static RankedSession rejoin(){
+		JSONObject saved = saved();
+		if (current != null) current.client.close();
+		current = new RankedSession( config() );
+		current.rejoining = true;
+		current.opponent = saved.optString( "opponent", null );
+		current.finalBossDepth = saved.optInt( "finalBossDepth", current.finalBossDepth );
+		current.client.resume( saved.optString( "matchId" ), saved.optString( "token" ), saved.optLong( "seen", 0 ) );
 		return current;
 	}
 
@@ -107,10 +138,12 @@ public final class RankedSession {
 	public void update(){
 		Runnable r;
 		while ((r = events.poll()) != null) r.run();
+		long now = System.currentTimeMillis();
 		if (inRun() && Features.isRanked() && Dungeon.hero != null
-				&& System.currentTimeMillis() - startedAt >= COUNTDOWN_GRACE_MS && heroWaits()){
+				&& now - startedAt >= COUNTDOWN_GRACE_MS && heroWaits()){
 			report();
 		}
+		if (inRun() && now - seenSaved >= SEEN_EVERY_MS) save();
 	}
 
 	/**
@@ -136,6 +169,17 @@ public final class RankedSession {
 				break;
 			case NetFrame.START:
 				startRun( f.l( "seed", 0 ) );
+				save();
+				break;
+			case NetFrame.RESUMED:
+				if (rejoining){
+					rejoining = false;
+					loadRun();
+				}
+				break;
+			case NetFrame.ERROR:
+				// the saved match is over or unknown to the server: nothing left to rejoin
+				if (rejoining || client.resumeToken() == null) forget();
 				break;
 			case NetFrame.OPPONENT:
 				oppDepth = f.i( "depth", oppDepth );
@@ -144,6 +188,7 @@ public final class RankedSession {
 				oppConnected = f.b( "connected" );
 				break;
 			case NetFrame.RESULT:
+				forget();
 				String outcome = f.s( "outcome" );
 				CommandLog.stop();
 				result = Messages.get( this, "result_" + (outcome == null ? "void" : outcome.toLowerCase( java.util.Locale.ROOT )) );
@@ -180,7 +225,57 @@ public final class RankedSession {
 		Game.switchScene( InterlevelScene.class );
 	}
 
+	/** rejoin after a restart: the run continues from its save, the server holds the match state */
+	private void loadRun(){
+		startedAt = System.currentTimeMillis() - COUNTDOWN_GRACE_MS;
+		tracker = new ProgressTracker( finalBossDepth );
+		save();
+		// A3: commands before the restart that never went out are lost, so the server's replay
+		// of this match will not verify; recording goes on so the log stays as full as it can
+		heroClass = null;
+		logged = 0;
+		CommandLog.start();
+		GamesInProgress.curSlot = SLOT;
+		Dungeon.hero = null;
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		ActionIndicator.clearAction();
+		InterlevelScene.mode = InterlevelScene.Mode.CONTINUE;
+		Game.switchScene( InterlevelScene.class );
+	}
+
+	private void save(){
+		seenSaved = System.currentTimeMillis();
+		if (client.resumeToken() == null) return;
+		JSONObject o = new JSONObject();
+		try {
+			o.put( "matchId", client.matchId() );
+			o.put( "token", client.resumeToken() );
+			o.put( "opponent", opponent );
+			o.put( "finalBossDepth", finalBossDepth );
+			o.put( "seen", seenSaved );
+		} catch (JSONException e){
+			return;
+		}
+		GameSettings.put( KEY_RESUME, o.toString() );
+	}
+
+	private static void forget(){
+		GameSettings.put( KEY_RESUME, "" );
+	}
+
+	private static JSONObject saved(){
+		String s = GameSettings.getString( KEY_RESUME, "" );
+		if (s.isEmpty()) return null;
+		try {
+			JSONObject o = new JSONObject( s );
+			return o.has( "token" ) && o.has( "matchId" ) ? o : null;
+		} catch (JSONException e){
+			return null;
+		}
+	}
+
 	private void sendLog(){
+		if (heroClass == null && Dungeon.hero != null) heroClass = Dungeon.hero.heroClass.name();
 		List<Command> rec = CommandLog.recorded();
 		List<String> cmds = new ArrayList<>();
 		for (int i = logged; i < rec.size(); i++) cmds.add( rec.get( i ).toString() );
@@ -223,12 +318,31 @@ public final class RankedSession {
 	}
 
 	/**
-	 * Must equal the server's -Dspdr.build. First pass: version name and code; replay checks
-	 * (A3) need the exact bytecode, so a release build should bake a class hash in here.
+	 * Must equal the server's build. Replay checks (A3) need the exact bytecode, so the build
+	 * writes a SHA-256 of core's compiled classes into {@link #FINGERPRINT_RESOURCE}; the server
+	 * reads the same resource from its core jar. Version name and code are only a fallback for
+	 * builds that skipped that step (an IDE run without Gradle).
 	 */
 	public static String buildFingerprint(){
-		return Game.version + "+" + Game.versionCode;
+		if (fingerprint == null){
+			String fp = null;
+			try (java.io.InputStream in = RankedSession.class.getResourceAsStream( FINGERPRINT_RESOURCE )){
+				if (in != null){
+					java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+					byte[] buf = new byte[256];
+					int n;
+					while ((n = in.read( buf )) > 0) b.write( buf, 0, n );
+					fp = b.toString( "UTF-8" ).trim();
+				}
+			} catch (java.io.IOException ignored){
+			}
+			fingerprint = fp == null || fp.isEmpty() ? Game.version + "+" + Game.versionCode : fp;
+		}
+		return fingerprint;
 	}
+
+	public static final String FINGERPRINT_RESOURCE = "/ranked/build-fingerprint.txt";
+	private static String fingerprint;
 
 	/** L2: the account is this device key plus a name; generated once and kept in settings */
 	static String deviceKey(){

@@ -2,7 +2,7 @@
 
 Module mới `ranked-server/` (Java 11, không có libGDX backend). Chỉ dùng `core` cho luật kết thúc trận (`ranked/duel/MatchEnd`, A2) và định dạng seed pool (`ranked/seed/SeedPoolFile`, A4). Không sửa file gốc SPD, không đụng `Dungeon.java`. Chưa triển khai lên A53 (A7, cần hỏi user).
 
-Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-server:run -Dspdr.build=<fingerprint>` (xem tham số ở `ServerMain`).
+Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-server:run` (build fingerprint mặc định lấy từ core, có thể ghi đè bằng `-Dspdr.build`) (xem tham số ở `ServerMain`).
 
 ## Thành phần
 | Class | Việc |
@@ -45,8 +45,13 @@ Package `core/.../ranked/net/`, không đụng `Dungeon.java` (chỉ thêm một
 | `WndRankedQueue` | Nút "Ranked duel" ở màn chọn nhân vật: kết nối, chờ, đối thủ + nút Accept (READY), Cancel |
 | `RankedHud` | Dòng đối thủ trong game (tầng, boss, chết, mất kết nối), "đang nối lại", và kết quả + đổi rating |
 
-Cấu hình (GameSettings): `ranked_server` (mặc định `127.0.0.1:7420`; ngoài localhost/LAN thì dùng TLS), `ranked_name`, `ranked_device_key` (tự sinh, L2). Build fingerprint client là `Game.version + "+" + Game.versionCode`; server phải chạy với `-Dspdr.build` đúng chuỗi đó.
+Cấu hình (GameSettings): `ranked_server` (mặc định `127.0.0.1:7420`; ngoài localhost/LAN thì dùng TLS), `ranked_name`, `ranked_device_key` (tự sinh, L2). Build fingerprint là `spdr-` + 16 ký tự hex đầu của SHA-256 trên các file `.class` đã biên dịch của core (đường dẫn sắp xếp + nội dung), do task `:core:rankedFingerprint` ghi vào resource `ranked/build-fingerprint.txt`. Game đọc resource đó (có trong APK), server đọc cùng resource từ jar core nên cùng commit thì tự khớp. Thiếu resource (chạy từ IDE không qua Gradle) thì quay về `version+versionCode`.
 
 Test: `ProgressTrackerTest` (core) và `ClientInteropTest` (ranked-server): `RankedClient` thật đấu với `Server` thật qua socket cục bộ, cả trận có rớt mạng giữa chừng rồi RESUME, và từ chối build lạ.
 
-Chưa làm: tiếp tục run ranked sau khi tắt app (token chỉ nằm trong RAM), nút bỏ cuộc trong game, gửi log lệnh (A3), fingerprint theo hash bytecode, chưa thử trên Android thật.
+## Đợt 3
+- **Bỏ cuộc**: nút Resign dưới dòng đối thủ khi trận đang chạy, hỏi lại trước (thua và tính strike).
+- **Vào lại sau khi tắt app**: khi `START`, `RankedSession` lưu `ranked_resume` (matchId, token, đối thủ, tầng boss cuối, `seen` cập nhật mỗi 10 s) vào GameSettings; xóa khi có `RESULT` hoặc server báo không còn gì để resume. Nếu còn trong 5 phút tính từ `seen` và slot ranked còn save, nút ở màn chọn nhân vật thành "Rejoin ranked duel": `RankedClient.resume` nối lại với cửa sổ tính từ `seen`, khi `RESUMED` thì tải run từ slot như Continue. Log lệnh A3 được ghi tiếp từ lúc tải lại, nhưng các lệnh sau `LOG` cuối trước khi tắt app đã mất, nên trận vào lại kiểu này sẽ không qua được phát lại của Verifier (void). Muốn giữ được cần lưu log chưa gửi cùng save.
+- Test thêm trong `ClientInteropTest`: client mới vào lại bằng token đã lưu rồi bỏ cuộc (thua/thắng đúng), token cũ bị từ chối, core có fingerprint đúng dạng.
+
+Chưa làm: lưu log lệnh chưa gửi khi tắt app (xem trên), chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).
