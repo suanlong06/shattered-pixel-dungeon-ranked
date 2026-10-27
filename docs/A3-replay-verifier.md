@@ -2,15 +2,21 @@
 
 Server không ghi rating từ lời báo của client nữa. Mỗi client gửi log lệnh của mình; khi `MatchEnd.judge` ra kết quả, server phát lại log của cả hai bên trên nền tất định T0.8 (headless, không GL) rồi so với báo cáo cuối của từng bên. Chỉ khi khớp thì mới tính rating.
 
-Chạy test: `./gradlew :ranked-server:test` (24 ca, khoảng 10 giây) và `./gradlew :core:test` (lint và golden digest vẫn xanh).
+Chạy test: `./gradlew :ranked-server:test` (26 ca, khoảng 10 giây) và `./gradlew :core:test` (lint và golden digest vẫn xanh).
 
 ## Giao thức (phiên bản 2)
 - Frame mới `LOG`, `{from, cmds, cls}`: `cmds` là các lệnh T0.8 (`CELL c`, `REST f`, `SEARCH`, `ITEM i action`), mỗi dòng một lệnh; `from` là chỉ số của lệnh đầu; `cls` là class nhân vật, bắt buộc ở phần đầu tiên và không được đổi.
 - Phần bắt đầu sau cuối log bị từ chối với `ERROR {message: "log gap", expected}`. Lệnh đã nhận rồi thì bỏ qua, nên client gửi lại thoải mái sau `RESUME`; `RESUMED` có thêm `logCount`.
 - **Quy tắc cho client**: trước mỗi `PROGRESS`, `DIED`, `CLEARED` phải gửi `LOG` đưa log tới đúng thời điểm đó. Server phát lại tới hết log và đòi khớp đúng với báo cáo cuối.
 - Định nghĩa các số client phải báo (để khớp phát lại): `depth` = `Statistics.deepestFloor`; `turns` = `(long) Statistics.duration`; `bosses` = số boss đã hạ trong các tầng 5/10/15; `CLEARED` khi boss tầng `finalBossDepth` chết.
-- Ván phải bắt đầu như `ReplayCheck.start`: chế độ Ranked, slot 1, seed từ `START`, không daily, không custom seed.
+- Ván phải bắt đầu như `ReplayCheck.start`: chế độ Ranked, seed từ `START`, không daily, không custom seed (client dùng slot riêng; slot chỉ là tên file, không ảnh hưởng gameplay).
 - Log tối đa 500.000 lệnh mỗi bên (`Config.maxLogCommands`).
+
+## Phía client (đã nối vào client A1)
+- `RankedSession` bật `CommandLog` khi nhận `START`, gửi ngay một `LOG` rỗng có class, và trước mỗi báo cáo thì gửi các lệnh mới. `NetFrame.PROTOCOL` lên 2.
+- Client chỉ báo cáo khi hero đang chờ lệnh (hoặc đã chết), đúng chỗ phát lại dừng, để `turns` và tầng khớp.
+- `RankedClient` giữ cả log của trận; sau `RESUMED` gửi lại từ `logCount` rồi mới gửi báo cáo đang chờ.
+- Đếm boss ở `ReplayCheck` dùng cùng luật với `ProgressTracker` của client.
 
 ## Luồng trên server
 `RUNNING` → (judge ra kết quả) → `VERIFYING` → `FINISHED` hoặc `VOIDED`. Trong lúc `VERIFYING` không nhận báo cáo mới, và client chưa nhận `RESULT`.
@@ -46,4 +52,4 @@ Các giới hạn khác:
 - Chưa chạy trên ART và chưa triển khai lên A53 (A7, cần hỏi user).
 
 ## Test (`ReplayVerifierTest`)
-Một người chơi giả chỉ đọc trạng thái (khám phá bằng chạm ô, đánh, nghỉ, xuống cầu thang) tạo log thật tới tầng 2. Kiểm: log thật được `ACCEPT`; phát lại nhiều lần cho cùng trace; báo sâu hơn, ít lượt hơn, log cắt ngắn, boss chưa đánh, lệnh rác đều `REJECT`; lệnh không áp dụng được là `UNVERIFIABLE`; bỏ cuộc không cần phát lại; một trận đầy đủ qua `Hub` (log gửi hai phần chồng nhau, hết giờ) chỉ có rating khi báo cáo đúng, báo sai thì void `REJECTED`.
+Một người chơi giả chỉ đọc trạng thái (khám phá bằng chạm ô, đánh, nghỉ, xuống cầu thang) tạo log thật tới tầng 2. Kiểm: log thật được `ACCEPT`; phát lại nhiều lần cho cùng trace; báo sâu hơn, ít lượt hơn, log cắt ngắn, boss chưa đánh, lệnh rác đều `REJECT`; lệnh không áp dụng được là `UNVERIFIABLE`; bỏ cuộc không cần phát lại; một trận đầy đủ qua `Hub` (log gửi hai phần chồng nhau, hết giờ) chỉ có rating khi báo cáo đúng, báo sai thì void `REJECTED`. `ClientInteropTest`: client thật gửi log, mất mạng, gửi tiếp khi offline, RESUME; server nhận đủ log không trùng không thiếu.

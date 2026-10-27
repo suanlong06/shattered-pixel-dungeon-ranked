@@ -390,7 +390,8 @@ public final class Hub {
 
 	private void log(Client c, Frame f) {
 		Match m = c.match;
-		if (m == null || m.state != State.RUNNING || (f.matchId != null && !f.matchId.equals(m.id))) {
+		// the first part (hero class, no commands yet) comes with START, during the countdown
+		if (m == null || (m.state != State.RUNNING && m.state != State.COUNTDOWN) || (f.matchId != null && !f.matchId.equals(m.id))) {
 			error(c.link, "no running match");
 			return;
 		}

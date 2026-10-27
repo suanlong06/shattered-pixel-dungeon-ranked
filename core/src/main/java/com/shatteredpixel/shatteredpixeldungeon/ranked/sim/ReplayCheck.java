@@ -62,12 +62,13 @@ public final class ReplayCheck {
 	public static Facts replay( long seed, HeroClass cls, List<Command> cmds ){
 		TurnRunner r = start( seed, cls );
 		Facts f = new Facts();
-		int[] lastScores = Statistics.bossScores.clone();
+		// same rule as the client's ProgressTracker: penalties only lower a boss score, so a
+		// score above its lowest so far is a kill; so is being deeper than that boss's floor
+		int[] lowest = Statistics.bossScores.clone();
 		Runnable bossCheck = () -> {
-			// a boss kill adds its score (1000 * boss number); penalties only ever subtract
 			for (int b = 0; b < f.bosses.length; b++){
-				if (Statistics.bossScores[b] - lastScores[b] >= 500) f.bosses[b] = true;
-				lastScores[b] = Statistics.bossScores[b];
+				lowest[b] = Math.min( lowest[b], Statistics.bossScores[b] );
+				if (Statistics.bossScores[b] > lowest[b] || Statistics.deepestFloor > 5 * (b + 1)) f.bosses[b] = true;
 			}
 		};
 		try {
