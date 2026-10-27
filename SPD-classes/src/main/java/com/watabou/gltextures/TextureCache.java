@@ -142,6 +142,13 @@ public class TextureCache {
 		}
 	}
 	
+	/** spd-ranked: A6 skin packs. Returns a replacement for an asset path, or null to load the original. */
+	public interface SkinOverride {
+		Pixmap load( String path );
+	}
+
+	public static SkinOverride override = null; // spd-ranked: A6
+
 	public static Pixmap getBitmap( Object src ) {
 		
 		try {
@@ -153,6 +160,8 @@ public class TextureCache {
 				
 			} else if (src instanceof String) {
 				
+				Pixmap skinned = override != null ? override.load((String)src) : null; // spd-ranked: A6
+				if (skinned != null) return skinned;
 				return new Pixmap(Gdx.files.internal((String)src));
 				
 			} else if (src instanceof Pixmap) {

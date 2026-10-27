@@ -151,10 +151,12 @@ class QolTest {
 		assertEquals("Rat", ev.get(0).actor);
 		assertEquals("QolTest", ev.get(0).subject);
 		assertEquals(3, ev.get(0).value);
-		assertEquals(EventLog.Type.HEAL, ev.get(1).type);
-		assertEquals(2, ev.get(1).value);
-		assertEquals(EventLog.Type.USE_ITEM, ev.get(2).type);
-		assertEquals("Food:NOTHING", ev.get(2).subject);
+		assertEquals(EventLog.Type.DEPTH, ev.get(1).type); // A5: first hero turn on a depth
+		assertEquals(Dungeon.depth, ev.get(1).value);
+		assertEquals(EventLog.Type.HEAL, ev.get(2).type);
+		assertEquals(2, ev.get(2).value);
+		assertEquals(EventLog.Type.USE_ITEM, ev.get(3).type);
+		assertEquals("Food:NOTHING", ev.get(3).subject);
 
 		for (EventLog.Event e : ev){
 			assertEquals(e.line(), EventLog.Event.parse(e.line()).line());
