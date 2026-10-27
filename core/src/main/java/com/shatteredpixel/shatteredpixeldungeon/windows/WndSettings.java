@@ -186,11 +186,25 @@ public class WndSettings extends WndTabbed {
 		};
 		add( langsTab );
 
+		// spd-ranked: A6 skins tab
+		final com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinsTab skins = new com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinsTab();
+		skins.setSize(width, 0);
+		height = Math.max(height, skins.height());
+		add( skins );
+		add( new IconTab(Icons.get(Icons.SHPX)){
+			@Override
+			protected void select(boolean value) {
+				super.select(value);
+				skins.visible = skins.active = value;
+				if (value) last_index = 6;
+			}
+		});
+
 		resize(width, (int)Math.ceil(height));
 
 		layoutTabs();
 
-		if (tabs.size() == 5 && last_index >= 3){
+		if (tabs.size() == 6 && last_index >= 3){ // spd-ranked: was 5, +1 for the skins tab
 			//input tab isn't visible
 			select(last_index-1);
 		} else {

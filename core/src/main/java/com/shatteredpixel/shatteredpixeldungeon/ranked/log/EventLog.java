@@ -1,9 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked.log;
 
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.race.Splits;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -35,7 +38,9 @@ public final class EventLog {
 		/** actor = hero, subject = item class + ":" + action, value = quantity */
 		USE_ITEM,
 		/** actor = who died, subject = source */
-		DEATH
+		DEATH,
+		/** actor = hero, value = depth the hero just arrived on (A5); added at the end, see VERSION */
+		DEPTH
 	}
 
 	public static final class Event {
@@ -66,6 +71,7 @@ public final class EventLog {
 	private static int capacity = SOLO_CAPACITY;
 	private static int seq;
 	private static int lastHeroHP = -1;
+	private static int lastDepth = -1;
 
 	private EventLog(){}
 
@@ -75,6 +81,8 @@ public final class EventLog {
 		capacity = cap;
 		seq = 0;
 		lastHeroHP = -1;
+		lastDepth = -1;
+		Splits.current().clear();
 	}
 
 	public static List<Event> events(){
@@ -108,6 +116,7 @@ public final class EventLog {
 
 	public static void death( Char ch, Object src ){
 		add( Type.DEATH, name( ch ), name( src ), 0 );
+		Splits.current().death( ch, Statistics.duration );
 	}
 
 	public static void move( Char ch, int cell ){
@@ -120,6 +129,11 @@ public final class EventLog {
 
 	/** start of each hero turn: logs healing from any source as the HP gained since last time */
 	public static void heroTurn( Hero hero ){
+		if (Dungeon.depth != lastDepth){
+			lastDepth = Dungeon.depth;
+			add( Type.DEPTH, name( hero ), "-", lastDepth );
+			Splits.current().arrive( lastDepth, Statistics.duration );
+		}
 		if (lastHeroHP >= 0 && hero.HP > lastHeroHP){
 			add( Type.HEAL, name( hero ), "-", hero.HP - lastHeroHP );
 		}

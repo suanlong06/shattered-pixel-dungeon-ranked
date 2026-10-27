@@ -68,6 +68,7 @@ public class ShatteredPixelDungeon extends Game {
 		Sample.INSTANCE.volume( SPDSettings.SFXVol()*SPDSettings.SFXVol()/100f );
 
 		Sample.INSTANCE.load( Assets.Sounds.all );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.skins.Skins.install(); // spd-ranked: A6
 		
 	}
 

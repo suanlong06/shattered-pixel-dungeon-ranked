@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked;
 
 import com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ContextualKnowledge;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.Skins;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameSettings;
 
@@ -43,6 +44,7 @@ public final class Features {
 		rankedSet = defaultRankedSet();
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 		ContextualKnowledge.reset();
+		Skins.modeChanged();
 	}
 
 	public static boolean enabled( Feature f ){
@@ -81,6 +83,7 @@ public final class Features {
 		}
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 		ContextualKnowledge.reset();
+		Skins.modeChanged();
 	}
 
 	private static EnumSet<Feature> defaultRankedSet(){
