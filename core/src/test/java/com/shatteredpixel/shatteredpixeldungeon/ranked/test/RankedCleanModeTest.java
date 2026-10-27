@@ -168,4 +168,21 @@ class RankedCleanModeTest {
 		Features.restore(new Bundle());
 		assertEquals(GameMode.SOLO, Features.mode(), "old saves are Solo");
 	}
+
+	@Test
+	void rankedIgnoresTheChallengesSetForSolo(){
+		int saved = com.shatteredpixel.shatteredpixeldungeon.SPDSettings.challenges();
+		try {
+			com.shatteredpixel.shatteredpixeldungeon.SPDSettings.challenges( 3 );
+			Features.setMode( GameMode.SOLO );
+			Headless.newRun( 12345L, HeroClass.WARRIOR );
+			assertEquals( 3, Dungeon.challenges, "Solo keeps the player's challenges" );
+			Features.setMode( GameMode.RANKED );
+			Headless.newRun( 12345L, HeroClass.WARRIOR );
+			assertEquals( 0, Dungeon.challenges, "Ranked runs as the server replays it: no challenges" );
+			assertEquals( 0, Features.challenges( 7 ) );
+		} finally {
+			com.shatteredpixel.shatteredpixeldungeon.SPDSettings.challenges( saved );
+		}
+	}
 }

@@ -234,7 +234,7 @@ public class Dungeon {
 	public static void init() {
 
 		initialVersion = version = Game.versionCode;
-		challenges = com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.challenges( SPDSettings.challenges() ); // spd-ranked: A5
+		challenges = com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.challenges( com.shatteredpixel.shatteredpixeldungeon.ranked.Features.challenges( SPDSettings.challenges() ) ); // spd-ranked: A5, ranked has none
 		mobsToChampion = 1;
 
 		Actor.clear();
