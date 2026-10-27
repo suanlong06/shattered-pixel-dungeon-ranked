@@ -1,21 +1,26 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked.server;
 
+import com.shatteredpixel.shatteredpixeldungeon.ranked.seed.SeedPoolFile;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * spd-ranked (A1): SQLite storage. Players are keyed by device key (L2 default: device key
  * plus display name). Ratings are per season and platform (L3). Seeds come from the A4 pool
- * file and are used once. Schema version lives in {@code PRAGMA user_version}.
+ * file and are used once:
+ * a seed is marked with the match that took it in the same transaction that creates the
+ * match, so a seed can never back two matches, even across a crash. Schema version lives in {@code PRAGMA user_version}.
  */
 public final class Storage implements AutoCloseable {
 
-	public static final int SCHEMA = 2;
+	public static final int SCHEMA = 3;
 
 	private final Connection db;
 
@@ -45,6 +50,20 @@ public final class Storage implements AutoCloseable {
 				s.execute("CREATE TABLE replay (match_id TEXT NOT NULL REFERENCES match(id), side INTEGER NOT NULL, hero_class TEXT,"
 						+ " commands TEXT NOT NULL, result TEXT, detail TEXT, PRIMARY KEY (match_id, side))");
 				s.execute("PRAGMA user_version = 2");
+			}
+			if (version < 3) {
+				// A4: keep each seed's scores and the pool header it came from (stale thresholds
+				// can be found and retired), and when it was loaded and used
+				s.execute("ALTER TABLE seed ADD COLUMN min_score INTEGER");
+				s.execute("ALTER TABLE seed ADD COLUMN max_score INTEGER");
+				s.execute("ALTER TABLE seed ADD COLUMN pool TEXT");
+				s.execute("ALTER TABLE seed ADD COLUMN added INTEGER");
+				s.execute("ALTER TABLE seed ADD COLUMN used_at INTEGER");
+				s.execute("ALTER TABLE seed ADD COLUMN retired INTEGER NOT NULL DEFAULT 0");
+				// hand-out order: the seed is the rowid, so rowid order would be numeric, not file order
+				s.execute("ALTER TABLE seed ADD COLUMN pos INTEGER");
+				s.execute("UPDATE seed SET pos = (SELECT COUNT(*) FROM seed o WHERE o.seed <= seed.seed)");
+				s.execute("PRAGMA user_version = 3");
 			}
 		}
 	}
@@ -100,30 +119,91 @@ public final class Storage implements AutoCloseable {
 		}
 	}
 
-	/** loads pool seeds; seeds already known keep their used state */
+	/** loads bare seeds (tests); known seeds keep their used state */
 	public int addSeeds(List<Long> seeds) throws SQLException {
-		int added = 0;
-		try (PreparedStatement p = db.prepareStatement("INSERT OR IGNORE INTO seed (seed) VALUES (?)")) {
-			for (long s : seeds) {
-				p.setLong(1, s);
-				added += p.executeUpdate();
-			}
-		}
-		return added;
+		List<SeedPoolFile.Entry> e = new ArrayList<>();
+		for (long s : seeds) e.add(new SeedPoolFile.Entry(s, -1, -1));
+		return addSeeds(e, null, 0);
 	}
 
-	/** takes the next unused seed for a match, or null if the pool is empty */
-	public Long takeSeed(String matchId) throws SQLException {
-		try (Statement s = db.createStatement(); ResultSet r = s.executeQuery("SELECT seed FROM seed WHERE used_by IS NULL ORDER BY rowid LIMIT 1")) {
-			if (!r.next()) return null;
-			long seed = r.getLong(1);
-			try (PreparedStatement u = db.prepareStatement("UPDATE seed SET used_by = ? WHERE seed = ?")) {
-				u.setString(1, matchId);
-				u.setLong(2, seed);
-				u.executeUpdate();
+	/**
+	 * loads a pool file's seeds in file order, in one transaction. Seeds already known keep
+	 * their used state, scores and pool, so reloading the same file at every start is safe.
+	 */
+	public int addSeeds(List<SeedPoolFile.Entry> seeds, String pool, long now) throws SQLException {
+		return inTransaction(() -> {
+			int added = 0;
+			try (PreparedStatement p = db.prepareStatement("INSERT OR IGNORE INTO seed (seed, min_score, max_score, pool, added, pos)"
+					+ " VALUES (?, ?, ?, ?, ?, (SELECT COALESCE(MAX(pos), 0) + 1 FROM seed))")) {
+				for (SeedPoolFile.Entry e : seeds) {
+					p.setLong(1, e.seed);
+					if (e.min < 0) p.setNull(2, java.sql.Types.INTEGER); else p.setInt(2, e.min);
+					if (e.max < 0) p.setNull(3, java.sql.Types.INTEGER); else p.setInt(3, e.max);
+					p.setString(4, pool);
+					p.setLong(5, now);
+					added += p.executeUpdate();
+				}
 			}
-			return seed;
+			return added;
+		});
+	}
+
+	/** unused seeds that matches can still take */
+	public int seedsLeft() throws SQLException {
+		try (Statement s = db.createStatement(); ResultSet r = s.executeQuery("SELECT COUNT(*) FROM seed WHERE used_by IS NULL AND retired = 0")) {
+			r.next();
+			return r.getInt(1);
 		}
+	}
+
+	/**
+	 * stops handing out unused seeds whose pool header differs from {@code keep} (built with
+	 * old thresholds); used seeds stay as the record of their matches. Returns how many.
+	 */
+	public int retireOtherPools(String keep) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("UPDATE seed SET retired = 1 WHERE used_by IS NULL AND retired = 0 AND (pool IS NULL OR pool <> ?)")) {
+			p.setString(1, keep);
+			return p.executeUpdate();
+		}
+	}
+
+	/** the match that used a seed, or null if it is unused or unknown */
+	public String seedUsedBy(long seed) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("SELECT used_by FROM seed WHERE seed = ?")) {
+			p.setLong(1, seed);
+			try (ResultSet r = p.executeQuery()) {
+				return r.next() ? r.getString(1) : null;
+			}
+		}
+	}
+
+	/** takes the next unused seed (file order) for a match, or null if the pool is empty */
+	public Long takeSeed(String matchId) throws SQLException {
+		return takeSeed(matchId, 0);
+	}
+
+	private Long takeSeed(String matchId, long now) throws SQLException {
+		// one statement, so two takers can never get the same seed
+		try (PreparedStatement u = db.prepareStatement("UPDATE seed SET used_by = ?, used_at = ?"
+				+ " WHERE seed = (SELECT seed FROM seed WHERE used_by IS NULL AND retired = 0 ORDER BY pos LIMIT 1) RETURNING seed")) {
+			u.setString(1, matchId);
+			u.setLong(2, now);
+			try (ResultSet r = u.executeQuery()) {
+				return r.next() ? r.getLong(1) : null;
+			}
+		}
+	}
+
+	/**
+	 * takes a seed and creates the match with it in one transaction: either both happen or
+	 * neither does. Returns the seed, or null (and no match) if the pool is empty.
+	 */
+	public Long startMatch(String id, int season, String platform, long a, long b, long now) throws SQLException {
+		return inTransaction(() -> {
+			Long seed = takeSeed(id, now);
+			if (seed != null) createMatch(id, season, platform, a, b, seed, now);
+			return seed;
+		});
 	}
 
 	public void createMatch(String id, int season, String platform, long a, long b, long seed, long now) throws SQLException {
@@ -136,6 +216,24 @@ public final class Storage implements AutoCloseable {
 			p.setLong(6, seed);
 			p.setLong(7, now);
 			p.executeUpdate();
+		}
+	}
+
+	private interface Work<T> {
+		T run() throws SQLException;
+	}
+
+	private synchronized <T> T inTransaction(Work<T> w) throws SQLException {
+		db.setAutoCommit(false);
+		try {
+			T out = w.run();
+			db.commit();
+			return out;
+		} catch (SQLException | RuntimeException e) {
+			db.rollback();
+			throw e;
+		} finally {
+			db.setAutoCommit(true);
 		}
 	}
 

@@ -21,7 +21,15 @@ Ngưỡng hiện tại lấy từ 30 seed mẫu (điểm 11 đến 44, chênh gi
 - `SeedPoolFile`: file pool dạng text, mỗi dòng `seed min max`; dòng đầu là comment ghi phiên bản và ngưỡng đã dùng (`MIN`, `CAP`, độ sâu) để biết pool nào được tạo bằng ngưỡng cũ.
 - `SeedPoolMain` (test sources, như `GoldenMain`): quét `count` ứng viên `first + i*step` và ghi file pool. Test kiểm tra ghi rồi đọc lại ra đúng danh sách seed.
 
+## Đợt 3: lưu pool trên server
+- Server nạp file pool qua `-Dspdr.seedpool=<file>` mỗi lần khởi động vào bảng `seed` (SQLite, schema 3). Mỗi seed giữ điểm `min`/`max`, dòng header của pool (ngưỡng đã dùng), thời điểm nạp, trận đã dùng và thời điểm dùng. Nạp lại cùng file không đổi trạng thái seed đã dùng.
+- Seed phát theo đúng thứ tự trong file (cột `pos`; trước đây vô tình theo thứ tự số vì `seed` là rowid).
+- `Storage.startMatch` lấy seed và tạo trận trong cùng một transaction: không có trận nào thiếu seed, không seed nào dùng cho hai trận, kể cả khi lỗi giữa chừng.
+- Header khác ngưỡng hiện tại thì in cảnh báo. `-Dspdr.retireStalePools=true` ngừng phát các seed chưa dùng của pool cũ (seed đã dùng vẫn giữ làm hồ sơ trận).
+- Khởi động in số seed còn lại và cảnh báo khi pool rỗng.
+- Test: `SeedStoreTest` (thứ tự file, dùng một lần, rollback khi tạo trận lỗi, pool rỗng, giữ trạng thái qua khởi động lại, loại pool cũ, nâng cấp DB schema 2).
+- Seed của trận bị hủy trước `START` (hết giờ READY) vẫn tính là đã dùng, dù chưa lộ cho ai. Có thể trả lại pool nếu cần tiết kiệm seed; chưa làm vì cần user chốt.
+
 ## Còn để sau
 - Chỉnh bảng điểm và ngưỡng khi có dữ liệu chơi thật (bot S5 chưa qua được boss).
-- Nơi lưu file pool phía server và cách đánh dấu seed đã dùng (gắn với A1).
 - Tính cả đồ trong shop nếu mở rộng ra tầng 6 trở lên.
