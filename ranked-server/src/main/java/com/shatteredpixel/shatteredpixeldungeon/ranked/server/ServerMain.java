@@ -23,6 +23,8 @@ import javax.net.ssl.SSLContext;
  *   spdr.season    (default 1)
  *   spdr.seedpool  A4 pool file to load; known seeds keep their used state
  *   spdr.keystore / spdr.keystorePass   PKCS12 keystore; without it the server runs plain TCP
+ *   spdr.verify    replay (default): replay command logs before rating (A3); none: accept every verdict
+ *   spdr.acceptUnverifiable  true: count verdicts replay cannot follow yet instead of voiding them
  * </pre>
  */
 public final class ServerMain {
@@ -33,6 +35,8 @@ public final class ServerMain {
 		if (cfg.build == null) throw new IllegalArgumentException("no fingerprint in core; set -Dspdr.build=<fingerprint>");
 		cfg.season = Integer.getInteger("spdr.season", 1);
 		int port = Integer.getInteger("spdr.port", 7420);
+		if (!"none".equals(System.getProperty("spdr.verify", "replay"))) cfg.verifier = new ReplayVerifier();
+		cfg.acceptUnverifiable = Boolean.getBoolean("spdr.acceptUnverifiable");
 
 		Storage db = new Storage("jdbc:sqlite:" + System.getProperty("spdr.db", "ranked.db"));
 		String pool = System.getProperty("spdr.seedpool");

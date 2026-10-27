@@ -68,6 +68,8 @@ class ClientInteropTest {
 			db.addSeeds(Arrays.asList(42L));
 			Hub.Config cfg = new Hub.Config();
 			cfg.countdownMs = 0;
+			Hub.Evidence[] seen = new Hub.Evidence[1];
+			cfg.verifier = (e, done) -> { seen[0] = e; done.accept(new Hub.Check(Hub.Result.ACCEPT, null, null)); };
 			try (Server server = new Server(new Hub(cfg, db, System.currentTimeMillis()), new ServerSocket(0))) {
 				server.start();
 				Probe pa = new Probe(), pb = new Probe();
@@ -88,16 +90,19 @@ class ClientInteropTest {
 					assertEquals(State.STARTED, a.state());
 					Thread.sleep(1500); // the ticker moves the match to RUNNING
 
+					a.log("WARRIOR", Arrays.asList("CELL 5", "REST 0"));
 					a.progress(3, 100, 0);
 					pb.awaitOpponent(true, 3);
 
 					// network failure: the client resumes on its own and sends its newest report again
 					a.dropLink();
 					pb.awaitOpponent(false, 3);
+					a.log("WARRIOR", Arrays.asList("SEARCH")); // logged while offline
 					a.progress(4, 150, 0); // made while offline
 					pa.awaitState(State.RECONNECTING);
 					NetFrame resumed = pa.await(NetFrame.RESUMED);
 					assertEquals(3, resumed.i("depth", -1), "server state before the queued report");
+					assertEquals(2, resumed.i("logCount", -1));
 					pb.awaitOpponent(true, 4);
 
 					a.cleared(15, 900, 3);
@@ -106,6 +111,8 @@ class ClientInteropTest {
 					assertEquals("LOSS", rb.s("outcome"));
 					assertTrue(ra.d("ratingAfter", 0) > ra.d("ratingBefore", 0));
 					pa.awaitState(State.FINISHED);
+					Hub.SideLog la = "WARRIOR".equals(seen[0].sides[0].heroClass) ? seen[0].sides[0] : seen[0].sides[1];
+					assertEquals(Arrays.asList("CELL 5", "REST 0", "SEARCH"), la.commands, "log resent after RESUME without gaps or repeats");
 					assertTrue(pa.errors.isEmpty(), pa.errors.toString());
 				} finally {
 					a.close();

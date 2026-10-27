@@ -26,7 +26,7 @@ Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-
 
 ## Cố ý chưa làm
 - **Vote đổi seed giữa trận** và **pause 180 s**: user chưa chốt (L6/L19). Nếu cần sẽ là thêm loại frame và một trường trong `Hub.Match`, không đổi phần còn lại.
-- **Xác minh bằng phát lại (A3)**: `Hub.Verifier` là chỗ nối; hiện chấp nhận mọi kết quả nên rating được ghi ngay. Khi có A3 thì `Verifier` phát lại log lệnh trước khi chấp nhận.
+- ~~Xác minh bằng phát lại~~: đã làm ở A3 (`docs/A3-replay-verifier.md`), giao thức lên phiên bản 2 với frame `LOG`.
 - Log lệnh theo đoạn và lệnh `CHOICE` (T0.5 mục 4), phía client (UI hàng chờ, gửi báo cáo), bảng xếp hạng, đổi mùa.
 - Giới hạn tổng 90 phút vẫn là số tạm của A2.
 
@@ -51,7 +51,7 @@ Test: `ProgressTrackerTest` (core) và `ClientInteropTest` (ranked-server): `Ran
 
 ## Đợt 3
 - **Bỏ cuộc**: nút Resign dưới dòng đối thủ khi trận đang chạy, hỏi lại trước (thua và tính strike).
-- **Vào lại sau khi tắt app**: khi `START`, `RankedSession` lưu `ranked_resume` (matchId, token, đối thủ, tầng boss cuối, `seen` cập nhật mỗi 10 s) vào GameSettings; xóa khi có `RESULT` hoặc server báo không còn gì để resume. Nếu còn trong 5 phút tính từ `seen` và slot ranked còn save, nút ở màn chọn nhân vật thành "Rejoin ranked duel": `RankedClient.resume` nối lại với cửa sổ tính từ `seen`, khi `RESUMED` thì tải run từ slot như Continue.
+- **Vào lại sau khi tắt app**: khi `START`, `RankedSession` lưu `ranked_resume` (matchId, token, đối thủ, tầng boss cuối, `seen` cập nhật mỗi 10 s) vào GameSettings; xóa khi có `RESULT` hoặc server báo không còn gì để resume. Nếu còn trong 5 phút tính từ `seen` và slot ranked còn save, nút ở màn chọn nhân vật thành "Rejoin ranked duel": `RankedClient.resume` nối lại với cửa sổ tính từ `seen`, khi `RESUMED` thì tải run từ slot như Continue. Log lệnh A3 được ghi tiếp từ lúc tải lại, nhưng các lệnh sau `LOG` cuối trước khi tắt app đã mất, nên trận vào lại kiểu này sẽ không qua được phát lại của Verifier (void). Muốn giữ được cần lưu log chưa gửi cùng save.
 - Test thêm trong `ClientInteropTest`: client mới vào lại bằng token đã lưu rồi bỏ cuộc (thua/thắng đúng), token cũ bị từ chối, core có fingerprint đúng dạng.
 
-Chưa làm: gửi log lệnh (A3), chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).
+Chưa làm: lưu log lệnh chưa gửi khi tắt app (xem trên), chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).

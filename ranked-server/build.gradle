@@ -14,6 +14,10 @@ dependencies {
     implementation project(':core')
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.xerial:sqlite-jdbc:3.46.1.3'
+    // A3: replay verification runs the game itself on the libGDX headless backend (no GL)
+    implementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
 
     testImplementation 'org.json:json:20170516'
     testImplementation platform('org.junit:junit-bom:5.11.4')
@@ -21,7 +25,12 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// A3: the game's assets (strings, level data) go on the classpath; libGDX falls back to the
+// classpath for internal files, so the server runs from any working directory
+sourceSets.main.resources.srcDir project(':core').file('src/main/assets')
+
 tasks.named('test') {
     useJUnitPlatform()
+    maxHeapSize = '2g'
     testLogging { events 'failed', 'skipped'; exceptionFormat 'full' }
 }

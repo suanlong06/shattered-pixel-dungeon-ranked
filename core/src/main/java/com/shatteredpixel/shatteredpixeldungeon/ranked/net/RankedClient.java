@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.net.ssl.SSLSocketFactory;
 
@@ -75,6 +77,9 @@ public final class RankedClient {
 	private volatile String matchId;
 	private volatile String resumeToken;
 	private volatile NetFrame lastReport;
+	/** A3: this match's command log, as sent; the server replays it before rating */
+	private final List<String> log = new ArrayList<>();
+	private volatile String logClass;
 	private volatile int rating = -1;
 	private volatile long playerId = -1;
 	private volatile long resumeLostAt = -1;
@@ -126,6 +131,34 @@ public final class RankedClient {
 
 	public void ready(){ send( match( NetFrame.READY, null ) ); }
 	public void resign(){ report( match( NetFrame.RESIGN, null ) ); }
+
+	/**
+	 * A3: appends commands to the match log and sends them. Call before the report they lead
+	 * up to (the server compares its replay of the whole log with the last report).
+	 */
+	public void log( String heroClass, List<String> cmds ){
+		synchronized (log){
+			int from = log.size();
+			logClass = heroClass;
+			log.addAll( cmds );
+			if (state != State.RECONNECTING) sendLog( from );
+		}
+	}
+
+	/** LOG frames from index from to the end, split to stay well under the frame limit; at least one */
+	private void sendLog( int from ){
+		synchronized (log){
+			int i = Math.max( 0, Math.min( from, log.size() ) );
+			do {
+				int start = i;
+				StringBuilder sb = new StringBuilder();
+				while (i < log.size() && sb.length() < NetFrame.MAX_FRAME / 2){
+					sb.append( log.get( i++ ) ).append( '\n' );
+				}
+				send( match( NetFrame.LOG, NetFrame.obj( "from", start, "cls", logClass, "cmds", sb.toString() ) ) );
+			} while (i < log.size());
+		}
+	}
 
 	public void progress( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.PROGRESS, depth, turns, bosses ) ); }
 	public void died( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.DIED, depth, turns, bosses ) ); }
@@ -272,6 +305,7 @@ public final class RankedClient {
 				matchId = f.matchId;
 				resumeToken = f.s( "resumeToken" );
 				lastReport = null;
+				synchronized (log){ log.clear(); }
 				setState( State.MATCH_FOUND );
 				break;
 			case NetFrame.START:
@@ -280,6 +314,8 @@ public final class RankedClient {
 			case NetFrame.RESUMED:
 				setState( State.STARTED );
 				NetFrame r = lastReport;
+				// the log first (from what the server has), then the report it leads to
+				if (logClass != null) sendLog( f.i( "logCount", 0 ) );
 				if (r != null) send( r );
 				break;
 			case NetFrame.RESULT:

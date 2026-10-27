@@ -15,7 +15,7 @@ import java.util.List;
  */
 public final class Storage implements AutoCloseable {
 
-	public static final int SCHEMA = 1;
+	public static final int SCHEMA = 2;
 
 	private final Connection db;
 
@@ -39,6 +39,12 @@ public final class Storage implements AutoCloseable {
 						+ " seed INTEGER NOT NULL, state TEXT NOT NULL, outcome TEXT, reason TEXT, created INTEGER NOT NULL, ended INTEGER)");
 				s.execute("CREATE TABLE strike (player_id INTEGER NOT NULL REFERENCES player(id), at INTEGER NOT NULL, reason TEXT NOT NULL)");
 				s.execute("PRAGMA user_version = 1");
+			}
+			if (version < 2) {
+				// A3: each side's command log and what replaying it showed, kept for disputes
+				s.execute("CREATE TABLE replay (match_id TEXT NOT NULL REFERENCES match(id), side INTEGER NOT NULL, hero_class TEXT,"
+						+ " commands TEXT NOT NULL, result TEXT, detail TEXT, PRIMARY KEY (match_id, side))");
+				s.execute("PRAGMA user_version = 2");
 			}
 		}
 	}
@@ -141,6 +147,29 @@ public final class Storage implements AutoCloseable {
 			p.setLong(4, now);
 			p.setString(5, id);
 			p.executeUpdate();
+		}
+	}
+
+	public void saveReplay(String matchId, int side, String heroClass, String commands, String result, String detail) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("INSERT OR REPLACE INTO replay (match_id, side, hero_class, commands, result, detail) VALUES (?, ?, ?, ?, ?, ?)")) {
+			p.setString(1, matchId);
+			p.setInt(2, side);
+			p.setString(3, heroClass);
+			p.setString(4, commands);
+			p.setString(5, result);
+			p.setString(6, detail);
+			p.executeUpdate();
+		}
+	}
+
+	/** {result, detail} of a stored replay, or null */
+	public String[] replayResult(String matchId, int side) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("SELECT result, detail FROM replay WHERE match_id = ? AND side = ?")) {
+			p.setString(1, matchId);
+			p.setInt(2, side);
+			try (ResultSet r = p.executeQuery()) {
+				return r.next() ? new String[]{r.getString(1), r.getString(2)} : null;
+			}
 		}
 	}
 

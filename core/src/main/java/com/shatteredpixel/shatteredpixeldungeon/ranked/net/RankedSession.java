@@ -6,6 +6,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.watabou.noosa.Game;
@@ -15,6 +17,8 @@ import com.watabou.utils.GameSettings;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -62,6 +66,9 @@ public final class RankedSession {
 
 	private ProgressTracker tracker;
 	private long startedAt = -1;
+	/** commands of this run already handed to the client (A3) */
+	private int logged;
+	private String heroClass;
 	private String result;
 	private boolean rejoining;
 	private long seenSaved;
@@ -133,10 +140,19 @@ public final class RankedSession {
 		while ((r = events.poll()) != null) r.run();
 		long now = System.currentTimeMillis();
 		if (inRun() && Features.isRanked() && Dungeon.hero != null
-				&& now - startedAt >= COUNTDOWN_GRACE_MS){
+				&& now - startedAt >= COUNTDOWN_GRACE_MS && heroWaits()){
 			report();
 		}
 		if (inRun() && now - seenSaved >= SEEN_EVERY_MS) save();
+	}
+
+	/**
+	 * A3: report only where the server's replay stops too, when the hero waits for input
+	 * (or has died), so turns and floor match the replay of the log sent with the report
+	 */
+	private static boolean heroWaits(){
+		return !Dungeon.hero.isAlive()
+				|| (Dungeon.hero.ready && Dungeon.hero.curAction == null && !Dungeon.hero.resting);
 	}
 
 	private void state( RankedClient.State s ){
@@ -174,6 +190,7 @@ public final class RankedSession {
 			case NetFrame.RESULT:
 				forget();
 				String outcome = f.s( "outcome" );
+				CommandLog.stop();
 				result = Messages.get( this, "result_" + (outcome == null ? "void" : outcome.toLowerCase( java.util.Locale.ROOT )) );
 				if (f.data.has( "ratingAfter" )){
 					result += " " + Messages.get( this, "rating_change",
@@ -200,6 +217,11 @@ public final class RankedSession {
 		Dungeon.customSeedText = "";
 		ActionIndicator.clearAction();
 		InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
+		// A3: every input of the run is recorded; the first LOG names the hero class
+		heroClass = GamesInProgress.selectedClass.name();
+		logged = 0;
+		CommandLog.start();
+		sendLog();
 		Game.switchScene( InterlevelScene.class );
 	}
 
@@ -208,6 +230,11 @@ public final class RankedSession {
 		startedAt = System.currentTimeMillis() - COUNTDOWN_GRACE_MS;
 		tracker = new ProgressTracker( finalBossDepth );
 		save();
+		// A3: commands before the restart that never went out are lost, so the server's replay
+		// of this match will not verify; recording goes on so the log stays as full as it can
+		heroClass = null;
+		logged = 0;
+		CommandLog.start();
 		GamesInProgress.curSlot = SLOT;
 		Dungeon.hero = null;
 		Dungeon.daily = Dungeon.dailyReplay = false;
@@ -247,11 +274,21 @@ public final class RankedSession {
 		}
 	}
 
+	private void sendLog(){
+		if (heroClass == null && Dungeon.hero != null) heroClass = Dungeon.hero.heroClass.name();
+		List<Command> rec = CommandLog.recorded();
+		List<String> cmds = new ArrayList<>();
+		for (int i = logged; i < rec.size(); i++) cmds.add( rec.get( i ).toString() );
+		logged = rec.size();
+		client.log( heroClass, cmds );
+	}
+
 	private void report(){
 		int depth = Dungeon.depth;
 		long turns = (long)Statistics.duration;
 		ProgressTracker.Report rep = tracker.update( Math.max( depth, Statistics.deepestFloor ), turns,
 				Statistics.bossScores, Dungeon.hero.isAlive() );
+		if (rep != ProgressTracker.Report.NONE) sendLog();
 		switch (rep){
 			case PROGRESS: client.progress( tracker.depth(), tracker.turns(), tracker.bosses() ); break;
 			case DIED:     client.died( tracker.depth(), tracker.turns(), tracker.bosses() ); break;

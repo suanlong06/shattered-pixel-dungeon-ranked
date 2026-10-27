@@ -60,7 +60,7 @@ public final class MatchEnd {
 		public final Outcome outcome;
 		public final Reason reason;
 
-		Verdict(Outcome outcome, Reason reason) {
+		public Verdict(Outcome outcome, Reason reason) {
 			this.outcome = outcome;
 			this.reason = reason;
 		}
