@@ -32,3 +32,21 @@ Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-
 
 ## Test
 `HubTest` (14 ca, đồng hồ giả): từ chối build lạ, tách nền tảng, thắng bằng hạ boss có đổi rating, chặn `CLEARED` sớm và tiến độ lùi, chết là thua, bỏ cuộc có strike, RESUME dưới 5 phút và thua khi quá, token của người khác, cả hai mất kết nối là void, hết giờ READY, khóa hàng chờ, seed dùng một lần, `Verifier` từ chối, khởi động lại thì void. `PartsTest`: codec, Glicko-2, ghép cặp, và một trận đầy đủ qua socket thật.
+
+## Phía client (đợt 2)
+Package `core/.../ranked/net/`, không đụng `Dungeon.java` (chỉ thêm một dòng ở `GameScene` và `HeroSelectScene`).
+
+| Class | Việc |
+|---|---|
+| `NetFrame` | Bản client của `Frame`/`FrameCodec` (org.json, cùng định dạng dây) |
+| `RankedClient` | Một kết nối: HELLO, PING 5 s, im lặng 15 s là đứt. Mất kết nối sau `START` thì tự nối lại (1, 2, 4 ... 10 s) trong cửa sổ 5 phút, `HELLO` + `RESUME`, rồi gửi lại báo cáo mới nhất. Không chạm trạng thái game |
+| `ProgressTracker` | Từ trạng thái run ra `PROGRESS` / `DIED` / `CLEARED`, chỉ khi có thay đổi. Boss tính là đã hạ khi xuống sâu hơn tầng boss hoặc `Statistics.bossScores[i]` tăng (điểm boss chỉ tăng khi boss chết) |
+| `RankedSession` | Chuyển sự kiện mạng về luồng render, bắt đầu run Ranked với seed trong `START` (slot riêng `MAX_SLOTS + 2`), gửi báo cáo sau 6 s đếm ngược |
+| `WndRankedQueue` | Nút "Ranked duel" ở màn chọn nhân vật: kết nối, chờ, đối thủ + nút Accept (READY), Cancel |
+| `RankedHud` | Dòng đối thủ trong game (tầng, boss, chết, mất kết nối), "đang nối lại", và kết quả + đổi rating |
+
+Cấu hình (GameSettings): `ranked_server` (mặc định `127.0.0.1:7420`; ngoài localhost/LAN thì dùng TLS), `ranked_name`, `ranked_device_key` (tự sinh, L2). Build fingerprint client là `Game.version + "+" + Game.versionCode`; server phải chạy với `-Dspdr.build` đúng chuỗi đó.
+
+Test: `ProgressTrackerTest` (core) và `ClientInteropTest` (ranked-server): `RankedClient` thật đấu với `Server` thật qua socket cục bộ, cả trận có rớt mạng giữa chừng rồi RESUME, và từ chối build lạ.
+
+Chưa làm: tiếp tục run ranked sau khi tắt app (token chỉ nằm trong RAM), nút bỏ cuộc trong game, gửi log lệnh (A3), fingerprint theo hash bytecode, chưa thử trên Android thật.

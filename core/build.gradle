@@ -6,6 +6,8 @@ java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
 dependencies {
     api project(':SPD-classes')
     implementation project(':services')
+    // spd-ranked (A1 client): frame JSON; same artifact SPD-classes already ships
+    implementation "org.json:json:20170516"
 
     // spd-ranked: headless test harness (T0.3/T0.4)
     testImplementation platform('org.junit:junit-bom:5.11.4')
