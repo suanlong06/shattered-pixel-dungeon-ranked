@@ -87,83 +87,229 @@ public final class TurnRunner {
 
 	public Hero hero(){ return Dungeon.hero; }
 
+	/** What {@link #step} needs next. */
+	public enum Step {
+		/** call step() again */
+		CONTINUE,
+		/** run one scene frame (sprites, tweens, posted callbacks), then call step() again */
+		FRAME,
+		/** a level change was requested; only with {@link #hostScenes}: call {@link #sceneBuilt()} once the new GameScene is up */
+		SWITCH,
+		/** the run is over for this runner, see {@link #stop} */
+		STOP
+	}
+
+	/**
+	 * The game's own InterlevelScene does level changes and its render loop runs the frames and posted
+	 * callbacks (the in-game replay viewer). False for the headless runner, which does both itself.
+	 */
+	public boolean hostScenes = false;
+	/** with {@link #hostScenes}: seconds the scene keeps running before each input, so a viewer can follow it */
+	public float inputDelay = 0f;
+
+	// where step() stopped: run() is a loop over step(), the viewer calls it from GameScene.update()
+	private enum Phase { READY, SPRITE, CALLBACK, UI_PAUSE }
+	private Phase phase = Phase.READY;
+	private boolean awaiting = false;
+	private int stepsSinceDecision = 0;
+	/** the actor whose sprite or callback is waited for */
+	private Actor waitingFor;
+	/** frames waited (frame units of frameSeconds, so a variable frame rate counts the same scene time) */
+	private float waited;
+	/** UI_PAUSE: the command to apply after the pause, and whether it came from Input.next */
+	private Command pending;
+	private boolean pendingFromNext;
+	private float pendingCooldown;
+	/** with hostScenes: the scene ran this long since the hero started waiting for this input */
+	private boolean inputReady;
+	private boolean delayStarted;
+	private int delayFrames;
+	private float delayTime;
+
 	/** Runs until the input returns null, the hero dies, or maxDecisions inputs were applied. */
 	public void run( Input input, int maxDecisions ){
-		boolean awaiting = false;
-		int stepsSinceDecision = 0;
+		awaiting = false;
+		stepsSinceDecision = 0;
 		if (!live) CommandLog.suspend( true );
 		try {
 			while (true){
-				if (HeadlessGame.get().consumeSceneSwitch()){
-					if (!transition()) return;
-					awaiting = false;
-					continue;
-				}
-				// dead with an unblessed ankh: the game waits for the player's choice in WndResurrect
-				boolean dead = !Dungeon.hero.isAlive();
-				if (dead && WndResurrect.instance == null){ stop = "hero died depth " + Dungeon.depth; return; }
-				// no actor acts while the alchemy scene is up: everything there is the player's input
-				boolean alchemy = Game.scene() instanceof AlchemyScene;
-				if (awaiting || dead || alchemy){
-					// the render loop keeps running while the game waits for the player
-					runPostedCallbacks();
-					if (HeadlessGame.get().switchRequested()) continue;
-					trace.add( stateDigest() );
-					if (decisions >= maxDecisions){ stop = "decision limit"; return; }
-					Command c = input.next( this );
-					// the input may instead have started a level transition (scenario scripts in tests)
-					if (HeadlessGame.get().switchRequested()) continue;
-					if (c == null){ stop = "input ended"; return; }
-					float before = Dungeon.hero.cooldown();
-					apply( c );
-					stepsSinceDecision = 0;
-					// an input that did nothing leaves the hero waiting, as in the UI
-					awaiting = heroWaits() && Dungeon.hero.cooldown() == before && !HeadlessGame.get().switchRequested();
-					continue;
-				}
-				if (++stepsSinceDecision > MAX_STEPS_PER_DECISION){ stop = "stuck: no input requested"; return; }
-				Actor a = Actor.nextToAct();
-				if (a == null){ stop = "no actors"; return; }
-				if (a == Dungeon.hero){
-					// an input given while the hero was acting goes in right before its next turn;
-					// then look again, it may have changed who acts next
-					Command c = input.beforeHeroActs( this, CommandLog.heroActs() );
-					if (c != null){
-						apply( c );
-						stepsSinceDecision = 0;
-						continue;
-					}
-				}
-				if (a instanceof Char && ((Char) a).sprite != null){
-					for (int f = 0; f < MAX_FRAMES && ((Char) a).sprite.isMoving; f++) frame();
-				}
-				boolean doNext = Actor.actOnce( a );
-				actorSteps++;
-				if (!doNext){
-					for (int f = 0; f < MAX_FRAMES && Actor.waitingOn( a ) && !heroWaits() && !HeadlessGame.get().switchRequested(); f++){
-						frame();
-					}
-					awaiting = heroWaits();
-				}
+				Step s = step( input, maxDecisions );
+				if (s == Step.FRAME) frame();
+				else if (s != Step.CONTINUE) return;
 			}
 		} finally {
 			if (!live) CommandLog.suspend( false );
 		}
 	}
 
-	private void apply( Command c ){
+	/** Replay in the real game (viewer): nothing is recorded and every window is the game's, until {@link #endViewing()}. */
+	public static void beginViewing(){
+		CommandLog.suspend( true );
+	}
+
+	public static void endViewing(){
+		CommandLog.suspend( false );
+	}
+
+	/** A runner for the viewer: the game's scenes and render loop do level changes and frames. */
+	public static TurnRunner forViewer(){
+		TurnRunner r = new TurnRunner();
+		r.hostScenes = true;
+		return r;
+	}
+
+	/** true when the next step() hands the hero an input (the hero waits, lies dead with WndResurrect up, or alchemy is up) */
+	public boolean waitsForInput(){
+		return phase == Phase.READY && (awaiting || (Dungeon.hero != null && !Dungeon.hero.isAlive()) || Game.scene() instanceof AlchemyScene);
+	}
+
+	/** with hostScenes: the GameScene the level change led to is up, carry on there */
+	public void sceneBuilt(){
+		phase = Phase.READY;
+		awaiting = false;
+		resetInputDelay();
+	}
+
+	/**
+	 * One piece of the run: an actor's turn, an input, or one frame of waiting. Same order of
+	 * events as the actor thread; frames only run sprites and callbacks, never gameplay rolls.
+	 */
+	public Step step( Input input, int maxDecisions ){
+		switch (phase){
+			case SPRITE:
+				waited += Game.elapsed / frameSeconds;
+				if (waited < MAX_FRAMES && ((Char) waitingFor).sprite.isMoving) return Step.FRAME;
+				phase = Phase.READY;
+				return act( waitingFor );
+			case CALLBACK:
+				waited += Game.elapsed / frameSeconds;
+				return afterAct();
+			case UI_PAUSE:
+				waited += Game.elapsed;
+				if (waited < UI_PAUSE) return Step.FRAME;
+				phase = Phase.READY;
+				finishApply();
+				return Step.CONTINUE;
+			default:
+				break;
+		}
+
+		if (hostScenes){
+			if (Game.switchingScene()) return Step.SWITCH;
+		} else if (HeadlessGame.get().consumeSceneSwitch()){
+			if (!transition()) return Step.STOP;
+			awaiting = false;
+			return Step.CONTINUE;
+		}
+		// dead with an unblessed ankh: the game waits for the player's choice in WndResurrect
+		boolean dead = !Dungeon.hero.isAlive();
+		if (dead && WndResurrect.instance == null){ stop = "hero died depth " + Dungeon.depth; return Step.STOP; }
+		// no actor acts while the alchemy scene is up: everything there is the player's input
+		boolean alchemy = Game.scene() instanceof AlchemyScene;
+		if (awaiting || dead || alchemy){
+			if (hostScenes){
+				// the render loop keeps running while the game waits for the player: posted callbacks run
+				// there, and the viewer gets a moment to see what happened
+				if (!inputReady){
+					if (delayStarted){
+						delayFrames++;
+						delayTime += Game.elapsed;
+					}
+					delayStarted = true;
+					if (delayFrames < 2 || delayTime < inputDelay) return Step.FRAME;
+					inputReady = true;
+				}
+			} else {
+				runPostedCallbacks();
+			}
+			if (switchRequested()) return Step.CONTINUE;
+			trace.add( stateDigest() );
+			if (decisions >= maxDecisions){ stop = "decision limit"; return Step.STOP; }
+			Command c = input.next( this );
+			// the input may instead have started a level transition (scenario scripts in tests)
+			if (switchRequested()) return Step.CONTINUE;
+			if (c == null){ stop = "input ended"; return Step.STOP; }
+			return beginApply( c, true );
+		}
+		if (++stepsSinceDecision > MAX_STEPS_PER_DECISION){ stop = "stuck: no input requested"; return Step.STOP; }
+		Actor a = Actor.nextToAct();
+		if (a == null){ stop = "no actors"; return Step.STOP; }
+		if (a == Dungeon.hero){
+			// an input given while the hero was acting goes in right before its next turn;
+			// then look again, it may have changed who acts next
+			Command c = input.beforeHeroActs( this, CommandLog.heroActs() );
+			if (c != null) return beginApply( c, false );
+		}
+		if (a instanceof Char && ((Char) a).sprite != null && ((Char) a).sprite.isMoving){
+			phase = Phase.SPRITE;
+			waitingFor = a;
+			waited = 0;
+			return Step.FRAME;
+		}
+		return act( a );
+	}
+
+	private Step act( Actor a ){
+		boolean doNext = Actor.actOnce( a );
+		actorSteps++;
+		if (doNext) return Step.CONTINUE;
+		waitingFor = a;
+		waited = 0;
+		return afterAct();
+	}
+
+	/** an actor that did not call next() yet: frames run until its sprite callback does */
+	private Step afterAct(){
+		if (waited < MAX_FRAMES && Actor.waitingOn( waitingFor ) && !heroWaits() && !switchRequested()){
+			phase = Phase.CALLBACK;
+			return Step.FRAME;
+		}
+		phase = Phase.READY;
+		awaiting = heroWaits();
+		return Step.CONTINUE;
+	}
+
+	private boolean switchRequested(){
+		return hostScenes ? Game.switchingScene() : HeadlessGame.get().switchRequested();
+	}
+
+	private Step beginApply( Command c, boolean fromNext ){
+		pending = c;
+		pendingFromNext = fromNext;
+		pendingCooldown = Dungeon.hero.cooldown();
+		if (!live && (c.type == Command.Type.BTN || c.type == Command.Type.BACK || c.type == Command.Type.SELECT)){
+			// the scene keeps running while the player reads the window
+			phase = Phase.UI_PAUSE;
+			waited = 0;
+			return Step.FRAME;
+		}
+		finishApply();
+		return Step.CONTINUE;
+	}
+
+	private void finishApply(){
+		Command c = pending;
+		pending = null;
 		if (live){
 			decisions++;
-			return;
+		} else {
+			c.apply();
+			applied.add( c );
+			decisions++;
+			CommandLog.resetHeroActs();
 		}
-		if (c.type == Command.Type.BTN || c.type == Command.Type.BACK || c.type == Command.Type.SELECT){
-			// the scene keeps running while the player reads the window
-			for (float t = 0; t < UI_PAUSE; t += frameSeconds) frame();
+		stepsSinceDecision = 0;
+		resetInputDelay();
+		if (pendingFromNext){
+			// an input that did nothing leaves the hero waiting, as in the UI
+			awaiting = heroWaits() && Dungeon.hero.cooldown() == pendingCooldown && !switchRequested();
 		}
-		c.apply();
-		applied.add( c );
-		decisions++;
-		CommandLog.resetHeroActs();
+	}
+
+	private void resetInputDelay(){
+		inputReady = delayStarted = false;
+		delayFrames = 0;
+		delayTime = 0;
 	}
 
 	/** callbacks posted with Game.runOnRenderThread, until none are left (as frames would while waiting) */
@@ -177,9 +323,14 @@ public final class TurnRunner {
 
 	/** One fixed frame of the scene graph (sprites, tweens, particles); never the actor thread. */
 	public void frame(){
+		frame( frameSeconds );
+	}
+
+	/** a frame of any length, as a render loop with a varying frame rate or Game.timeScale gives */
+	public void frame( float seconds ){
 		HeadlessGame.get().runPostedCallbacks();
-		Game.elapsed = frameSeconds;
-		Game.timeTotal += frameSeconds;
+		Game.elapsed = seconds;
+		Game.timeTotal += seconds;
 		Game.scene().updateMembers();
 		frames++;
 	}
@@ -232,13 +383,9 @@ public final class TurnRunner {
 				return true;
 			}
 		}
-		if (next != InterlevelScene.class){
-			stop = "unsupported scene switch: " + (next == null ? "none" : next.getSimpleName());
-			return false;
-		}
-		if (mode == null || mode == InterlevelScene.Mode.CONTINUE || mode == InterlevelScene.Mode.NONE
-				|| ((mode == InterlevelScene.Mode.DESCEND || mode == InterlevelScene.Mode.ASCEND) && InterlevelScene.curTransition == null)){
-			stop = "unsupported scene switch: " + mode;
+		String unsupported = unsupportedSwitch( next );
+		if (unsupported != null){
+			stop = unsupported;
 			return false;
 		}
 		leaveScene();
@@ -249,6 +396,25 @@ public final class TurnRunner {
 		}
 		buildScene( mode );
 		return true;
+	}
+
+	/** null if a switch to scene next is a level change (InterlevelScene) replay can follow, else why not */
+	public static String unsupportedSwitch( Class<?> next ){
+		InterlevelScene.Mode mode = InterlevelScene.mode;
+		if (next != InterlevelScene.class){
+			return "unsupported scene switch: " + (next == null ? "none" : next.getSimpleName());
+		}
+		if (mode == null || mode == InterlevelScene.Mode.CONTINUE || mode == InterlevelScene.Mode.NONE
+				|| ((mode == InterlevelScene.Mode.DESCEND || mode == InterlevelScene.Mode.ASCEND) && InterlevelScene.curTransition == null)){
+			return "unsupported scene switch: " + mode;
+		}
+		return null;
+	}
+
+	/** Tests: what the game's InterlevelScene does for a viewer runner (hostScenes) after Step.SWITCH. */
+	public boolean transitionHeadless(){
+		HeadlessGame.get().consumeSceneSwitch();
+		return transition();
 	}
 
 	private void buildScene( InterlevelScene.Mode mode ){

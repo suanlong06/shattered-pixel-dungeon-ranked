@@ -227,6 +227,11 @@ public class Game implements ApplicationListener {
 	public static boolean switchingScene() {
 		return instance.requestedReset;
 	}
+
+	// spd-ranked: A5 the replay viewer checks where a pending switch goes
+	public static Class<? extends Scene> pendingScene() {
+		return instance.requestedReset ? instance.sceneClass : null;
+	}
 	
 	protected void step() {
 		

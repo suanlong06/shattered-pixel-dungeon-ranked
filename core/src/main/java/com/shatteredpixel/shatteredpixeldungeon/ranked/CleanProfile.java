@@ -33,8 +33,9 @@ public final class CleanProfile {
 		return Features.isRanked() || solo;
 	}
 
+	/** A5: a replay being watched neither reads nor leaves remains (they belong to the player's own runs) */
 	public static boolean bonesAllowed(){
-		return !Features.isRanked();
+		return !Features.isRanked() && !Features.viewingReplay();
 	}
 
 	public static boolean intro( boolean solo ){

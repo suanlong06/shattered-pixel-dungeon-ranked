@@ -541,6 +541,7 @@ public class AlchemyScene extends PixelScene {
 	public void update() {
 		super.update();
 		water.offset( 0, -5 * Game.elapsed );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.update( this ); // spd-ranked: A5 a replay steps alchemy inputs too
 	}
 	
 	@Override
@@ -845,7 +846,7 @@ public class AlchemyScene extends PixelScene {
 
 	@Override
 	public void onPause() {
-		if (saveNeeded) {
+		if (saveNeeded && !com.shatteredpixel.shatteredpixeldungeon.ranked.Features.viewingReplay()) { // spd-ranked: A5 a replay only gives inputs back where the recording did (ALCH PAUSE)
 			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.alchemyPaused(); // spd-ranked: T0.8
 			saveNeeded = false;
 			clearSlots();

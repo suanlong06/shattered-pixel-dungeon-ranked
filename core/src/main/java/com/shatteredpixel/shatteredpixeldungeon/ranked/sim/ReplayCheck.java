@@ -81,34 +81,17 @@ public final class ReplayCheck {
 			}
 		};
 		try {
-			r.run( new TurnRunner.Input(){
-				int i;
+			ReplayInput in = new ReplayInput( cmds ){
 				@Override
-				public Command next( TurnRunner runner ){
+				protected void beforeCommand(){
 					bossCheck.run();
-					return i < cmds.size() ? take() : null;
 				}
-
-				@Override
-				public Command beforeHeroActs( TurnRunner runner, int heroActs ){
-					if (i >= cmds.size() || cmds.get( i ).at < 0 || cmds.get( i ).at > heroActs) return null;
-					bossCheck.run();
-					return take();
-				}
-
-				private Command take(){
-					Command c = cmds.get( i );
-					if (f.unsupported == null){
-						if (c.type == Command.Type.NOTE){
-							f.unsupported = "client: " + c.action;
-						} else if (!c.answersWindow() && CommandLog.topWindow() != null){
-							f.unsupported = "window " + CommandLog.windowName( CommandLog.topWindow() ) + " open before command " + i;
-						}
-					}
-					i++;
-					return c;
-				}
-			}, Integer.MAX_VALUE );
+			};
+			try {
+				r.run( in, Integer.MAX_VALUE );
+			} finally {
+				if (f.unsupported == null) f.unsupported = in.unsupported;
+			}
 		} catch (RuntimeException e){
 			if (f.unsupported == null) f.unsupported = "command failed: " + e;
 		}

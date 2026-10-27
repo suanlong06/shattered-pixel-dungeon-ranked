@@ -194,7 +194,7 @@ public final class RankedSession {
 			case NetFrame.RESULT:
 				forget();
 				String outcome = f.s( "outcome" );
-				CommandLog.stop();
+				saveReplay( CommandLog.stop(), outcome );
 				result = Messages.get( this, "result_" + (outcome == null ? "void" : outcome.toLowerCase( java.util.Locale.ROOT )) );
 				if (f.data.has( "ratingAfter" )){
 					result += " " + Messages.get( this, "rating_change",
@@ -204,6 +204,17 @@ public final class RankedSession {
 			default:
 				break;
 		}
+	}
+
+	/** A5: the finished match goes to the replay list (replays/) */
+	private void saveReplay( List<Command> log, String outcome ){
+		if (log == null || log.isEmpty() || Dungeon.hero == null || !Features.isRanked()) return;
+		if (Game.instance instanceof com.shatteredpixel.shatteredpixeldungeon.ranked.sim.HeadlessGame) return;
+		String label = (opponent == null ? "" : Messages.get( this, "replay_vs", opponent ) + " - ")
+				+ Messages.get( this, "replay_" + (outcome == null ? "void" : outcome.toLowerCase( java.util.Locale.ROOT )) );
+		com.shatteredpixel.shatteredpixeldungeon.ranked.replay.Replays.save( new com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayFile(
+				Game.versionCode, Dungeon.seed, Dungeon.hero.heroClass, GameMode.RANKED, "", log, Dungeon.challenges, label ),
+				System.currentTimeMillis() );
 	}
 
 	/** the seed arrives with START (L18); the run starts like Boss Practice, but in Ranked mode */
