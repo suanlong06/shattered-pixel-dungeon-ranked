@@ -564,8 +564,8 @@ public class InventoryPane extends Component {
 
 			if (selector == null && item.defaultAction() != null){
 				GameScene.centerNextWndOnInvPane();
-				com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
-				item.execute(Dungeon.hero);
+				final Item spdrItem = item; final String spdrAction = item.defaultAction(); // spd-ranked: recorded as Command ITEM
+				com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 				if (item != null && item.usesTargeting) {
 					targetingSlot = this;
 					InventoryPane.useTargeting();

@@ -274,7 +274,8 @@ public class Game implements ApplicationListener {
 		
 		Game.realTime = TimeUtils.millis();
 
-		inputHandler.processAllEvents();
+		if (inputHook != null) inputHook.accept(inputHandler::processAllEvents); // spd-ranked
+		else inputHandler.processAllEvents();
 
 		Music.INSTANCE.update();
 		Sample.INSTANCE.update();
@@ -303,11 +304,17 @@ public class Game implements ApplicationListener {
 		Gdx.app.error("GAME", sw.toString());
 	}
 	
+	// spd-ranked: T0.8 lets the command log tell player input (pointer and key events) from game code
+	public static java.util.function.UnaryOperator<Callback> renderCallbackHook;
+	public static java.util.function.Consumer<Runnable> inputHook;
+
 	public static void runOnRenderThread(Callback c){
+		if (renderCallbackHook != null) c = renderCallbackHook.apply(c); // spd-ranked
+		final Callback cb = c;
 		Gdx.app.postRunnable(new Runnable() {
 			@Override
 			public void run() {
-				c.call();
+				cb.call();
 			}
 		});
 	}

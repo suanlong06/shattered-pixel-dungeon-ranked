@@ -155,8 +155,8 @@ public class CellSelector extends ScrollArea {
 
 			switch (button){
 				default:
-					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordCell( cell ); // spd-ranked
-					listener.onSelect( cell );
+					final Listener l = listener; // spd-ranked: T0.8 recorded if the game set this listener
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.cell( cell, l, () -> l.onSelect( cell ) );
 					break;
 				case PointerEvent.RIGHT:
 					listener.onRightClick( cell );
@@ -331,7 +331,7 @@ public class CellSelector extends ScrollArea {
 
 			} else if (!directionFromAction(action).isZero()) {
 
-				Dungeon.hero.resting = false;
+				stopResting(); // spd-ranked
 				lastCellMoved = -1;
 				if (heldAction1 == SPDAction.NONE){
 					heldAction1 = action;
@@ -345,7 +345,7 @@ public class CellSelector extends ScrollArea {
 
 				return true;
 			} else if (Dungeon.hero != null && Dungeon.hero.resting){
-				Dungeon.hero.resting = false;
+				stopResting(); // spd-ranked
 				return true;
 			}
 			
@@ -373,10 +373,11 @@ public class CellSelector extends ScrollArea {
 		if (newLeftStick != leftStickAction){
 			if (leftStickAction == SPDAction.NONE){
 				heldDelay = initialDelay();
-				Dungeon.hero.resting = false;
+				com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.asInput( CellSelector::stopResting ); // spd-ranked: the stick is input
 			} else if (newLeftStick == SPDAction.NONE && heldDelay > 0f){
 				heldDelay = 0f;
-				moveFromActions(leftStickAction);
+				final GameAction stick = leftStickAction; // spd-ranked: the stick is input
+				com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.asInput( () -> moveFromActions(stick) );
 			}
 			leftStickAction = newLeftStick;
 		}
@@ -388,7 +389,7 @@ public class CellSelector extends ScrollArea {
 		if ((heldAction1 == SPDAction.NONE && leftStickAction == SPDAction.NONE)){
 			lastCellMoved = -1;
 		} else if (Dungeon.hero.ready){
-			processKeyHold();
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.asInput( this::processKeyHold ); // spd-ranked: held keys are input
 		}
 	}
 
@@ -415,15 +416,19 @@ public class CellSelector extends ScrollArea {
 
 		if (cell != Dungeon.hero.pos && cell != lastCellMoved){
 			lastCellMoved = cell;
-			if (Dungeon.hero.handle( cell )) {
-				Dungeon.hero.next();
-			}
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.move( cell ) ); // spd-ranked: hero.handle + next
 			return true;
 
 		} else {
 			return false;
 		}
 
+	}
+
+	// spd-ranked: T0.8 a key that stops resting is a player input (Command CANCEL)
+	private static void stopResting(){
+		if (Dungeon.hero == null) return;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.stopResting( () -> Dungeon.hero.resting = false );
 	}
 
 	private Point directionFromAction(GameAction action){

@@ -221,8 +221,18 @@ public class GameScene extends PixelScene {
 		inGameScene = true;
 	}
 
+	// spd-ranked: T0.8 what the new scene shows (windows, callbacks) is game code, see ranked.sim.CommandLog
 	@Override
 	public void create() {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.beginScene();
+		try {
+			createScene();
+		} finally {
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.endScene();
+		}
+	}
+
+	private void createScene() {
 		
 		if (Dungeon.hero == null || Dungeon.level == null){
 			ShatteredPixelDungeon.switchNoFade(TitleScene.class);
@@ -1644,6 +1654,7 @@ public class GameScene extends PixelScene {
 	}
 	
 	public static void selectCell( CellSelector.Listener listener ) {
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.cellListener( cellSelector.listener, listener, listener == defaultCellListener ); // spd-ranked
 		if (cellSelector.listener != null && cellSelector.listener != defaultCellListener){
 			cellSelector.listener.onSelect(null);
 		}
@@ -1654,7 +1665,13 @@ public class GameScene extends PixelScene {
 		}
 	}
 	
+	// spd-ranked: T0.8 a cancel from the UI is a player input (Command CANCEL sel)
 	public static boolean cancelCellSelector() {
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.cancel( true, GameScene::doCancelCellSelector );
+	}
+
+	// spd-ranked: the original cancelCellSelector()
+	public static boolean doCancelCellSelector() {
 		if (cellSelector.listener != null && cellSelector.listener != defaultCellListener) {
 			cellSelector.resetKeyHold();
 			cellSelector.cancel();
@@ -1666,10 +1683,13 @@ public class GameScene extends PixelScene {
 	
 	public static WndBag selectItem( WndBag.ItemSelector listener ) {
 		cancel();
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.selectorCreated( listener ); // spd-ranked
 
 		if (scene != null) {
 			//TODO can the inventory pane work in these cases? bad to fallback to mobile window
-			if (scene.inventory != null && scene.inventory.visible && !showingWindow()){
+			// spd-ranked: T0.8 Ranked always picks in a window, as the server's replay does
+			if (scene.inventory != null && scene.inventory.visible && !showingWindow()
+					&& !com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()){
 				scene.inventory.setSelector(listener);
 				return null;
 			} else {
@@ -1688,6 +1708,7 @@ public class GameScene extends PixelScene {
 	@Override
 	public synchronized void saveWindows() {
 		if (members == null) return;
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.sceneReset( this ); // spd-ranked: T0.8
 
 		super.saveWindows();
 		if (scene != null && scene.inventory != null && scene.inventory.getSelector() != null){
@@ -1719,7 +1740,22 @@ public class GameScene extends PixelScene {
 		}
 	}
 
+	// spd-ranked: T0.8 a cancel from the UI is a player input (Command CANCEL)
 	public static boolean cancel() {
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.cancel( false, GameScene::doCancel );
+	}
+
+	// spd-ranked: T0.8 the cell selector's listener, for the command log
+	public static Object cellListener() {
+		return cellSelector == null ? null : cellSelector.listener;
+	}
+
+	public static boolean isDefaultCellListener( Object listener ) {
+		return listener == defaultCellListener;
+	}
+
+	// spd-ranked: the original cancel()
+	public static boolean doCancel() {
 		cellSelector.resetKeyHold();
 		if (Dungeon.hero != null && (Dungeon.hero.curAction != null || Dungeon.hero.resting)) {
 			

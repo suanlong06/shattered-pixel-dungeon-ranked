@@ -104,8 +104,8 @@ public class WndQuickBag extends Window {
 					}
 
 					hide();
-					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
-					item.execute(Dungeon.hero);
+					final Item spdrItem = item; final String spdrAction = item.defaultAction(); // spd-ranked: recorded as Command ITEM
+					com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 					if (item.usesTargeting && bag != null){
 						int idx = Dungeon.quickslot.getSlot(WndQuickBag.bag);
 						if (idx != -1){

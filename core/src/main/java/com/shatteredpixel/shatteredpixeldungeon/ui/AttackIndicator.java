@@ -181,9 +181,7 @@ public class AttackIndicator extends Tag {
 	protected void onClick() {
 		super.onClick();
 		if (enabled && Dungeon.hero.ready) {
-			if (Dungeon.hero.handle( lastTarget.pos )) {
-				Dungeon.hero.next();
-			}
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.move( lastTarget.pos ) ); // spd-ranked: hero.handle + next
 		}
 	}
 

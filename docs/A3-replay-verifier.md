@@ -39,12 +39,15 @@ Log và kết quả phát lại của từng bên được lưu ở bảng `repl
 `ReplayVerifier` chạy phát lại trên một luồng riêng (game là trạng thái static nên mỗi lần một ván); `Hub` không bị khóa trong lúc chờ. `ServerMain` bật nó mặc định; `-Dspdr.verify=none` quay về chấp nhận mọi kết quả như A1. Asset của game nằm trên classpath của server nên chạy được từ thư mục bất kỳ.
 
 ## Giới hạn (theo T0.8) và cách xử lý an toàn
-Những gì T0.8 chưa phát lại được thì ghi vào `Facts.unsupported` thay vì đoán:
-1. **Cửa sổ còn mở khi lệnh tiếp tục** (chọn talent, nâng cấp, shop, `WndOptions`/`WndBag`): lựa chọn trong cửa sổ chưa là lệnh, nên phát lại có thể khác ván thật.
-2. **Chuyển tầng không phải cầu thang** (rơi hố, hồi sinh, Return, Teleport): runner dừng `unsupported scene switch`.
-3. **Lệnh không áp dụng được** (ví dụ chỉ số item không còn) hoặc runner dừng vì lý do khác ngoài hết lệnh và chết.
+Từ 27/10 log có lệnh cho lựa chọn trong cửa sổ (`BTN`, `BACK`, `SELECT`), talent, hủy hành động, phím di chuyển và các nút chỉ báo, và runner phát lại rơi hố, Return, hồi sinh bằng Ankh (xem `docs/T0.8-deterministic-core.md`, mục "Lựa chọn trong cửa sổ và chuyển tầng đặc biệt"). Những gì vẫn chưa phát lại được thì ghi vào `Facts.unsupported` thay vì đoán:
+1. **Cửa sổ còn mở khi đến một lệnh không trả lời cửa sổ**: client đã đóng nó theo cách không được ghi.
+2. **Scene không phải tầng** (giả kim, mặt đất, Amulet): runner dừng `unsupported scene switch`.
+3. **Client ghi `NOTE`**: xoay màn hình khi cửa sổ của game đang mở, item ngoài belongings, vào lại từ save làm giữa lúc hero đang đi/nghỉ.
+4. **Lệnh không áp dụng được** (không có cửa sổ, sai lớp cửa sổ hay số nút, chỉ số item không còn) hoặc runner dừng vì lý do khác ngoài hết lệnh và chết.
 
-Nếu phát lại vẫn khớp báo cáo thì vẫn `ACCEPT` dù có cửa sổ mở (ví dụ đọc biển báo). Chỉ khi lệch **và** có giới hạn thì mới `UNVERIFIABLE`. Mặc định void nên rating không bao giờ được ghi từ một ván chưa kiểm chứng. Hệ quả: tới khi T0.8 có lệnh `CHOICE` và đủ kiểu chuyển tầng, nhiều trận thật sẽ bị void. Đây là chủ ý; có cờ `acceptUnverifiable` nếu muốn chơi thử.
+Nếu phát lại vẫn khớp báo cáo thì vẫn `ACCEPT` dù có giới hạn. Chỉ khi lệch **và** có giới hạn thì mới `UNVERIFIABLE`. Mặc định void nên rating không bao giờ được ghi từ một ván chưa kiểm chứng; có cờ `acceptUnverifiable` nếu muốn chơi thử. Hero nằm chết chờ `WndResurrect` không tính là chết (client cũng chưa báo `DIED`).
+
+Vào lại sau khi tắt app: log lệnh lưu cùng save và client lưu game trước mỗi `LOG`, nên log gửi lại sau khi vào lại khớp với log server đã có (trước đây phần chưa gửi bị mất và trận bị void).
 
 Các giới hạn khác:
 - Thời gian (ai clear trước, ai chết sau) là giờ server lúc nhận báo cáo; phát lại không kiểm chứng được tốc độ chơi thật, chỉ kiểm chứng *điều gì* đã xảy ra.

@@ -8,7 +8,10 @@ import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndResurrect;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.watabou.noosa.Game;
 import com.watabou.utils.DeviceCompat;
@@ -151,8 +154,9 @@ public final class RankedSession {
 	 * (or has died), so turns and floor match the replay of the log sent with the report
 	 */
 	private static boolean heroWaits(){
-		return !Dungeon.hero.isAlive()
-				|| (Dungeon.hero.ready && Dungeon.hero.curAction == null && !Dungeon.hero.resting);
+		// lying dead while WndResurrect asks what to keep is not death yet (the replay agrees)
+		if (!Dungeon.hero.isAlive()) return WndResurrect.instance == null;
+		return Dungeon.hero.ready && Dungeon.hero.curAction == null && !Dungeon.hero.resting;
 	}
 
 	private void state( RankedClient.State s ){
@@ -230,8 +234,8 @@ public final class RankedSession {
 		startedAt = System.currentTimeMillis() - COUNTDOWN_GRACE_MS;
 		tracker = new ProgressTracker( finalBossDepth );
 		save();
-		// A3: commands before the restart that never went out are lost, so the server's replay
-		// of this match will not verify; recording goes on so the log stays as full as it can
+		// A3: the log is saved with the game (CommandLog.store) and comes back when the save loads;
+		// the next LOG sends it again from the start and the server keeps what it lacks
 		heroClass = null;
 		logged = 0;
 		CommandLog.start();
@@ -276,6 +280,15 @@ public final class RankedSession {
 
 	private void sendLog(){
 		if (heroClass == null && Dungeon.hero != null) heroClass = Dungeon.hero.heroClass.name();
+		// A3: the save must hold every command the server has, or a rejoin after a crash would play
+		// on from an older state than the server's log; in Ranked a save does not change the game
+		if (Dungeon.hero != null && Dungeon.level != null && Game.scene() instanceof GameScene){
+			try {
+				Dungeon.saveAll();
+			} catch (java.io.IOException e){
+				ShatteredPixelDungeon.reportException( e );
+			}
+		}
 		List<Command> rec = CommandLog.recorded();
 		List<String> cmds = new ArrayList<>();
 		for (int i = logged; i < rec.size(); i++) cmds.add( rec.get( i ).toString() );
@@ -287,7 +300,7 @@ public final class RankedSession {
 		int depth = Dungeon.depth;
 		long turns = (long)Statistics.duration;
 		ProgressTracker.Report rep = tracker.update( Math.max( depth, Statistics.deepestFloor ), turns,
-				Statistics.bossScores, Dungeon.hero.isAlive() );
+				Statistics.bossScores, Dungeon.hero.isAlive() || WndResurrect.instance != null );
 		if (rep != ProgressTracker.Report.NONE) sendLog();
 		switch (rep){
 			case PROGRESS: client.progress( tracker.depth(), tracker.turns(), tracker.bosses() ); break;

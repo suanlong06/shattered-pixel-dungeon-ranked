@@ -55,6 +55,26 @@ public final class HeadlessGame extends Game {
 		return requestedReset;
 	}
 
+	/** the scene a pending switch goes to */
+	Class<? extends Scene> requestedScene(){
+		return sceneClass;
+	}
+
+	private java.lang.reflect.Method executeRunnables;
+
+	/**
+	 * Runs the callbacks posted with Game.runOnRenderThread, as the render loop does once per frame.
+	 * The headless backend has no loop of its own here (updatesPerSecond -1). Returns true if any ran.
+	 */
+	boolean runPostedCallbacks(){
+		try {
+			if (executeRunnables == null) executeRunnables = Gdx.app.getClass().getMethod( "executeRunnables" );
+			return (Boolean) executeRunnables.invoke( Gdx.app );
+		} catch (ReflectiveOperationException e){
+			throw new IllegalStateException( "headless backend without executeRunnables", e );
+		}
+	}
+
 	/** True once if a scene switch was requested since the last call (e.g. a level transition). */
 	boolean consumeSceneSwitch(){
 		boolean r = requestedReset;

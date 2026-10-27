@@ -99,8 +99,8 @@ public class QuickSlotButton extends Button {
 					Item item = select(slotNum);
 					if (Dungeon.hero.belongings.contains(item) && !GameScene.cancel()) {
 						GameScene.centerNextWndOnInvPane();
-						com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.recordItem( item, item.defaultAction() ); // spd-ranked
-						item.execute(Dungeon.hero);
+						final Item spdrItem = item; final String spdrAction = item.defaultAction(); // spd-ranked: recorded as Command ITEM
+						com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.item( spdrItem, spdrAction, () -> spdrItem.execute(Dungeon.hero, spdrAction) );
 						if (item.usesTargeting) {
 							useTargeting();
 						}

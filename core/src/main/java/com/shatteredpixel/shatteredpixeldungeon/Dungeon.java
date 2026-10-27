@@ -711,7 +711,9 @@ public class Dungeon {
 	public static void saveAll() throws IOException {
 		if (hero != null && (hero.isAlive() || WndResurrect.instance != null)) {
 			
-			Actor.fixTime();
+			// spd-ranked: T0.8 in Ranked a save must not change the game (a pause, or a save before a
+			// report, is not in the replay); level changes still rebase time, in InterlevelScene
+			if (!com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isRanked()) Actor.fixTime();
 			updateLevelExplored();
 			saveGame( GamesInProgress.curSlot );
 			saveLevel( GamesInProgress.curSlot );

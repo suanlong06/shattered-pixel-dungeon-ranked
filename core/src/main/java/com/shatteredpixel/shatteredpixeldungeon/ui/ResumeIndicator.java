@@ -69,7 +69,7 @@ public class ResumeIndicator extends Tag {
 	protected void onClick() {
 		super.onClick();
 		if (Dungeon.hero.ready) {
-			Dungeon.hero.resume();
+			com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.input( com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command.resume() ); // spd-ranked: hero.resume()
 		}
 	}
 

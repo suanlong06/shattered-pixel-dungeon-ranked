@@ -71,14 +71,15 @@ public class Button extends Component {
 				if (clickReady) {
 					killTooltip();
 					switch (event.button){
+						// spd-ranked: T0.8 clicks in windows the game opened are recorded
 						case PointerEvent.LEFT: default:
-							Button.this.onClick();
+							click( 0 );
 							break;
 						case PointerEvent.RIGHT:
-							Button.this.onRightClick();
+							click( 1 );
 							break;
 						case PointerEvent.MIDDLE:
-							Button.this.onMiddleClick();
+							click( 2 );
 							break;
 					}
 
@@ -132,7 +133,7 @@ public class Button extends Component {
 						Button.this.onPointerUp();
 						if (pressedButton == Button.this) {
 							pressedButton = null;
-							if (clickReady) onClick();
+							if (clickReady) click( 0 ); // spd-ranked
 						}
 					}
 					return true;
@@ -161,7 +162,7 @@ public class Button extends Component {
 		
 		if (pressedButton == this && (pressTime += Game.elapsed) >= longClick) {
 			pressedButton = null;
-			if (onLongClick()) {
+			if (longPress()) { // spd-ranked
 
 				hotArea.reset();
 				clickReady = false; //did a long click, can't do a regular one
@@ -174,6 +175,28 @@ public class Button extends Component {
 		}
 	}
 	
+	// spd-ranked: T0.8 every click goes through here, so the command log can record it
+	private boolean click( int kind ){
+		return com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.click( this, kind, () -> replayClick( kind ) );
+	}
+
+	// spd-ranked: T0.8 a long press is detected in update(), but it is player input
+	private boolean longPress(){
+		boolean[] r = new boolean[1];
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.asInput( () -> r[0] = click( 3 ) );
+		return r[0];
+	}
+
+	// spd-ranked: T0.8 a click without the pointer, as recorded (0 left, 1 right, 2 middle, 3 long)
+	public final boolean replayClick( int kind ){
+		switch (kind){
+			case 1: onRightClick(); return true;
+			case 2: onMiddleClick(); return true;
+			case 3: return onLongClick();
+			default: onClick(); return true;
+		}
+	}
+
 	protected void onPointerDown() {}
 	protected void onPointerUp() {}
 	protected void onClick() {} //left click, default key type

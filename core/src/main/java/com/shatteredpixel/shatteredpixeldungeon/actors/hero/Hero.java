@@ -839,6 +839,7 @@ public class Hero extends Char {
 		//calls to dungeon.observe will also update hero's local FOV.
 		fieldOfView = Dungeon.level.heroFOV;
 		com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog.heroTurn( this ); // spd-ranked: T-log
+		com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog.heroActed(); // spd-ranked: T0.8
 
 		if (buff(Endure.EndureTracker.class) != null){
 			buff(Endure.EndureTracker.class).endEnduring();
