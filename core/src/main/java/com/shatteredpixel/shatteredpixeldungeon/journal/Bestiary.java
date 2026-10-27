@@ -303,7 +303,7 @@ public enum Bestiary {
 	}
 
 	public static void setSeen(Class<?> cls){
-		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isPractice()) return; // spd-ranked: B6 practice leaves the profile alone
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.leavesProfileAlone()) return; // spd-ranked: B6/A5 practice and replays leave the profile alone
 		if (classConversions.containsKey(cls)){
 			cls = classConversions.get(cls);
 		}
@@ -333,7 +333,7 @@ public enum Bestiary {
 	}
 
 	public static void countEncounters(Class<?> cls, int encounters){
-		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isPractice()) return; // spd-ranked: B6 practice leaves the profile alone
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.leavesProfileAlone()) return; // spd-ranked: B6/A5 practice and replays leave the profile alone
 		if (skipCountingEncounters){
 			return;
 		}

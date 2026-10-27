@@ -53,8 +53,9 @@ public class RankedHud extends Group {
 	public void update(){
 		super.update();
 		RankedSession s = RankedSession.current();
-		visible = s != null;
-		if (s == null) return;
+		// a replay being watched is not the match in progress
+		visible = s != null && !com.shatteredpixel.shatteredpixeldungeon.ranked.Features.viewingReplay();
+		if (!visible) return;
 		s.update();
 
 		String t = describe( s );

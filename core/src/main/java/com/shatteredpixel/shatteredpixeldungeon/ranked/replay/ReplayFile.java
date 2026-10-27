@@ -21,6 +21,8 @@ import java.util.List;
  * class=&lt;HeroClass&gt;
  * mode=&lt;GameMode&gt;
  * digest=&lt;final trace digest, may be empty&gt;
+ * challenges=&lt;challenge mask, only if not 0&gt;
+ * label=&lt;free text shown in the replay list, optional&gt;
  * ---
  * &lt;one command per line, CommandLog format&gt;
  * </pre>
@@ -37,8 +39,17 @@ public final class ReplayFile {
 	public final GameMode mode;
 	public final String digest;
 	public final List<Command> commands;
+	/** Dungeon.challenges of the run (read from the settings when the run started) */
+	public final int challenges;
+	public final String label;
 
 	public ReplayFile( int gameVersion, long seed, HeroClass heroClass, GameMode mode, String digest, List<Command> commands ){
+		this( gameVersion, seed, heroClass, mode, digest, commands, 0, "" );
+	}
+
+	public ReplayFile( int gameVersion, long seed, HeroClass heroClass, GameMode mode, String digest, List<Command> commands, int challenges, String label ){
+		this.challenges = challenges;
+		this.label = label == null ? "" : label.replace( '\n', ' ' ).replace( '\r', ' ' ).trim();
 		this.gameVersion = gameVersion;
 		this.seed = seed;
 		this.heroClass = heroClass;
@@ -54,6 +65,8 @@ public final class ReplayFile {
 				+ "class=" + heroClass.name() + "\n"
 				+ "mode=" + mode.name() + "\n"
 				+ "digest=" + digest + "\n"
+				+ (challenges != 0 ? "challenges=" + challenges + "\n" : "")
+				+ (label.isEmpty() ? "" : "label=" + label + "\n")
 				+ "---\n"
 				+ CommandLog.toText( commands );
 	}
@@ -68,6 +81,8 @@ public final class ReplayFile {
 		HeroClass cls = null;
 		GameMode mode = GameMode.SOLO;
 		String digest = "";
+		int challenges = 0;
+		String label = "";
 		for (String line : text.substring( 0, split ).split( "\n" )){
 			int eq = line.indexOf( '=' );
 			if (eq < 0) continue;
@@ -78,10 +93,12 @@ public final class ReplayFile {
 				case "class":   cls = HeroClass.valueOf( v ); break;
 				case "mode":    mode = GameMode.valueOf( v ); break;
 				case "digest":  digest = v; break;
+				case "challenges": challenges = Integer.parseInt( v ); break;
+				case "label":   label = v; break;
 				default: break;
 			}
 		}
 		if (cls == null) throw new IllegalArgumentException( "replay without class" );
-		return new ReplayFile( version, seed, cls, mode, digest, CommandLog.fromText( text.substring( split + 5 ) ) );
+		return new ReplayFile( version, seed, cls, mode, digest, CommandLog.fromText( text.substring( split + 5 ) ), challenges, label );
 	}
 }

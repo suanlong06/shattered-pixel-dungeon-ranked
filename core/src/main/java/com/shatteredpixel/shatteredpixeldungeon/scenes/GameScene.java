@@ -908,7 +908,9 @@ public class GameScene extends PixelScene {
 			waterOfs = water.offsetY(); //re-assign to account for auto adjust
 		}
 
-		if (!Actor.processing() && Dungeon.hero.isAlive()) {
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.drivesActors()) { // spd-ranked: A5 a replay steps the game itself
+			com.shatteredpixel.shatteredpixeldungeon.ranked.replay.ReplayViewer.update( this );
+		} else if (!Actor.processing() && Dungeon.hero.isAlive()) {
 			if (actorThread == null || !actorThread.isAlive()) {
 				
 				actorThread = new Thread() {

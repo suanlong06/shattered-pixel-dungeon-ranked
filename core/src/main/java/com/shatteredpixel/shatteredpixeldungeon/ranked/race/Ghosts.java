@@ -27,7 +27,7 @@ public final class Ghosts {
 	private Ghosts(){}
 
 	private static boolean active(){
-		if (Features.isRanked() || Features.isPractice()) return false;
+		if (Features.isRanked() || Features.leavesProfileAlone()) return false;
 		if (!Features.enabled( Feature.GHOST_RACE )) return false;
 		if (storage != null) return storage;
 		return !(Game.instance instanceof HeadlessGame);

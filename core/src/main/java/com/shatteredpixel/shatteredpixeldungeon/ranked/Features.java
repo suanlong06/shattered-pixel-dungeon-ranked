@@ -22,6 +22,7 @@ public final class Features {
 	private static final String FEATURES = "spdr_features";
 
 	private static GameMode mode = GameMode.SOLO;
+	private static boolean viewingReplay = false;
 	private static EnumSet<Feature> rankedSet = defaultRankedSet();
 
 	private Features(){}
@@ -36,6 +37,20 @@ public final class Features {
 
 	public static boolean isPractice(){
 		return mode == GameMode.PRACTICE;
+	}
+
+	/** A5: true while a replay plays in the game scene (ranked.replay.ReplayViewer) */
+	public static boolean viewingReplay(){
+		return viewingReplay;
+	}
+
+	public static void setViewingReplay( boolean on ){
+		viewingReplay = on;
+	}
+
+	/** the run must not touch the player's profile (badges, rankings, journal): Boss Practice, or a replay being watched */
+	public static boolean leavesProfileAlone(){
+		return isPractice() || viewingReplay;
 	}
 
 	/** starts a new run in this mode; Ranked takes the current default ranked feature set */

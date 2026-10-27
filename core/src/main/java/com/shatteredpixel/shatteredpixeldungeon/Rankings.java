@@ -81,7 +81,7 @@ public enum Rankings {
 	public LinkedHashMap<Long, Integer> dailyScoreHistory = new LinkedHashMap<>();
 
 	public void submit( boolean win, Object cause ) {
-		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.isPractice()) return; // spd-ranked: B6 practice is never ranked
+		if (com.shatteredpixel.shatteredpixeldungeon.ranked.Features.leavesProfileAlone()) return; // spd-ranked: B6/A5 practice and replays are never ranked
 
 		load();
 		
