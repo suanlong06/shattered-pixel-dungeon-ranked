@@ -51,7 +51,7 @@ Vào lại sau khi tắt app: log lệnh lưu cùng save và client lưu game tr
 
 Các giới hạn khác:
 - Thời gian (ai clear trước, ai chết sau) là giờ server lúc nhận báo cáo; phát lại không kiểm chứng được tốc độ chơi thật, chỉ kiểm chứng *điều gì* đã xảy ra.
-- Chưa có test phủ boss (bot T0.8 chưa qua được boss); đếm boss dựa vào `Statistics.bossScores` tăng ít nhất 500 khi boss chết.
+- Có test phủ boss từ 28/10: `BossBotTest` phát lại cả run qua Goo, Tengu, DM-300 và `Facts` thấy đủ 3 boss (`cleared(15)`). Cách đếm boss vẫn dựa vào `Statistics.bossScores` hoặc tầng sâu nhất vượt tầng boss.
 - Chưa chạy trên ART và chưa triển khai lên A53 (A7, cần hỏi user).
 
 ## Test (`ReplayVerifierTest`)
