@@ -128,6 +128,8 @@ public final class Hub {
 		public boolean acceptUnverifiable = false;
 		/** longest command log per side */
 		public int maxLogCommands = 500_000;
+		/** spd-ranked (C8): weekly league, profiles, chat */
+		public Community.Config community = new Community.Config();
 	}
 
 	static final class Side {
@@ -192,11 +194,19 @@ public final class Hub {
 	private long nextMatch = 1;
 	/** latest server time seen, for verifier answers that arrive between calls */
 	private long lastNow;
+	private final Community community;
 
 	public Hub(Config cfg, Storage db, long now) throws SQLException {
 		this.cfg = cfg;
 		this.db = db;
 		db.voidUnfinished(now);
+		community = new Community(cfg.community, db, new Community.Clients() {
+			@Override public Iterable<Client> all() { return clients.values(); }
+			@Override public Client byPlayer(long player) { return byPlayer.get(player); }
+			@Override public boolean inDuel(Client c) {
+				return c.match != null && (c.match.state == State.PREPARING || c.match.state == State.COUNTDOWN || c.match.state == State.RUNNING);
+			}
+		}, this, cfg.rules.finalBossDepth, cfg.season, cfg.maxLogCommands);
 	}
 
 	public synchronized void connect(Link link) {
@@ -206,6 +216,7 @@ public final class Hub {
 	public synchronized void disconnect(Link link, long now) throws SQLException {
 		lastNow = Math.max(lastNow, now);
 		Client c = clients.remove(link);
+		community.disconnect(link);
 		if (c == null || c.player < 0) return;
 		if (byPlayer.get(c.player) == c) byPlayer.remove(c.player);
 		queue.remove(c.player);
@@ -246,7 +257,7 @@ public final class Hub {
 			case Frame.READY: ready(c, now); break;
 			case Frame.PROGRESS: case Frame.DIED: case Frame.CLEARED: case Frame.RESIGN: report(c, f, now); break;
 			case Frame.LOG: log(c, f); break;
-			default: error(link, "unknown type " + f.type);
+			default: if (!community.receive(c, f, now)) error(link, "unknown type " + f.type);
 		}
 	}
 

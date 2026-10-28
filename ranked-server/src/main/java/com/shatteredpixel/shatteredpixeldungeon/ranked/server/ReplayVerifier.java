@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * The game is static state, so replays run one at a time on one thread; the hub is not held
  * while they run.
  */
-public final class ReplayVerifier implements Hub.Verifier, AutoCloseable {
+public final class ReplayVerifier implements Hub.Verifier, Community.RunVerifier, AutoCloseable {
 
 	private final ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
 		Thread t = new Thread(r, "replay-verifier");
@@ -57,6 +57,32 @@ public final class ReplayVerifier implements Hub.Verifier, AutoCloseable {
 			}
 			done.accept(c);
 		});
+	}
+
+	/** C8: a weekly league run, replayed like one duel side on the same worker */
+	@Override
+	public void verify(long seed, int finalBossDepth, Hub.SideLog run, Consumer<Hub.Check> done) {
+		worker.execute(() -> {
+			Hub.Check c;
+			try {
+				c = checkRun(seed, finalBossDepth, run);
+			} catch (Throwable t) {
+				c = new Hub.Check(Hub.Result.UNVERIFIABLE, "verifier error: " + t, null);
+			}
+			done.accept(c);
+		});
+	}
+
+	/** runs on the calling thread; the run's result is in detail[0] */
+	public static Hub.Check checkRun(long seed, int finalBossDepth, Hub.SideLog s) {
+		HeroClass cls = heroClass(s.heroClass);
+		List<Command> cmds = cls == null ? null : parse(s.commands);
+		if (cls == null) return new Hub.Check(Hub.Result.REJECT, "bad hero class " + s.heroClass, null);
+		if (cmds == null) return new Hub.Check(Hub.Result.REJECT, "bad command in log", null);
+		ReplayCheck.Facts f = replay(seed, cls, cmds);
+		String diff = compare(s, f, cmds.size(), finalBossDepth);
+		Hub.Result r = diff == null ? Hub.Result.ACCEPT : f.unsupported != null ? Hub.Result.UNVERIFIABLE : Hub.Result.REJECT;
+		return new Hub.Check(r, (diff == null ? "ok" : diff) + "; replay " + f, null);
 	}
 
 	/** runs on the calling thread */

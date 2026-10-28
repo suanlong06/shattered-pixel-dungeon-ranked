@@ -36,8 +36,14 @@ public final class ServerMain {
 		if (cfg.build == null) throw new IllegalArgumentException("no fingerprint in core; set -Dspdr.build=<fingerprint>");
 		cfg.season = Integer.getInteger("spdr.season", 1);
 		int port = Integer.getInteger("spdr.port", 7420);
-		if (!"none".equals(System.getProperty("spdr.verify", "replay"))) cfg.verifier = new ReplayVerifier();
+		if (!"none".equals(System.getProperty("spdr.verify", "replay"))) {
+			ReplayVerifier v = new ReplayVerifier();
+			cfg.verifier = v;
+			// C8: league runs replay on the same single worker (the game is static state)
+			cfg.community.verifier = v;
+		}
 		cfg.acceptUnverifiable = Boolean.getBoolean("spdr.acceptUnverifiable");
+		cfg.community.acceptUnverifiable = cfg.acceptUnverifiable;
 
 		Storage db = new Storage("jdbc:sqlite:" + System.getProperty("spdr.db", "ranked.db"));
 		String pool = System.getProperty("spdr.seedpool");

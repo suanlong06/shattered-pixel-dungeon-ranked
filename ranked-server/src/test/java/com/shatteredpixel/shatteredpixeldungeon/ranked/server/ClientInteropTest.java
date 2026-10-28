@@ -200,6 +200,55 @@ class ClientInteropTest {
 		assertTrue(fp.matches("spdr-[0-9a-f]{16}"), fp);
 	}
 
+	/** C8 over a real socket: a league run with a log longer than one frame, a profile, chat */
+	@Test
+	void leagueProfileAndChat() throws Exception {
+		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
+			db.addSeeds(Arrays.asList(77L));
+			Hub.Config cfg = new Hub.Config();
+			Hub.SideLog[] seen = new Hub.SideLog[1];
+			cfg.community.verifier = (seed, depth, run, done) -> { seen[0] = run; done.accept(new Hub.Check(Hub.Result.ACCEPT, null, null)); };
+			try (Server server = new Server(new Hub(cfg, db, System.currentTimeMillis()), new ServerSocket(0))) {
+				server.start();
+				Probe pa = new Probe(), pb = new Probe();
+				RankedClient a = client(server.port(), "dev", "alice", pa), b = client(server.port(), "dev", "bob", pb);
+				try {
+					a.start();
+					b.start();
+					pa.awaitState(State.IDLE);
+					pb.awaitState(State.IDLE);
+
+					a.leagueStart();
+					NetFrame info = pa.await(NetFrame.LEAGUE);
+					assertEquals(77L, info.l("seed", -1));
+					java.util.List<String> cmds = new java.util.ArrayList<>();
+					for (int i = 0; i < 9000; i++) cmds.add("CELL " + i);
+					a.leagueSubmit(info.l("week", -1), "HUNTRESS", cmds, 6, 4321, 1, true, false);
+					assertEquals("ACCEPTED", pa.await(NetFrame.LEAGUE_RESULT).s("state"));
+					assertEquals(cmds, seen[0].commands, "a log split over several frames arrives whole");
+
+					b.leagueBoard(-1);
+					NetFrame board = pb.await(NetFrame.LEAGUE_BOARD);
+					assertEquals("alice", board.data.getJSONArray("entries").getJSONObject(0).getString("name"));
+
+					b.profile(-1, "alice");
+					assertEquals(1, pb.await(NetFrame.PROFILE).data.getJSONArray("league").length());
+
+					a.chat("gg");
+					NetFrame m = pb.await(NetFrame.CHAT_MSG);
+					assertEquals("gg", m.s("text"));
+					b.chatReport(m.l("playerId", -1), m.l("at", -1));
+					pb.await(NetFrame.CHAT_REPORTED);
+					assertTrue(pa.errors.isEmpty(), pa.errors.toString());
+					assertTrue(pb.errors.isEmpty(), pb.errors.toString());
+				} finally {
+					a.close();
+					b.close();
+				}
+			}
+		}
+	}
+
 	@Test
 	void buildMismatchIsReported() throws Exception {
 		try (Storage db = new Storage("jdbc:sqlite::memory:")) {

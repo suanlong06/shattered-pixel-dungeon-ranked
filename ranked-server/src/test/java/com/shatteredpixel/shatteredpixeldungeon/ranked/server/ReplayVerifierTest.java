@@ -80,6 +80,16 @@ class ReplayVerifierTest {
 	}
 
 	@Test
+	void leagueRunsReplayLikeADuelSide() {
+		assertEquals(Hub.Result.ACCEPT, ReplayVerifier.checkRun(SEED, 15, honest).result);
+		Hub.SideLog deeper = new Hub.SideLog("WARRIOR", log, honest.depth + 1, 0, honest.turns, false, false);
+		Hub.Check c = ReplayVerifier.checkRun(SEED, 15, deeper);
+		assertEquals(Hub.Result.REJECT, c.result, c.detail[0]);
+		assertNotEquals(Hub.Result.ACCEPT, ReplayVerifier.checkRun(SEED + 1000, 15, honest).result,
+				"a run on another week's seed must not pass");
+	}
+
+	@Test
 	void replayIsTheSameEachTime() {
 		ReplayCheck.Facts a = ReplayVerifier.replay(SEED, HeroClass.WARRIOR, parse(log));
 		ReplayCheck.Facts b = ReplayVerifier.replay(SEED, HeroClass.WARRIOR, parse(log));

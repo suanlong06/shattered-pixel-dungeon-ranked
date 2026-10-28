@@ -34,6 +34,16 @@ public final class NetFrame {
 	public static final String LOG = "LOG";
 	public static final String RESUME = "RESUME";
 	public static final String PING = "PING";
+	// C8 (docs/C8-community.md); PROFILE and LEAGUE_BOARD are both the request and the answer
+	public static final String LEAGUE_INFO = "LEAGUE_INFO";
+	public static final String LEAGUE_START = "LEAGUE_START";
+	public static final String LEAGUE_LOG = "LEAGUE_LOG";
+	public static final String LEAGUE_SUBMIT = "LEAGUE_SUBMIT";
+	public static final String LEAGUE_BOARD = "LEAGUE_BOARD";
+	public static final String PROFILE = "PROFILE";
+	public static final String CHAT = "CHAT";
+	public static final String CHAT_HISTORY = "CHAT_HISTORY";
+	public static final String CHAT_REPORT = "CHAT_REPORT";
 
 	// server -> client
 	public static final String WELCOME = "WELCOME";
@@ -45,6 +55,11 @@ public final class NetFrame {
 	public static final String RESULT = "RESULT";
 	public static final String PONG = "PONG";
 	public static final String ERROR = "ERROR";
+	// C8
+	public static final String LEAGUE = "LEAGUE";
+	public static final String LEAGUE_RESULT = "LEAGUE_RESULT";
+	public static final String CHAT_MSG = "CHAT_MSG";
+	public static final String CHAT_REPORTED = "CHAT_REPORTED";
 
 	public final String type;
 	public final long seq;

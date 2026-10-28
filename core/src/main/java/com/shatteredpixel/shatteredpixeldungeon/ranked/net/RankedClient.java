@@ -164,6 +164,39 @@ public final class RankedClient {
 	public void died( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.DIED, depth, turns, bosses ) ); }
 	public void cleared( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.CLEARED, depth, turns, bosses ) ); }
 
+	// C8: weekly league, profiles, lobby chat. Answers arrive through Listener.onFrame.
+
+	public void leagueInfo(){ send( new NetFrame( NetFrame.LEAGUE_INFO, null ) ); }
+	/** spends this week's one attempt; the LEAGUE answer carries the seed */
+	public void leagueStart(){ send( new NetFrame( NetFrame.LEAGUE_START, null ) ); }
+	public void leagueBoard( long week ){ send( new NetFrame( NetFrame.LEAGUE_BOARD, week < 0 ? null : NetFrame.obj( "week", week ) ) ); }
+
+	/** sends the whole run's log (split like a duel log), then the claim the server replays */
+	public void leagueSubmit( long week, String heroClass, List<String> cmds, int depth, long turns, int bosses, boolean dead, boolean cleared ){
+		int i = 0;
+		do {
+			int start = i;
+			StringBuilder sb = new StringBuilder();
+			while (i < cmds.size() && sb.length() < NetFrame.MAX_FRAME / 2){
+				sb.append( cmds.get( i++ ) ).append( '\n' );
+			}
+			send( new NetFrame( NetFrame.LEAGUE_LOG, NetFrame.obj( "week", week, "from", start, "cls", heroClass, "cmds", sb.toString() ) ) );
+		} while (i < cmds.size());
+		send( new NetFrame( NetFrame.LEAGUE_SUBMIT, NetFrame.obj( "week", week, "depth", depth, "turns", turns,
+				"bosses", bosses, "dead", dead, "cleared", cleared ) ) );
+	}
+
+	/** playerId < 0 and name null: your own profile */
+	public void profile( long playerId, String name ){
+		send( new NetFrame( NetFrame.PROFILE, playerId >= 0 ? NetFrame.obj( "playerId", playerId )
+				: name != null ? NetFrame.obj( "name", name ) : null ) );
+	}
+
+	public void chat( String text ){ send( new NetFrame( NetFrame.CHAT, NetFrame.obj( "text", text ) ) ); }
+	public void chatHistory(){ send( new NetFrame( NetFrame.CHAT_HISTORY, null ) ); }
+	/** reports the message a player sent at a time (CHAT_MSG playerId and at) */
+	public void chatReport( long playerId, long at ){ send( new NetFrame( NetFrame.CHAT_REPORT, NetFrame.obj( "playerId", playerId, "at", at ) ) ); }
+
 	/** stops for good: no reconnect, no resume */
 	public void close(){
 		closed = true;

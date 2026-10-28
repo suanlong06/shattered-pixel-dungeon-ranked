@@ -182,7 +182,8 @@ public final class Storage implements AutoCloseable {
 		return takeSeed(matchId, 0);
 	}
 
-	private Long takeSeed(String matchId, long now) throws SQLException {
+	// spd-ranked (C8): package-private so the weekly league can take its seed from the same pool
+	Long takeSeed(String matchId, long now) throws SQLException {
 		// one statement, so two takers can never get the same seed
 		try (PreparedStatement u = db.prepareStatement("UPDATE seed SET used_by = ?, used_at = ?"
 				+ " WHERE seed = (SELECT seed FROM seed WHERE used_by IS NULL AND retired = 0 ORDER BY pos LIMIT 1) RETURNING seed")) {
@@ -219,11 +220,11 @@ public final class Storage implements AutoCloseable {
 		}
 	}
 
-	private interface Work<T> {
+	interface Work<T> {
 		T run() throws SQLException;
 	}
 
-	private synchronized <T> T inTransaction(Work<T> w) throws SQLException {
+	synchronized <T> T inTransaction(Work<T> w) throws SQLException {
 		db.setAutoCommit(false);
 		try {
 			T out = w.run();
@@ -307,6 +308,9 @@ public final class Storage implements AutoCloseable {
 			}
 		}
 	}
+
+	/** C8: CommunityStore keeps its own tables on this connection */
+	Connection connection() { return db; }
 
 	@Override
 	public void close() throws SQLException { db.close(); }
