@@ -232,6 +232,13 @@ public class Game implements ApplicationListener {
 	public static Class<? extends Scene> pendingScene() {
 		return instance.requestedReset ? instance.sceneClass : null;
 	}
+
+	// spd-ranked: A5 the replay viewer stays where a run ended instead of going to its end scene
+	public static void cancelSceneSwitch() {
+		instance.requestedReset = false;
+		instance.onChange = null;
+		if (instance.scene != null) instance.sceneClass = instance.scene.getClass();
+	}
 	
 	protected void step() {
 		
