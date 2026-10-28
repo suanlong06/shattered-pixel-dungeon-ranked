@@ -40,10 +40,27 @@ public final class SkinPack {
 
 	/** the pack's replacement for an asset path, or null; paths that could leave the folder are refused */
 	public FileHandle file( String path ){
-		if (path == null || !path.endsWith( ".png" ) || path.contains( ".." ) || path.startsWith( "/" )
-				|| path.contains( "\\" ) || path.contains( ":" )) return null;
+		if (!SkinHash.usable( path )) return null;
 		FileHandle f = root.child( path );
 		return f.exists() && !f.isDirectory() ? f : null;
+	}
+
+	private String hash;
+
+	/** {@link SkinHash} of this pack's art, computed once; null if a file cannot be read */
+	public synchronized String hash(){
+		if (hash == null){
+			try {
+				hash = SkinHash.of( paths(), path -> {
+					FileHandle f = file( path );
+					if (f == null) throw new java.io.IOException( path );
+					return f.readBytes();
+				} );
+			} catch (Exception e){
+				return null;
+			}
+		}
+		return hash;
 	}
 
 	/** asset paths this pack replaces, sorted */

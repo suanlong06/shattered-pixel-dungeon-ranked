@@ -36,12 +36,16 @@ public class SkinsTab extends Component {
 		add( sep );
 
 		List<SkinPack> packs = Skins.installed();
-		info = PixelScene.renderTextBlock( Messages.get( this, packs.isEmpty() ? "none_installed" : "info", Skins.DIR ), 6 );
+		boolean locked = com.shatteredpixel.shatteredpixeldungeon.ranked.net.RankedSession.locksSkin();
+		info = PixelScene.renderTextBlock( Messages.get( this, locked ? "locked" : packs.isEmpty() ? "none_installed" : "info", Skins.DIR ), 6 );
 		add( info );
 
 		buttons.add( button( null ) );
 		for (SkinPack p : packs) buttons.add( button( p ) );
-		for (RedButton b : buttons) add( b );
+		for (RedButton b : buttons){
+			b.enable( !locked );
+			add( b );
+		}
 	}
 
 	private RedButton button( final SkinPack pack ){
