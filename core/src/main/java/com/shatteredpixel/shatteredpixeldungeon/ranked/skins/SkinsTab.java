@@ -24,7 +24,8 @@ public class SkinsTab extends Component {
 	private RenderedTextBlock title;
 	private ColorBlock sep;
 	private RenderedTextBlock info;
-	private final List<RedButton> buttons = new ArrayList<>();
+	//filled in createChildren(), which Component's constructor calls before field initializers run
+	private List<RedButton> buttons;
 
 	@Override
 	protected void createChildren(){
@@ -39,6 +40,7 @@ public class SkinsTab extends Component {
 		info = PixelScene.renderTextBlock( Messages.get( this, packs.isEmpty() ? "none_installed" : "info", Skins.DIR ), 6 );
 		add( info );
 
+		buttons = new ArrayList<>();
 		buttons.add( button( null ) );
 		for (SkinPack p : packs) buttons.add( button( p ) );
 		for (RedButton b : buttons) add( b );

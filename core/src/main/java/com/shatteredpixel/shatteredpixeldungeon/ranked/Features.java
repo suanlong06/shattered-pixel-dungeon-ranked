@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked;
 
 import com.shatteredpixel.shatteredpixeldungeon.ranked.log.EventLog;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ContextualKnowledge;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ExplorationMemory;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.Skins;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.GameSettings;
@@ -59,6 +60,7 @@ public final class Features {
 		rankedSet = defaultRankedSet();
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 		ContextualKnowledge.reset();
+		ExplorationMemory.reset();
 		Skins.modeChanged();
 	}
 
@@ -89,6 +91,7 @@ public final class Features {
 			for (Feature f : rankedSet) names[i++] = f.name();
 			bundle.put( FEATURES, names );
 		}
+		ExplorationMemory.store( bundle );
 	}
 
 	/** saves without a mode are Solo */
@@ -107,6 +110,7 @@ public final class Features {
 		}
 		EventLog.reset( isRanked() ? 0 : EventLog.SOLO_CAPACITY );
 		ContextualKnowledge.reset();
+		ExplorationMemory.restore( bundle );
 		Skins.modeChanged();
 	}
 
