@@ -301,6 +301,48 @@ class AlchemyReplayTest {
 	}
 
 	@Test
+	void appClosedInAlchemyRecordsExitAndReplaysFromItsSave() throws Exception {
+		Headless.boot();
+		CommandLog.start();
+		TurnRunner first = ReplayCheck.start( SEED, HeroClass.CLERIC );
+		SETUP.run();
+		first.live = true;
+		Player pl = new Player()
+				.step( r -> tap( POT[0] ) )
+				.step( r -> { putIn( r, 0, seed() ); putIn( r, 1, seed() ); } );
+		first.run( pl, Integer.MAX_VALUE );
+		assertEquals( 2, pl.next );
+		assertEquals( 2, seeds(), "two seeds are in the pot" );
+		// the app is closed normally (back to the OS, window closed): Game.destroy destroys the scene,
+		// which gives the inputs back and saves outside of alchemy, without any switch being requested
+		Game.instance.destroy();
+		List<Command> closed = new ArrayList<>( CommandLog.recorded() );
+		assertEquals( Command.alchemy( "EXIT", 0 ), closed.get( closed.size() - 1 ), CommandLog.toText( closed ) );
+		assertFalse( CommandLog.toText( closed ).contains( "ALCH CLEAR" ), "giving the inputs back is part of EXIT" );
+		assertEquals( 4, seeds(), "closing gave the seeds back" );
+		CommandLog.stop();
+		TurnRunner.dropScene();
+
+		// restart: the save left alchemy, so it loads as an ordinary save (no ALCH LOAD), seeds and all
+		Random.resetGenerators();
+		CommandLog.start();
+		TurnRunner resumed = TurnRunner.resumeSavedGame();
+		List<Command> restored = CommandLog.recorded();
+		assertEquals( closed, restored, "the log came back with the save" );
+		assertEquals( 4, seeds() );
+		resumed.live = true;
+		resumed.run( new Player().step( r -> tap( freeNeighbour() ) ).step( r -> tap( freeNeighbour() ) ), Integer.MAX_VALUE );
+		List<Command> log = new ArrayList<>( CommandLog.stop() );
+
+		Random.resetGenerators();
+		ReplayCheck.Facts f = ReplayCheck.replay( SEED, HeroClass.CLERIC, log, SETUP );
+		assertNull( f.unsupported, f + "\n" + CommandLog.toText( log ) );
+		assertEquals( log.size(), f.commandsApplied );
+		assertEquals( 4, seeds() );
+		assertEquals( resumed.trace.get( resumed.trace.size() - 1 ), TurnRunner.stateDigest() );
+	}
+
+	@Test
 	void forgedAlchemyInputsAreRefused(){
 		Headless.boot();
 		// craft with nothing in the pot, and alchemy outside of it

@@ -26,7 +26,7 @@ Mã A/B/C lấy từ ROADMAP. "Chờ Q#" = phụ thuộc câu hỏi ở Nhóm 2.
 | T0.5 | [X] Đọc lại thiết kế repo cũ (`TECHNICAL_DESIGN.md`, `docs/`) để liệt kê điều còn dùng / đã lỗi thời | chỉ đọc, không sửa repo cũ |
 | T0.6 | [X] **Spike tất định S1 đến S6** (xem `DECISIONS.md` mục 7.4): digest tầng 1 đến 15 giữa hai JVM, nhật ký RNG, vector toán ART/JVM, headless, bot đo thời gian, thử vá | quyết định mức xác thực D5 dựa trên số đo |
 | T0.7 | [X] Chế độ Ranked "sạch": mở khóa cả 6 class, tắt Bones, chuẩn hóa meta (trang hướng dẫn, intro, Catalog), chặn rút bộ bài lúc chơi dùng chung với sinh tầng | cần cho "cùng seed, cùng tầng" |
-| T0.8 | [X] **Nền tất định** (D5 Nặng, xem `docs/T0.8-deterministic-core.md`; lệnh cho lựa chọn trong cửa sổ và chuyển tầng hố/Return/hồi sinh xong 27/10; còn: giả kim, chạy trên ART): PRNG gameplay lưu được trạng thái, tách RNG hiệu ứng, `StrictMath`, thứ tự Actor `(time, priority, id)`, đổi HashMap/HashSet sang có thứ tự, bộ chạy headless và ghi/phát lại input theo lệnh | làm sau spike T0.6, **trước mọi QoL**; xem `DECISIONS.md` mục 7.6 |
+| T0.8 | [X] **Nền tất định** (D5 Nặng, xem `docs/T0.8-deterministic-core.md`; lệnh cho lựa chọn trong cửa sổ và chuyển tầng hố/Return/hồi sinh xong 27/10; giả kim xong 28/10; còn: chạy trên ART): PRNG gameplay lưu được trạng thái, tách RNG hiệu ứng, `StrictMath`, thứ tự Actor `(time, priority, id)`, đổi HashMap/HashSet sang có thứ tự, bộ chạy headless và ghi/phát lại input theo lệnh | làm sau spike T0.6, **trước mọi QoL**; xem `DECISIONS.md` mục 7.6 |
 
 ### 1.1 Learning / QoL — nhóm B (làm trước vì độc lập, dễ kiểm chứng)
 | ID | Tính năng | [X] Xác minh trước | [T] Việc làm |
