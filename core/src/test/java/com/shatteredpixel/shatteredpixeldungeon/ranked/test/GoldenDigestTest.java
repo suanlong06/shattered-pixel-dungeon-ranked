@@ -38,6 +38,14 @@ class GoldenDigestTest {
 			TurnRunner r = Sim.play(12345L, cls, new Bot(new Bot.Scenario(true, 200, 8)), 2500);
 			out.add("game 12345 " + cls + " inputs=" + r.decisions + " steps=" + r.actorSteps + " " + r.traceDigest());
 		}
+		// floors 1 to 16 through Goo, Tengu and DM-300 (BossBot, no scenario rules)
+		BossBotTest.Run boss;
+		try {
+			boss = BossBotTest.live( 12345L, HeroClass.WARRIOR );
+		} finally {
+			com.shatteredpixel.shatteredpixeldungeon.ranked.Features.setMode( com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode.SOLO );
+		}
+		out.add( "bosses 12345 WARRIOR inputs=" + boss.cmds.size() + " turns=" + boss.turns + " " + boss.trace );
 		return out;
 	}
 
