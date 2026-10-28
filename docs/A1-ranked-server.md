@@ -25,7 +25,7 @@ Chạy test: `./gradlew :ranked-server:test`. Chạy server: `./gradlew :ranked-
 - Handshake từ chối khác phiên bản giao thức hoặc khác build fingerprint (phát lại chỉ đúng trên cùng bytecode).
 
 ## Cố ý chưa làm
-- **Vote đổi seed giữa trận** và **pause 180 s**: user chưa chốt (L6/L19). Nếu cần sẽ là thêm loại frame và một trường trong `Hub.Match`, không đổi phần còn lại.
+- ~~Vote đổi seed giữa trận và pause~~: đã làm (28/10), xem mục "Vote đổi seed và pause" bên dưới.
 - ~~Xác minh bằng phát lại~~: đã làm ở A3 (`docs/A3-replay-verifier.md`), giao thức lên phiên bản 2 với frame `LOG`.
 - Log lệnh theo đoạn và lệnh `CHOICE` (T0.5 mục 4), phía client (UI hàng chờ, gửi báo cáo), bảng xếp hạng, đổi mùa.
 - Giới hạn tổng 90 phút vẫn là số tạm của A2.
@@ -55,3 +55,24 @@ Test: `ProgressTrackerTest` (core) và `ClientInteropTest` (ranked-server): `Ran
 - Test thêm trong `ClientInteropTest`: client mới vào lại bằng token đã lưu rồi bỏ cuộc (thua/thắng đúng), token cũ bị từ chối, core có fingerprint đúng dạng.
 
 Chưa làm: chưa thử trên Android thật (APK debug build được và có fingerprint, nhưng lúc làm không có máy nào cắm adb).
+
+## Vote đổi seed và pause (L6, L19, chốt 28/10)
+Giao thức lên phiên bản 3.
+
+**Vote đổi seed** (mọi chế độ Duel, boss cuối 5, 10 hay 15):
+- Client gửi `VOTE_REROLL` (`accept` mặc định true). Server báo cả hai bằng `REROLL_VOTE {mine, theirs, voteMs, ended?}`.
+- Chỉ vote được khi cả hai còn ở tầng 5 trở lên (`rerollMaxDepth`), còn sống, chưa hạ boss cuối, và đối thủ đang kết nối. Một người xuống tầng 6 thì vote đang mở kết thúc (`TOO_DEEP`).
+- Người kia đồng ý trong 30 s (`rerollVoteMs`) thì đổi seed; `accept: false` là từ chối (`DECLINED`), quá 30 s là `EXPIRED`, một người rời là `LEFT`.
+- Mỗi trận đổi được 1 lần (`rerollsPerMatch`). Đây là con số tự chọn, user chưa nói; đổi trong `Hub.Config`.
+- Khi đổi: server lấy seed mới từ pool (`Storage.rerollMatch`, cùng transaction cập nhật `match.seed`), xóa log lệnh và tiến độ của cả hai, gửi lại `START {seed, t0, reroll}` với đếm ngược mới. Client chơi lại từ tầng 1.
+- Seed cũ vẫn đánh dấu thuộc trận này và **không** trả về pool: cả hai đã thấy nó. Pool hết seed thì vote kết thúc với `POOL_EMPTY`, giữ seed cũ.
+
+**Pause 60 s** (`pauseBudgetMs`, mỗi người mỗi trận):
+- `PAUSE` / `UNPAUSE`; server báo cả hai bằng `PAUSED {mine, paused, leftMs}`. Hết ngân sách thì server tự kết thúc pause.
+- Pause chỉ dừng **đồng hồ của người pause**; đồng hồ của đối thủ vẫn chạy. `MatchEnd.Player.pausedMs` giữ phần thời gian đã pause; đồng hồ riêng = thời gian trận − `pausedMs`.
+- Thời điểm hạ boss và lúc chết tính theo đồng hồ riêng. Vì vậy một lần hạ boss chỉ thắng khi đồng hồ riêng của đối thủ đã vượt mốc đó (hoặc đối thủ đã chết); trước đó đối thủ vẫn có thể hạ boss sớm hơn theo đồng hồ của mình.
+- Hết giờ (90 phút) xét khi cả hai đồng hồ riêng đều hết. Người hết giờ trước thì báo cáo sau đó bị từ chối (`time is up`) và chờ người kia.
+- Trong lúc pause, `LOG` và báo cáo bị từ chối. Client mở cửa sổ pause (chặn nhân vật) và chỉ cho pause khi nhân vật đang chờ lệnh. Thời gian pause đã dùng vẫn tính sau khi đổi seed.
+- Mất kết nối vẫn tính theo thời gian trận như cũ (5 phút).
+
+Test: `HubTest` thêm 9 ca (vote cần hai người và chơi lại từ đầu, đóng sau tầng 5, vote kết thúc khi xuống sâu, từ chối và hết hạn, pool rỗng, pause chỉ dừng đồng hồ người pause, hết ngân sách, chờ đồng hồ còn lại khi hạ boss, hết giờ chờ cả hai); `MatchEndTest` thêm 3 ca đồng hồ riêng; `ClientInteropTest.rerollAndPause` chạy qua `RankedClient` thật.

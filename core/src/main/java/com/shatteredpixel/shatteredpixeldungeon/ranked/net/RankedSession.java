@@ -68,6 +68,17 @@ public final class RankedSession {
 	private int oppDepth = 1, oppBosses;
 	private boolean oppDead, oppConnected = true;
 
+	// L6 reroll vote and L19 pause
+	private int rerollMaxDepth = 5;
+	private int rerolls;
+	private boolean myVote, theirVote;
+	private String voteEnded;
+	private long pauseBudgetMs = 60_000;
+	private long pauseLeftMs = 60_000;
+	private boolean paused, oppPaused;
+	/** local time the current own pause was confirmed, for the countdown shown */
+	private long pausedLocal;
+
 	private ProgressTracker tracker;
 	private long startedAt = -1;
 	/** commands of this run already handed to the client (A3) */
@@ -144,6 +155,44 @@ public final class RankedSession {
 	public int opponentBosses(){ return oppBosses; }
 	public boolean opponentDead(){ return oppDead; }
 	public boolean opponentConnected(){ return oppConnected; }
+
+	/** L6: a reroll vote is possible: once per match, both players no deeper than floor 5 */
+	public boolean canVoteReroll(){
+		return running() && rerolls == 0 && !myVote && Dungeon.depth <= rerollMaxDepth
+				&& Statistics.deepestFloor <= rerollMaxDepth && oppDepth <= rerollMaxDepth && !oppDead && oppConnected;
+	}
+	public void voteReroll( boolean accept ){
+		if (accept) myVote = true;
+		else theirVote = false;
+		client.voteReroll( accept );
+	}
+	public boolean myVote(){ return myVote; }
+	public boolean theirVote(){ return theirVote; }
+	/** why the last vote ended (DECLINED, EXPIRED ...), read once */
+	public String takeVoteEnded(){
+		String e = voteEnded;
+		voteEnded = null;
+		return e;
+	}
+
+	/** L19: pause only while the hero waits for input, with budget left */
+	public boolean canPause(){
+		return running() && !paused && pauseLeftMs > 0 && Dungeon.hero != null && Dungeon.hero.isAlive() && heroWaits();
+	}
+	public void pause(){ client.pause(); }
+	public void unpause(){ client.unpause(); }
+	public boolean paused(){ return paused; }
+	public boolean opponentPaused(){ return oppPaused; }
+	/** pause budget left, counting down locally while paused (the server's answer corrects it) */
+	public long pauseLeftMs(){
+		return paused ? Math.max( 0, pauseLeftMs - (System.currentTimeMillis() - pausedLocal) ) : pauseLeftMs;
+	}
+	public long pauseBudgetMs(){ return pauseBudgetMs; }
+
+	private boolean running(){
+		return inRun() && state == RankedClient.State.STARTED && Features.isRanked()
+				&& System.currentTimeMillis() - startedAt >= COUNTDOWN_GRACE_MS;
+	}
 	/** true while a ranked run is being played or waiting for its RESULT */
 	public boolean inRun(){ return startedAt >= 0 && result == null; }
 
@@ -180,12 +229,23 @@ public final class RankedSession {
 				opponent = f.s( "opponent" );
 				opponentRating = (int)Math.round( f.d( "opponentRating", 0 ) );
 				finalBossDepth = f.i( "finalBossDepth", finalBossDepth );
+				rerollMaxDepth = f.i( "rerollMaxDepth", rerollMaxDepth );
+				pauseBudgetMs = pauseLeftMs = f.l( "pauseBudgetMs", pauseBudgetMs );
 				break;
 			case NetFrame.START:
+				// a START during the run is a passed reroll vote (L6): the run starts over on the new seed
+				rerolls = f.i( "reroll", 0 );
+				myVote = theirVote = false;
+				paused = oppPaused = false;
+				if (rerolls > 0) CommandLog.stop();
 				startRun( f.l( "seed", 0 ) );
 				save();
 				break;
 			case NetFrame.RESUMED:
+				rerolls = f.i( "reroll", rerolls );
+				pauseLeftMs = f.l( "pauseLeftMs", pauseLeftMs );
+				paused = f.b( "paused" );
+				pausedLocal = System.currentTimeMillis();
 				if (rejoining){
 					rejoining = false;
 					loadRun();
@@ -200,6 +260,20 @@ public final class RankedSession {
 				oppBosses = f.i( "bosses", oppBosses );
 				oppDead = f.b( "dead" );
 				oppConnected = f.b( "connected" );
+				break;
+			case NetFrame.REROLL_VOTE:
+				myVote = f.b( "mine" );
+				theirVote = f.b( "theirs" );
+				if (f.data.has( "ended" )) voteEnded = f.s( "ended" );
+				break;
+			case NetFrame.PAUSED:
+				if (f.b( "mine" )){
+					paused = f.b( "paused" );
+					pauseLeftMs = f.l( "leftMs", pauseLeftMs );
+					pausedLocal = System.currentTimeMillis();
+				} else {
+					oppPaused = f.b( "paused" );
+				}
 				break;
 			case NetFrame.RESULT:
 				forget();
@@ -245,6 +319,7 @@ public final class RankedSession {
 		// A3: every input of the run is recorded; the first LOG names the hero class
 		heroClass = GamesInProgress.selectedClass.name();
 		logged = 0;
+		client.newRun();
 		CommandLog.start();
 		sendLog();
 		Game.switchScene( InterlevelScene.class );

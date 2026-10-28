@@ -111,4 +111,31 @@ class MatchEndTest {
 		assertEquals(5L * 60_000L, Rules.defaults().disconnectLimitMs);
 		assertEquals(15, Rules.defaults().finalBossDepth);
 	}
+
+	// L19 pause: own clocks
+
+	@Test void clearWaitsForTheOtherOwnClock() {
+		Player a = p(15, 900), b = p(12, 800);
+		a.clearedAt = 30_000;
+		b.pausedMs = 5_000;
+		// b's own clock is at 28 s: b may still clear before 30 s
+		check(Outcome.ONGOING, Reason.NONE, a, b, 33_000);
+		check(Outcome.A_WINS, Reason.BOSS_CLEARED, a, b, 35_000);
+		b.deathAt = 20_000;
+		check(Outcome.A_WINS, Reason.BOSS_CLEARED, a, b, 33_000);
+	}
+
+	@Test void earlierOwnClearWins() {
+		Player a = p(15, 900), b = p(15, 800);
+		a.clearedAt = 30_000; // own clock
+		b.clearedAt = 31_000;
+		check(Outcome.A_WINS, Reason.BOSS_CLEARED, a, b, 40_000);
+	}
+
+	@Test void timeoutNeedsBothOwnClocks() {
+		Player a = p(5, 900), b = p(4, 800);
+		b.pausedMs = 10_000;
+		check(Outcome.ONGOING, Reason.NONE, a, b, 65_000);
+		check(Outcome.A_WINS, Reason.TIMEOUT_DEPTH, a, b, 70_000);
+	}
 }

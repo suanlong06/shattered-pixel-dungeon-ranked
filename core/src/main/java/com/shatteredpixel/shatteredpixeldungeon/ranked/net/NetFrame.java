@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
  */
 public final class NetFrame {
 
-	public static final int PROTOCOL = 3; // 2: LOG (A3), 3: TELEMETRY (A5)
+	public static final int PROTOCOL = 4; // 2: LOG (A3), 3: TELEMETRY (A5), 4: VOTE_REROLL, PAUSE (L6, L19)
 	public static final int MAX_FRAME = 64 * 1024;
 
 	// client -> server
@@ -34,6 +34,11 @@ public final class NetFrame {
 	public static final String LOG = "LOG";
 	public static final String TELEMETRY = "TELEMETRY";
 	public static final String RESUME = "RESUME";
+	/** L6: vote for a new seed, {@code {accept}}; false declines the opponent's vote */
+	public static final String VOTE_REROLL = "VOTE_REROLL";
+	/** L19: stop this player's own clock, up to the pause budget */
+	public static final String PAUSE = "PAUSE";
+	public static final String UNPAUSE = "UNPAUSE";
 	public static final String PING = "PING";
 
 	// server -> client
@@ -44,6 +49,10 @@ public final class NetFrame {
 	public static final String OPPONENT = "OPPONENT";
 	public static final String RESUMED = "RESUMED";
 	public static final String RESULT = "RESULT";
+	/** {@code {mine, theirs, voteMs, ended?}}; a vote that passes is a new START */
+	public static final String REROLL_VOTE = "REROLL_VOTE";
+	/** {@code {mine, paused, leftMs}} */
+	public static final String PAUSED = "PAUSED";
 	public static final String PONG = "PONG";
 	public static final String ERROR = "ERROR";
 

@@ -219,6 +219,33 @@ public final class Storage implements AutoCloseable {
 		});
 	}
 
+	/**
+	 * L6 reroll: takes the next seed for a running match and makes it the match's seed, in
+	 * one transaction. The old seed keeps {@code used_by}: both players saw it. Null if the pool is empty.
+	 */
+	public Long rerollMatch(String id, long now) throws SQLException {
+		return inTransaction(() -> {
+			Long seed = takeSeed(id, now);
+			if (seed != null) {
+				try (PreparedStatement p = db.prepareStatement("UPDATE match SET seed = ? WHERE id = ?")) {
+					p.setLong(1, seed);
+					p.setString(2, id);
+					p.executeUpdate();
+				}
+			}
+			return seed;
+		});
+	}
+
+	public long matchSeed(String id) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("SELECT seed FROM match WHERE id = ?")) {
+			p.setString(1, id);
+			try (ResultSet r = p.executeQuery()) {
+				return r.next() ? r.getLong(1) : -1;
+			}
+		}
+	}
+
 	public void createMatch(String id, int season, String platform, long a, long b, long seed, long now) throws SQLException {
 		try (PreparedStatement p = db.prepareStatement("INSERT INTO match (id, season, platform, a, b, seed, state, created) VALUES (?, ?, ?, ?, ?, ?, 'PREPARING', ?)")) {
 			p.setString(1, id);

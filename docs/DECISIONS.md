@@ -102,7 +102,7 @@ Các câu này chỉ ảnh hưởng một task, hoặc cần thấy tính năng 
 | L3 | Android và desktop chung một bảng xếp hạng hay tách | thiết kế rating (liên quan D4) | tách theo nền tảng nhập liệu cho đến khi có số liệu | A1 |
 | L4 | Rating: thuật toán, độ dài mùa, trận xếp hạng đầu | thiết kế rating | rating kiểu Elo/Glicko đơn giản, mùa 8 tuần | A1 |
 | L5 | Tính năng Learning nào bật trong Ranked | trước khi bật Ranked đầu tiên | whitelist do server gửi; bản đầu chỉ tính năng không lộ thông tin thêm | T0.2, B* |
-| L6 | Chính sách ngắt kết nối, giới hạn thời gian trận, hòa, strike, vote reroll, tranh chấp | thiết kế A1 (đối chiếu repo cũ) | giữ luật cũ nếu đọc được, nếu không dùng bộ luật tối giản | A1 |
+| L6 | Chính sách ngắt kết nối, giới hạn thời gian trận, hòa, strike, vote reroll, tranh chấp (28/10: vote đổi seed có, tới tầng 5, mọi chế độ; xem `A1-ranked-server.md`) | thiết kế A1 (đối chiếu repo cũ) | giữ luật cũ nếu đọc được, nếu không dùng bộ luật tối giản | A1 |
 | L7 | Tên game, `appPackageName`, icon, thông báo cập nhật, news, nút ủng hộ | trước bản phát hành đầu | dùng `.indev` để thử, chưa phát hành | F12, F13 |
 | L8 | Ngôn ngữ cho chuỗi mới: chỉ EN, hay EN + VI | tính năng UI đầu tiên (B3) | EN + VI, ngôn ngữ khác rơi về EN | B* |
 | L9 | Known Item Recognition: chỉ item đã định danh hay cả đã thử dùng; ký hiệu cho item chưa biết | B3 | chỉ đã định danh, có ký hiệu rõ cho item chưa biết | B3 |
@@ -115,7 +115,7 @@ Các câu này chỉ ảnh hưởng một task, hoặc cần thấy tính năng 
 | L16 | Có hỗ trợ iOS không | trước khi dựng CI phát hành | không | CI |
 | L17 | Boss Practice: danh sách boss, kit và build mỗi class, kit reset hay mang theo, có cho đấu đôi bằng kit không | bắt đầu làm Boss Practice | chơi đơn; kit cố định theo class và boss, reset mỗi boss; chưa làm đấu đôi | B6, Boss Practice |
 | L18 | Tiêu chí "đồ tốt tầng 1 đến 5" của seed pool, và trần chất lượng để hạn chế may rủi | bắt đầu A4 (sau spike S1) | chấm theo từng class và lấy mức thấp nhất (đạt ngưỡng cho cả 6 class); cân cả "sống sót" lẫn "nhanh"; có trần trên; seed bí mật đến lúc bắt đầu trận và dùng một lần; ghost chỉ hiện tầng và mốc | A4 |
-| L19 | Luật kết thúc trận: giới hạn thời gian, chết, cả hai chết, hòa, hết giờ, mất kết nối lâu | trước khi viết giao thức A1, sau khi bot S5 đo thời lượng một lượt chơi tầng 1 đến 15 | chết là thua; cả hai chết thì ai xuống sâu hơn thắng, rồi ai chết muộn hơn; giới hạn tổng thời gian đặt theo số đo; mất kết nối quá 5 phút là thua, ngắn hơn thì RESUME | A1, A2 |
+| L19 | Luật kết thúc trận: giới hạn thời gian, chết, cả hai chết, hòa, hết giờ, mất kết nối lâu (28/10: pause 60 s mỗi người, đồng hồ riêng; xem `A1-ranked-server.md`) | trước khi viết giao thức A1, sau khi bot S5 đo thời lượng một lượt chơi tầng 1 đến 15 | chết là thua; cả hai chết thì ai xuống sâu hơn thắng, rồi ai chết muộn hơn; giới hạn tổng thời gian đặt theo số đo; mất kết nối quá 5 phút là thua, ngắn hơn thì RESUME | A1, A2 |
 
 ## 6. Tự quyết (kỹ thuật và tối ưu)
 
