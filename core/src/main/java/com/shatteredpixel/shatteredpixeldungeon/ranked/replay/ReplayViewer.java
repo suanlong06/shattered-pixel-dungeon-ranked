@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.InterlevelScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.TitleScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndResurrect;
 import com.watabou.input.GameAction;
@@ -24,7 +25,11 @@ import com.watabou.input.PointerEvent;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.Scene;
+import com.watabou.utils.Random;
 import com.watabou.utils.Signal;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * spd-ranked (A5): watches a replay in the real game scene. The run starts in its own save slot
@@ -33,8 +38,12 @@ import com.watabou.utils.Signal;
  * which feeds the recorded commands in exactly as the server's replay check does. Level changes
  * go through the game's own InterlevelScene; alchemy inputs are stepped from AlchemyScene.update()
  * the same way. The player's taps and keys do not reach the game
- * while watching (only the replay controls), and nothing of the replay is kept: no badges,
- * rankings, journal, bones or ghosts, and the save slot is deleted on exit.
+ * while watching (only the replay controls and the viewer's own windows), and nothing of the
+ * replay is kept: no badges, rankings, journal, bones or ghosts, and the save slot is deleted on exit.
+ * <p>
+ * Seeking back starts the run again and seeks forward to the input. The viewer's windows (the
+ * hero's inventory, seeking) hold the playback while they are up, and whatever they read cannot
+ * change the run: the gameplay RNG is put back as it was when they close.
  */
 public final class ReplayViewer {
 
@@ -50,12 +59,27 @@ public final class ReplayViewer {
 	private Scene lastScene;
 	private ReplayControls controls;
 	private boolean exiting;
+	/** the viewer's windows that may still be up, and the gameplay RNG from before the first opened */
+	private final List<Window> windows = new ArrayList<>();
+	private long[] rngBefore;
+	/** real seconds the scene still fades in for (PixelScene's Fader): it runs even while paused, or stays black */
+	private float fading;
+	/** seeking back: the scene of the run before, which this viewer leaves alone until it is gone */
+	private Scene replaced;
 
 	private ReplayViewer( ReplayPlayback playback ){
 		this.playback = playback;
 		prevSlot = GamesInProgress.curSlot;
 		prevClass = GamesInProgress.selectedClass;
 		prevLastClass = SPDSettings.lastClass();
+	}
+
+	/** the same viewing session on a new playback (seeking back): the player's things to give back stay */
+	private ReplayViewer( ReplayPlayback playback, ReplayViewer from ){
+		this.playback = playback;
+		prevSlot = from.prevSlot;
+		prevClass = from.prevClass;
+		prevLastClass = from.prevLastClass;
 	}
 
 	/** true from start() until the viewer has left the game scene */
@@ -80,8 +104,15 @@ public final class ReplayViewer {
 	public static boolean start( ReplayFile f ){
 		if (cannotWatch( f ) != null) return false;
 		current = new ReplayViewer( new ReplayPlayback( f, TurnRunner.forViewer() ) );
+		beginRun( f );
+		TurnRunner.beginViewing();
+		installGate();
+		Game.switchScene( InterlevelScene.class );
+		return true;
+	}
 
-		// the run starts as RankedSession.startRun starts a ranked run
+	/** the run starts as RankedSession.startRun starts a ranked run; InterlevelScene (DESCEND) does the rest */
+	private static void beginRun( ReplayFile f ){
 		Dungeon.deleteGame( SLOT, true );
 		GamesInProgress.curSlot = SLOT;
 		GamesInProgress.selectedClass = f.heroClass;
@@ -95,11 +126,6 @@ public final class ReplayViewer {
 		Dungeon.customSeedText = "";
 		ActionIndicator.clearAction();
 		InterlevelScene.mode = InterlevelScene.Mode.DESCEND;
-
-		TurnRunner.beginViewing();
-		installGate();
-		Game.switchScene( InterlevelScene.class );
-		return true;
 	}
 
 	// hooks
@@ -138,22 +164,29 @@ public final class ReplayViewer {
 
 	private void frame( Scene scene ){
 		// leaving: the switch to the title screen happens next frame, the run must not request another
-		if (exiting) return;
+		if (exiting || scene == replaced) return;
 		if (scene != lastScene){
 			lastScene = scene;
 			playback.sceneBuilt();
 			controls = new ReplayControls( this );
 			scene.add( controls );
+			fading = 1f;
 		}
+		if (!windows.isEmpty()) closedWindows();
 		if (playback.frame() == ReplayPlayback.Result.SWITCH && Game.switchingScene()){
 			String unsupported = unfollowable( Game.pendingScene() );
 			if (unsupported != null){
-				// the game went somewhere replay cannot follow (the surface, the amulet...)
+				// the game went somewhere replay cannot follow (a client closed in alchemy...)
 				playback.end( unsupported );
 				exit( Messages.get( ReplayViewer.class, "unsupported_scene" ) );
 			}
 		}
 		Game.timeScale = playback.ended() != null && !playback.paused() ? 1f : playback.timeScale();
+		if (fading > 0){
+			// only tweens and animations run meanwhile; the game itself waits for the playback
+			fading -= com.badlogic.gdx.Gdx.graphics.getDeltaTime();
+			if (Game.timeScale == 0f) Game.timeScale = 1f;
+		}
 		controls.refresh();
 	}
 
@@ -164,6 +197,66 @@ public final class ReplayViewer {
 	void faster(){ playback.faster(); }
 	void slower(){ playback.slower(); }
 	ReplayPlayback state(){ return playback; }
+
+	/** pauses once the hero waits after target inputs; back means the run starts again and plays up to there */
+	void seek( int target ){
+		target = Math.max( 0, Math.min( target, playback.total() ) );
+		if (target > playback.applied() && playback.ended() == null){
+			playback.seekTo( target );
+		} else {
+			restart( target );
+		}
+	}
+
+	void seekNextFloor(){
+		playback.seekNextFloor();
+	}
+
+	/** the run again from its start, in the same viewing session, seeking to target inputs */
+	private void restart( int target ){
+		if (exiting) return;
+		closeWindows();
+		ReplayPlayback pb = new ReplayPlayback( playback.file, TurnRunner.forViewer() );
+		pb.seekTo( target );
+		current = new ReplayViewer( pb, this );
+		current.replaced = Game.scene();
+		beginRun( playback.file );
+		Game.switchScene( InterlevelScene.class );
+	}
+
+	/** shows one of the viewer's windows (read-only: inventory, item info, seeking); the playback holds meanwhile */
+	void show( Window w ){
+		if (windows.isEmpty()){
+			try {
+				rngBefore = Random.getStackState();
+			} catch (IllegalStateException e){
+				// test harnesses wrap the generators; their RNG is checked by comparing the run instead
+				rngBefore = null;
+			}
+		}
+		windows.add( w );
+		playback.hold( true );
+		Game.scene().addToFront( w );
+	}
+
+	private boolean windowUp(){
+		for (Window w : windows) if (w.parent != null) return true;
+		return false;
+	}
+
+	/** the viewer's windows all closed: the playback goes on with the RNG it had */
+	private void closedWindows(){
+		if (windowUp()) return;
+		windows.clear();
+		if (rngBefore != null) Random.setStackState( rngBefore );
+		rngBefore = null;
+		playback.hold( false );
+	}
+
+	private void closeWindows(){
+		for (Window w : new ArrayList<>( windows )) if (w.parent != null) w.hide();
+		closedWindows();
+	}
 
 	/** leaves the replay for the title screen, optionally with a message there */
 	public static void exit( String message ){
@@ -208,6 +301,8 @@ public final class ReplayViewer {
 			if (current == null || e == null || e.type != PointerEvent.Type.DOWN) return false;
 			if (!playsIn( Game.scene() )) return false;
 			ReplayControls c = current.controls;
+			// the viewer's windows get every press except on the controls, which do nothing meanwhile
+			if (current.windowUp()) return c != null && c.hits( e );
 			return c == null || !c.hits( e );
 		}
 	};
@@ -216,7 +311,13 @@ public final class ReplayViewer {
 		@Override
 		public boolean onSignal( KeyEvent e ){
 			if (current == null || !playsIn( Game.scene() )) return false;
-			if (e.pressed && KeyBindings.getActionForKey( e ) == GameAction.BACK) exit( null );
+			if (e.pressed && KeyBindings.getActionForKey( e ) == GameAction.BACK){
+				// back closes the viewer's top window first
+				Window top = null;
+				for (Window w : current.windows) if (w.parent != null) top = w;
+				if (top != null) top.onBackPressed();
+				else exit( null );
+			}
 			return true;
 		}
 	};

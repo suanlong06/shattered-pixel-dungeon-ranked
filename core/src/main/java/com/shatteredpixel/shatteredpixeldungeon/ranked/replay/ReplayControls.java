@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * spd-ranked (A5): the replay bar at the top of the game scene: pause, slower, faster, one input,
- * exit, and a line with progress and speed. The only thing the player can press while watching.
+ * seeking, the hero's inventory, exit, and a line with progress and speed. The only thing the player can press while watching.
  */
 class ReplayControls extends Group {
 
@@ -25,7 +25,10 @@ class ReplayControls extends Group {
 	private static final float GAP = 2;
 
 	private final ReplayViewer viewer;
-	private final Btn pause, slower, faster, step, exit;
+	/** buttons per row */
+	private static final int ROW = 4;
+
+	private final Btn pause, slower, faster, step, seek, bag, exit;
 	private final List<Btn> buttons = new ArrayList<>();
 	private final RenderedTextBlock line;
 	private String shown;
@@ -38,6 +41,8 @@ class ReplayControls extends Group {
 		slower = add( new Btn( "-" ){ @Override protected void onClick(){ viewer.slower(); } } );
 		faster = add( new Btn( "+" ){ @Override protected void onClick(){ viewer.faster(); } } );
 		step   = add( new Btn( Messages.get( ReplayViewer.class, "step" ) ){ @Override protected void onClick(){ viewer.stepOne(); } } );
+		seek   = add( new Btn( Messages.get( ReplayViewer.class, "seek" ) ){ @Override protected void onClick(){ viewer.show( new WndReplaySeek( viewer ) ); } } );
+		bag    = add( new Btn( Messages.get( ReplayViewer.class, "bag" ) ){ @Override protected void onClick(){ viewer.show( new WndReplayBag( viewer ) ); } } );
 		exit   = add( new Btn( Messages.get( ReplayViewer.class, "exit" ) ){ @Override protected void onClick(){ ReplayViewer.exit( null ); } } );
 
 		line = PixelScene.renderTextBlock( 6 );
@@ -71,14 +76,23 @@ class ReplayControls extends Group {
 		pause.text( Messages.get( ReplayViewer.class, p.paused() ? "play" : "pause" ) );
 		pause.enable( !over );
 		step.enable( !over );
+		bag.enable( Dungeon.hero != null );
 
 		String speed = p.speed() < 1 ? "1/" + Math.round( 1 / p.speed() ) : String.valueOf( Math.round( p.speed() ) );
 		String t;
-		if (!over){
+		if (!over && p.seeking()){
+			t = Messages.get( ReplayViewer.class, "seeking", p.done(), p.total(), Dungeon.depth );
+		} else if (!over){
 			t = Messages.get( ReplayViewer.class, "status", p.done(), p.total(), Dungeon.depth, speed )
 					+ (p.paused() ? " " + Messages.get( ReplayViewer.class, "paused" ) : "");
 		} else if (p.finished()){
 			t = Messages.get( ReplayViewer.class, "finished", p.total() );
+		} else if (p.ended().equals( ReplayPlayback.WON_SURFACE )){
+			t = Messages.get( ReplayViewer.class, "won_surface" );
+		} else if (p.ended().equals( ReplayPlayback.WON_AMULET )){
+			int rest = p.total() - p.done();
+			t = rest > 0 ? Messages.get( ReplayViewer.class, "won_amulet_more", Dungeon.depth, rest )
+					: Messages.get( ReplayViewer.class, "won_amulet", Dungeon.depth );
 		} else if (p.ended().startsWith( "hero died" )){
 			t = Messages.get( ReplayViewer.class, "died", Dungeon.depth );
 		} else {
@@ -90,16 +104,20 @@ class ReplayControls extends Group {
 
 		Camera c = camera();
 		float width = c == null ? 160 : c.width;
-		float rowW = 5 * BTN_W + 4 * GAP;
-		float x = (width - rowW) / 2f;
-		for (Btn b : buttons){
-			b.setRect( x, TOP, BTN_W, BTN_H );
-			PixelScene.align( b );
-			x += BTN_W + GAP;
+		float y = TOP;
+		for (int i = 0; i < buttons.size(); i += ROW){
+			int n = Math.min( ROW, buttons.size() - i );
+			float x = (width - (n * BTN_W + (n - 1) * GAP)) / 2f;
+			for (Btn b : buttons.subList( i, i + n )){
+				b.setRect( x, y, BTN_W, BTN_H );
+				PixelScene.align( b );
+				x += BTN_W + GAP;
+			}
+			y += BTN_H + GAP;
 		}
 		line.maxWidth( (int) Math.min( width - 8, 200 ) );
 		line.text( t );
-		line.setPos( (width - line.width()) / 2f, TOP + BTN_H + 2 );
+		line.setPos( (width - line.width()) / 2f, y );
 		PixelScene.align( line );
 	}
 
