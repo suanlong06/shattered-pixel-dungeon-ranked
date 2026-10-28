@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
  */
 public final class NetFrame {
 
-	public static final int PROTOCOL = 2; // 2: LOG (A3)
+	public static final int PROTOCOL = 3; // 2: LOG (A3), 3: TELEMETRY (A5)
 	public static final int MAX_FRAME = 64 * 1024;
 
 	// client -> server
@@ -32,6 +32,7 @@ public final class NetFrame {
 	public static final String RESIGN = "RESIGN";
 	/** A3: next part of the command log, {from, cls, cmds} */
 	public static final String LOG = "LOG";
+	public static final String TELEMETRY = "TELEMETRY";
 	public static final String RESUME = "RESUME";
 	public static final String PING = "PING";
 

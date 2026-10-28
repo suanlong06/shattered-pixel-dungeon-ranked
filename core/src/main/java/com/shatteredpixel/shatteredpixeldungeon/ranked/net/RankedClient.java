@@ -163,6 +163,11 @@ public final class RankedClient {
 		}
 	}
 
+	/** A5: the run summary, best effort (dropped while reconnecting); send before the last report */
+	public void telemetry( String body ){
+		if (state != State.RECONNECTING) send( match( NetFrame.TELEMETRY, NetFrame.obj( "body", body ) ) );
+	}
+
 	public void progress( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.PROGRESS, depth, turns, bosses ) ); }
 	public void died( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.DIED, depth, turns, bosses ) ); }
 	public void cleared( int depth, long turns, int bosses ){ report( progressFrame( NetFrame.CLEARED, depth, turns, bosses ) ); }

@@ -137,6 +137,8 @@ public final class Hub {
 		public java.util.Set<String> allowedSkins = null;
 		/** longest command log per side */
 		public int maxLogCommands = 500_000;
+		/** largest telemetry body accepted, in characters */
+		public int maxTelemetry = 16 * 1024;
 	}
 
 	static final class Side {
@@ -255,6 +257,7 @@ public final class Hub {
 			case Frame.READY: ready(c, now); break;
 			case Frame.PROGRESS: case Frame.DIED: case Frame.CLEARED: case Frame.RESIGN: report(c, f, now); break;
 			case Frame.LOG: log(c, f); break;
+			case Frame.TELEMETRY: telemetry(c, f, now); break;
 			default: error(link, "unknown type " + f.type);
 		}
 	}
@@ -462,6 +465,25 @@ public final class Hub {
 			}
 			s.log.add(line);
 		}
+	}
+
+	/**
+	 * A5: a side's run summary, sent before its last report. Only "key=value" lines with plain
+	 * keys are kept; the server stores it as given and never uses it to judge the match.
+	 */
+	private void telemetry(Client c, Frame f, long now) throws SQLException {
+		Match m = c.match;
+		if (m == null || (m.state != State.RUNNING && m.state != State.COUNTDOWN) || (f.matchId != null && !f.matchId.equals(m.id))) {
+			error(c.link, "no running match");
+			return;
+		}
+		String body = Telemetry.clean(f.s("body"), cfg.maxTelemetry);
+		if (body == null) {
+			error(c.link, "bad telemetry");
+			return;
+		}
+		Side s = side(m, c.player);
+		db.saveTelemetry(m.id, m.sides[0] == s ? 0 : 1, body, now);
 	}
 
 	private void report(Client c, Frame f, long now) throws SQLException {

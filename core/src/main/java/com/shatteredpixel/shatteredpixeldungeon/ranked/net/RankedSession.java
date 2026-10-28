@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.Features;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.GameMode;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.telemetry.Telemetry;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.Command;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.sim.CommandLog;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -322,6 +323,9 @@ public final class RankedSession {
 		ProgressTracker.Report rep = tracker.update( Math.max( depth, Statistics.deepestFloor ), turns,
 				Statistics.bossScores, Dungeon.hero.isAlive() || WndResurrect.instance != null );
 		if (rep != ProgressTracker.Report.NONE) sendLog();
+		if (rep == ProgressTracker.Report.DIED || rep == ProgressTracker.Report.CLEARED){
+			client.telemetry( Telemetry.upload( heroClass, rep.name(), tracker.depth(), tracker.turns() ) ); // A5
+		}
 		switch (rep){
 			case PROGRESS: client.progress( tracker.depth(), tracker.turns(), tracker.bosses() ); break;
 			case DIED:     client.died( tracker.depth(), tracker.turns(), tracker.bosses() ); break;
