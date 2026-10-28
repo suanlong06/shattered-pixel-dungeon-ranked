@@ -1,0 +1,50 @@
+#!/bin/bash
+# spd-ranked (A7): control the ranked server inside the A53 chroot (/data/ubuntu).
+#   spdr-ranked start | stop | restart | status | logs
+# Dist in $HOME_DIR/lib (from :ranked-server:installDist), DB and seed pool beside it.
+# Separate from the older /root/ranked + a53-ranked setup, which is left untouched.
+set -u
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOME_DIR=/root/spdr-ranked
+PORT="${SPDR_PORT:-7420}"
+LOG=/var/log/spdr-ranked.log
+PIDFILE=/var/log/spdr-ranked.pid
+JAVA=/usr/local/jdk-17/bin/java
+
+running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
+
+case "${1:-status}" in
+  start)
+    if running; then echo "already running pid=$(cat "$PIDFILE")"; exit 0; fi
+    POOL=""
+    [ -f "$HOME_DIR/seedpool.txt" ] && POOL="-Dspdr.seedpool=$HOME_DIR/seedpool.txt"
+    cd "$HOME_DIR" || exit 1
+    nohup "$JAVA" -Xmx384m -Djava.io.tmpdir=/tmp \
+      -Dspdr.port="$PORT" -Dspdr.db="$HOME_DIR/ranked.db" $POOL \
+      -cp "$HOME_DIR/lib/*" com.shatteredpixel.shatteredpixeldungeon.ranked.server.ServerMain \
+      >> "$LOG" 2>&1 < /dev/null &
+    echo $! > "$PIDFILE"
+    for _ in $(seq 1 40); do
+      grep -q "spd-ranked server on port" "$LOG" 2>/dev/null && tail -n 1 "$LOG" && break
+      running || { echo "FAILED, see $LOG"; tail -n 20 "$LOG"; exit 1; }
+      sleep 0.25
+    done
+    echo "started pid=$(cat "$PIDFILE")"
+    ;;
+  stop)
+    running || { echo "not running"; exit 0; }
+    kill "$(cat "$PIDFILE")"; sleep 1; running && kill -9 "$(cat "$PIDFILE")"
+    rm -f "$PIDFILE"; echo "stopped"
+    ;;
+  restart) "$0" stop; "$0" start ;;
+  status)
+    if running; then
+      p=$(cat "$PIDFILE")
+      echo "RUNNING pid=$p rss_kB=$(awk '/VmRSS/{print $2}' /proc/$p/status) port=$PORT"
+    else
+      echo "STOPPED"
+    fi
+    ;;
+  logs) tail -n "${2:-40}" "$LOG" ;;
+  *) echo "usage: $0 start|stop|restart|status|logs"; exit 2 ;;
+esac
