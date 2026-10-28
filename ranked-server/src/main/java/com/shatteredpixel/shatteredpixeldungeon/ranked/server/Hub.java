@@ -367,7 +367,7 @@ public final class Hub {
 		}
 	}
 
-	private void ready(Client c, long now) {
+	private void ready(Client c, long now) throws SQLException {
 		Match m = c.match;
 		if (m == null || m.state != State.PREPARING) {
 			error(c.link, "no match waiting for READY");
@@ -377,6 +377,8 @@ public final class Hub {
 		if (m.sides[0].ready && m.sides[1].ready) {
 			m.state = State.COUNTDOWN;
 			m.t0 = now + cfg.countdownMs;
+			// recorded before START goes out: from here on the seed counts as revealed
+			db.markStarted(m.id, now);
 			// the seed stays secret until both players committed to the match (L18)
 			for (Side s : m.sides) s.link.send(new Frame(Frame.START, 0, m.id, startData(m)));
 		}
@@ -566,6 +568,8 @@ public final class Hub {
 	private void voidMatch(Match m, long now, String reason, long strikePlayer) throws SQLException {
 		m.state = State.VOIDED;
 		db.endMatch(m.id, m.state.name(), "VOID", reason, now);
+		// a seed nobody saw (START never sent) goes back to the pool (user call, 2026-10-28)
+		db.releaseSeed(m.id);
 		if (strikePlayer >= 0) db.strike(strikePlayer, now, reason);
 		for (Side s : m.sides) result(m, s, "VOID", reason, null, null);
 		close(m);

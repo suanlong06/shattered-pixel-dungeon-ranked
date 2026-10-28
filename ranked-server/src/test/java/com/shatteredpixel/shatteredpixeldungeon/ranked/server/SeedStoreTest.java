@@ -111,12 +111,15 @@ class SeedStoreTest {
 			s.execute("CREATE TABLE replay (match_id TEXT NOT NULL, side INTEGER NOT NULL, hero_class TEXT,"
 					+ " commands TEXT NOT NULL, result TEXT, detail TEXT, PRIMARY KEY (match_id, side))");
 			s.execute("INSERT INTO seed VALUES (100, 'old-match'), (200, NULL)");
+			s.execute("INSERT INTO match VALUES ('old-match', 1, 'desktop', 1, 2, 100, 'VOIDED', 'VOID', 'READY_TIMEOUT', 5, 6)");
 			s.execute("PRAGMA user_version = 2");
 		}
 		try (Storage db = new Storage(url)) {
 			assertEquals("old-match", db.seedUsedBy(100));
 			assertEquals(1, db.seedsLeft());
 			assertEquals(Long.valueOf(200), db.takeSeed("m"));
+			// old matches count as started: their seeds never come back
+			assertEquals(0, db.releaseSeed("old-match"));
 		}
 	}
 }
