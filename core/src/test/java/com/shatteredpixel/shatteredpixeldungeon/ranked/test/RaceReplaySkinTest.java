@@ -228,4 +228,20 @@ class RaceReplaySkinTest {
 		}
 		for (String k : vi.stringPropertyNames()) assertTrue(en.containsKey(k), "no English source for " + k);
 	}
+
+	@Test
+	void uploadedTelemetryIsSmallAndVersioned(){
+		Headless.boot();
+		Features.setMode(GameMode.RANKED);
+		EventLog.reset(0);
+		com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero hero = new com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero();
+		com.shatteredpixel.shatteredpixeldungeon.items.food.Food food = new com.shatteredpixel.shatteredpixeldungeon.items.food.Food();
+		for (int i = 0; i < 500; i++) EventLog.useItem(hero, food, "EAT" + i); // 500 distinct entries
+		String body = Telemetry.upload("WARRIOR", "DIED", 4, 1234);
+		assertTrue(body.startsWith("telemetry=v1\n"), body);
+		assertTrue(body.contains("run.end=DIED\n") && body.contains("hero.class=WARRIOR\n"), body);
+		assertTrue(body.length() <= Telemetry.MAX_CHARS);
+		long used = java.util.Arrays.stream(body.split("\n")).filter(l -> l.startsWith("used.")).count();
+		assertEquals(40, used, "used items cut to the 40 largest");
+	}
 }

@@ -11,7 +11,8 @@ import java.util.TreeMap;
 
 /**
  * spd-ranked (A5): a run summary built from the shared event log and the splits.
- * Local only: nothing here sends data anywhere (whether and what to upload is not decided yet).
+ * In Ranked the summary of each side is sent to the server once, before its last report
+ * ({@link #upload}); it is kept there to tune features and train models, never to judge matches.
  * Pure: reads the log, never the game RNG or state.
  *
  * Text form is {@code key=value} lines with stable, sorted keys, so summaries can be diffed
@@ -53,6 +54,40 @@ public final class Telemetry {
 			prev = a.getKey();
 		}
 		return t;
+	}
+
+	/** the server refuses bodies above 16 KB; per-source maps are cut to their largest entries first */
+	public static final int MAX_CHARS = 15 * 1024;
+	private static final int MAX_PER_MAP = 40;
+
+	/** the text sent to the server at the end of a Ranked run, from the live log and splits */
+	public static String upload( String heroClass, String end, int depth, long turns ){
+		Telemetry t = of( EventLog.events(), Splits.current(), "Hero" );
+		trim( t.damageTaken );
+		trim( t.damageDealt );
+		trim( t.itemsUsed );
+		Map<String, String> f = t.fields();
+		f.put( "game.version", "" + com.watabou.noosa.Game.versionCode );
+		f.put( "hero.class", heroClass == null ? "-" : heroClass );
+		f.put( "run.end", end );
+		f.put( "run.depth", "" + depth );
+		f.put( "run.turns", "" + turns );
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, String> e : f.entrySet()){
+			String line = e.getKey().replaceAll( "[^A-Za-z0-9_.:-]", "_" ) + "=" + e.getValue() + "\n";
+			if (sb.length() + line.length() > MAX_CHARS) break;
+			sb.append( line );
+		}
+		return sb.toString();
+	}
+
+	/** keeps the largest entries (ties by name), so the summary stays small */
+	static void trim( TreeMap<String, Integer> m ){
+		if (m.size() <= MAX_PER_MAP) return;
+		java.util.List<Map.Entry<String, Integer>> es = new java.util.ArrayList<>( m.entrySet() );
+		es.sort( (a, b) -> b.getValue().equals( a.getValue() ) ? a.getKey().compareTo( b.getKey() ) : b.getValue() - a.getValue() );
+		m.clear();
+		for (Map.Entry<String, Integer> e : es.subList( 0, MAX_PER_MAP )) m.put( e.getKey(), e.getValue() );
 	}
 
 	public Map<String, String> fields(){

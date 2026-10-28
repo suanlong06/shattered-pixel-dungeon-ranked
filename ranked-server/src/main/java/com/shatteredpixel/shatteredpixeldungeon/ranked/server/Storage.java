@@ -20,7 +20,7 @@ import java.util.List;
  */
 public final class Storage implements AutoCloseable {
 
-	public static final int SCHEMA = 3;
+	public static final int SCHEMA = 4;
 
 	private final Connection db;
 
@@ -64,6 +64,12 @@ public final class Storage implements AutoCloseable {
 				s.execute("ALTER TABLE seed ADD COLUMN pos INTEGER");
 				s.execute("UPDATE seed SET pos = (SELECT COUNT(*) FROM seed o WHERE o.seed <= seed.seed)");
 				s.execute("PRAGMA user_version = 3");
+			}
+			if (version < 4) {
+				// A5: each side's run summary (key=value lines), for tuning features and training models
+				s.execute("CREATE TABLE telemetry (match_id TEXT NOT NULL REFERENCES match(id), side INTEGER NOT NULL,"
+						+ " received INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY (match_id, side))");
+				s.execute("PRAGMA user_version = 4");
 			}
 		}
 	}
@@ -261,6 +267,27 @@ public final class Storage implements AutoCloseable {
 	}
 
 	/** {result, detail} of a stored replay, or null */
+	public void saveTelemetry(String matchId, int side, String body, long now) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("INSERT OR REPLACE INTO telemetry (match_id, side, received, body) VALUES (?, ?, ?, ?)")) {
+			p.setString(1, matchId);
+			p.setInt(2, side);
+			p.setLong(3, now);
+			p.setString(4, body);
+			p.executeUpdate();
+		}
+	}
+
+	/** null if that side sent none */
+	public String telemetry(String matchId, int side) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("SELECT body FROM telemetry WHERE match_id = ? AND side = ?")) {
+			p.setString(1, matchId);
+			p.setInt(2, side);
+			try (ResultSet r = p.executeQuery()) {
+				return r.next() ? r.getString(1) : null;
+			}
+		}
+	}
+
 	public String[] replayResult(String matchId, int side) throws SQLException {
 		try (PreparedStatement p = db.prepareStatement("SELECT result, detail FROM replay WHERE match_id = ? AND side = ?")) {
 			p.setString(1, matchId);
