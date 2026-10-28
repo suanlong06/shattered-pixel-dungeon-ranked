@@ -66,6 +66,13 @@ public class SPDAction extends GameAction {
 	public static final GameAction QUICKSLOT_4  = new SPDAction("quickslot_4");
 	public static final GameAction QUICKSLOT_5  = new SPDAction("quickslot_5");
 	public static final GameAction QUICKSLOT_6  = new SPDAction("quickslot_6");
+	// spd-ranked: C1 second hotbar, see ranked.qol.Hotbar2
+	public static final GameAction QUICKSLOT_7  = new SPDAction("quickslot_7");
+	public static final GameAction QUICKSLOT_8  = new SPDAction("quickslot_8");
+	public static final GameAction QUICKSLOT_9  = new SPDAction("quickslot_9");
+	public static final GameAction QUICKSLOT_10 = new SPDAction("quickslot_10");
+	public static final GameAction QUICKSLOT_11 = new SPDAction("quickslot_11");
+	public static final GameAction QUICKSLOT_12 = new SPDAction("quickslot_12");
 
 	public static final GameAction BAG_1        = new SPDAction("bag_1");
 	public static final GameAction BAG_2        = new SPDAction("bag_2");
@@ -131,6 +138,10 @@ public class SPDAction extends GameAction {
 		defaultBindings.put( Input.Keys.NUM_4,          SPDAction.QUICKSLOT_4 );
 		defaultBindings.put( Input.Keys.NUM_5,          SPDAction.QUICKSLOT_5 );
 		defaultBindings.put( Input.Keys.NUM_6,          SPDAction.QUICKSLOT_6 );
+		defaultBindings.put( Input.Keys.NUM_7,          SPDAction.QUICKSLOT_7 );  // spd-ranked: C1
+		defaultBindings.put( Input.Keys.NUM_8,          SPDAction.QUICKSLOT_8 );  // spd-ranked: C1
+		defaultBindings.put( Input.Keys.NUM_9,          SPDAction.QUICKSLOT_9 );  // spd-ranked: C1
+		defaultBindings.put( Input.Keys.NUM_0,          SPDAction.QUICKSLOT_10 ); // spd-ranked: C1
 
 		defaultBindings.put( Input.Keys.F1,             SPDAction.BAG_1 );
 		defaultBindings.put( Input.Keys.F2,             SPDAction.BAG_2 );

@@ -62,3 +62,9 @@
 - 2v2, Weekly League, Daily seed đều dùng lại cùng nền: seed pool (A4), nền tất định (T0.8), server (A1). Daily/Weekly là dễ nhất (chung seed, xếp hạng theo thời gian/tầng, không cần ghép trận thời gian thực). 2v2 cần luật đội mới và server phức tạp hơn.
 - Speedrun.com: **chưa kiểm chứng** hạng mục thật trên trang (không truy cập web trong lần nghiên cứu này). Cần mở trang game SPD trên speedrun.com để xem các category trước khi chọn luật tương thích.
 - Rủi ro lệch: thấp, vì không có tương tác giữa người chơi trong trận. Đề xuất giữ mặc định L15: chưa làm cho đến khi 1v1 ổn định; nếu làm, Daily seed trước.
+
+## Đã làm (C1, C2, C6)
+
+- **C1 hotbar 2:** `QuickSlot.SIZE = 12`; ô 7 đến 12 là hàng thứ hai phía trên toolbar (`ranked.qol.Hotbar2`, cờ `HOTBAR_2`), phím mặc định 7, 8, 9, 0 (ô 11, 12 tự gán). Vì là ô thật trong `QuickSlot`, mọi luật game giữ ô (placeholder, biến đổi, túi) đều áp dụng. Save cũ (6 ô) vẫn đọc được. Dùng ô ghi cùng lệnh ITEM; quickslot không nằm trong digest Ranked.
+- **C2:** dấu ghi chú đã có; test xác nhận ghi chú (theo loại và theo món) không đổi `TurnRunner.stateDigest`, và tạo ghi chú không dùng RNG (ID là bộ đếm).
+- **C6 (theo user: chỉ đổi hiển thị):** vạch tối trên thanh máu quái (trên đầu quái, thanh mục tiêu, cửa sổ xem quái), mỗi vạch = 5 HP nếu máu tối đa ≤ 30, 10 nếu ≤ 100, 25 nếu ≤ 250, 50 nếu ≤ 500, còn lại 100 (`ranked.qol.HpTicks`, cờ `HP_TICKS`). Bước chỉ theo máu tối đa nên cùng loại quái luôn cùng vạch. Bật cả trong Ranked (hai người như nhau). Phần "xác suất trúng" của C6 cũ chưa làm.

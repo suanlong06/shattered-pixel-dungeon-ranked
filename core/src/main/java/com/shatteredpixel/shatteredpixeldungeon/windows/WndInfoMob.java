@@ -59,6 +59,7 @@ public class WndInfoMob extends WndTitledMessage {
 
 			health = new HealthBar();
 			health.level(mob);
+			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.HpTicks.update( health, mob ); // spd-ranked: C6
 			if (!Char.hasProp(mob, Char.Property.OBJECT)) add( health );
 
 			buffs = new BuffIndicator( mob, false );
