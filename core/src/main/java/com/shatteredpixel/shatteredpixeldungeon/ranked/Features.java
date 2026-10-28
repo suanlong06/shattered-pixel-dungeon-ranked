@@ -62,6 +62,15 @@ public final class Features {
 		Skins.modeChanged();
 	}
 
+	/**
+	 * Dungeon.init: the challenges of a new run. Ranked always plays without challenges,
+	 * whatever the player set for Solo, because the server replays every match with none
+	 * (the run's digest would not match otherwise).
+	 */
+	public static int challenges( int fromSettings ){
+		return isRanked() ? 0 : fromSettings;
+	}
+
 	public static boolean enabled( Feature f ){
 		if (isRanked()) return rankedSet.contains( f );
 		return GameSettings.getBoolean( f.settingsKey(), f.soloDefault );
