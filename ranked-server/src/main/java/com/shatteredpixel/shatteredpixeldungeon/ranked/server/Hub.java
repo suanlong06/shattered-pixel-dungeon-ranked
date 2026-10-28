@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked.server;
 
 import com.google.gson.JsonObject;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.duel.MatchEnd;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinHash;
 
 import java.security.SecureRandom;
 import java.sql.SQLException;
@@ -133,6 +134,14 @@ public final class Hub {
 		public Verifier verifier = (e, done) -> done.accept(new Check(Result.ACCEPT, null, null));
 		/** what an UNVERIFIABLE check does: void the match (default, ratings unchanged) or count the verdict */
 		public boolean acceptUnverifiable = false;
+		/**
+		 * A6 skins. skinRules: hash of the denylist clients must apply when they use a pack (null:
+		 * not checked). A pack is refused if its hash is in deniedSkins, or allowedSkins is set and
+		 * lacks it. Players without a pack (the original art) are always let in.
+		 */
+		public String skinRules = null;
+		public java.util.Set<String> deniedSkins = new java.util.HashSet<>();
+		public java.util.Set<String> allowedSkins = null;
 		/** longest command log per side */
 		public int maxLogCommands = 500_000;
 		/** L6: a reroll vote is possible while both players are on this floor or above */
@@ -143,6 +152,8 @@ public final class Hub {
 		public int rerollsPerMatch = 1;
 		/** L19: pause time each player may use in a match */
 		public long pauseBudgetMs = 60_000;
+		/** largest telemetry body accepted, in characters */
+		public int maxTelemetry = 16 * 1024;
 	}
 
 	static final class Side {
@@ -280,6 +291,7 @@ public final class Hub {
 			case Frame.VOTE_REROLL: vote(c, f, now); break;
 			case Frame.PAUSE: pause(c, now); break;
 			case Frame.UNPAUSE: unpause(c, now); break;
+			case Frame.TELEMETRY: telemetry(c, f, now); break;
 			default: error(link, "unknown type " + f.type);
 		}
 	}
@@ -318,6 +330,11 @@ public final class Hub {
 			error(c.link, "build mismatch");
 			return;
 		}
+		String skinError = skinError(f.s("skin"), f.s("skinRules"));
+		if (skinError != null) {
+			error(c.link, skinError);
+			return;
+		}
 		String platform = f.s("platform"), key = f.s("deviceKey"), name = f.s("name");
 		if (!"android".equals(platform) && !"desktop".equals(platform)) {
 			error(c.link, "platform must be android or desktop");
@@ -337,6 +354,17 @@ public final class Hub {
 		d.addProperty("season", cfg.season);
 		d.addProperty("rating", db.rating(c.player, cfg.season, platform).rating);
 		c.link.send(new Frame(Frame.WELCOME, d));
+	}
+
+	/** A6: why this skin may not play, or null. Checked at every HELLO, so a reconnect is checked too. */
+	String skinError(String skin, String rules) {
+		if (skin == null || skin.equals(SkinHash.NONE)) return null;
+		if (!SkinHash.wellFormed(skin)) return "skin pack unreadable";
+		if (cfg.skinRules != null && !cfg.skinRules.equals(rules)) return "skin denylist mismatch";
+		if (cfg.deniedSkins.contains(skin) || (cfg.allowedSkins != null && !cfg.allowedSkins.contains(skin))) {
+			return "skin pack not allowed in ranked";
+		}
+		return null;
 	}
 
 	private void queue(Client c, long now) throws SQLException {
@@ -385,7 +413,7 @@ public final class Hub {
 		}
 	}
 
-	private void ready(Client c, long now) {
+	private void ready(Client c, long now) throws SQLException {
 		Match m = c.match;
 		if (m == null || m.state != State.PREPARING) {
 			error(c.link, "no match waiting for READY");
@@ -395,6 +423,8 @@ public final class Hub {
 		if (m.sides[0].ready && m.sides[1].ready) {
 			m.state = State.COUNTDOWN;
 			m.t0 = now + cfg.countdownMs;
+			// recorded before START goes out: from here on the seed counts as revealed
+			db.markStarted(m.id, now);
 			// the seed stays secret until both players committed to the match (L18)
 			for (Side s : m.sides) s.link.send(new Frame(Frame.START, 0, m.id, startData(m)));
 		}
@@ -485,6 +515,25 @@ public final class Hub {
 			}
 			s.log.add(line);
 		}
+	}
+
+	/**
+	 * A5: a side's run summary, sent before its last report. Only "key=value" lines with plain
+	 * keys are kept; the server stores it as given and never uses it to judge the match.
+	 */
+	private void telemetry(Client c, Frame f, long now) throws SQLException {
+		Match m = c.match;
+		if (m == null || (m.state != State.RUNNING && m.state != State.COUNTDOWN) || (f.matchId != null && !f.matchId.equals(m.id))) {
+			error(c.link, "no running match");
+			return;
+		}
+		String body = Telemetry.clean(f.s("body"), cfg.maxTelemetry);
+		if (body == null) {
+			error(c.link, "bad telemetry");
+			return;
+		}
+		Side s = side(m, c.player);
+		db.saveTelemetry(m.id, m.sides[0] == s ? 0 : 1, body, now);
 	}
 
 	private void report(Client c, Frame f, long now) throws SQLException {
@@ -756,6 +805,8 @@ public final class Hub {
 	private void voidMatch(Match m, long now, String reason, long strikePlayer) throws SQLException {
 		m.state = State.VOIDED;
 		db.endMatch(m.id, m.state.name(), "VOID", reason, now);
+		// a seed nobody saw (START never sent) goes back to the pool (user call, 2026-10-28)
+		db.releaseSeed(m.id);
 		if (strikePlayer >= 0) db.strike(strikePlayer, now, reason);
 		for (Side s : m.sides) result(m, s, "VOID", reason, null, null);
 		close(m);

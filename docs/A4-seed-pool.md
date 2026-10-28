@@ -28,7 +28,7 @@ Ngưỡng hiện tại lấy từ 30 seed mẫu (điểm 11 đến 44, chênh gi
 - Header khác ngưỡng hiện tại thì in cảnh báo. `-Dspdr.retireStalePools=true` ngừng phát các seed chưa dùng của pool cũ (seed đã dùng vẫn giữ làm hồ sơ trận).
 - Khởi động in số seed còn lại và cảnh báo khi pool rỗng.
 - Test: `SeedStoreTest` (thứ tự file, dùng một lần, rollback khi tạo trận lỗi, pool rỗng, giữ trạng thái qua khởi động lại, loại pool cũ, nâng cấp DB schema 2).
-- Seed của trận bị hủy trước `START` (hết giờ READY) vẫn tính là đã dùng, dù chưa lộ cho ai. Có thể trả lại pool nếu cần tiết kiệm seed; chưa làm vì cần user chốt.
+- Trận bị hủy trước `START` (hết giờ READY, rời trận, server khởi động lại) trả seed lại pool vì seed chưa lộ cho ai (user chốt 2026-10-28). Cột `match.started` (schema 4) ghi lúc gửi `START`, ghi trước khi gửi; seed của trận đã `START` không bao giờ quay lại pool. Trận cũ trước schema 4 coi như đã `START`.
 
 ## Còn để sau
 - Chỉnh bảng điểm và ngưỡng khi có dữ liệu chơi thật (bot S5 chưa qua được boss).

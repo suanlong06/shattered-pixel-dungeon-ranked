@@ -25,6 +25,7 @@ public final class Skins {
 
 	private static SkinPack active;
 	private static SkinDenylist denylist;
+	private static String denylistHash = SkinHash.NONE;
 	private static Boolean lastRanked;
 
 	private Skins(){}
@@ -49,6 +50,24 @@ public final class Skins {
 		} catch (IllegalArgumentException e){
 			denylist = null;
 		}
+		denylistHash = denylist == null ? SkinHash.NONE : SkinHash.ofText( text );
+	}
+
+	/**
+	 * What the ranked server checks (HELLO): the hash of the pack Ranked would draw with, or
+	 * {@link SkinHash#NONE} when it draws the original art (no pack, or no readable denylist).
+	 * A pack whose files cannot be read is sent as its folder name, which the server refuses.
+	 */
+	public static String rankedSkin(){
+		SkinPack pack = active;
+		if (pack == null || denylist == null) return SkinHash.NONE;
+		String h = pack.hash();
+		return h == null ? "unreadable:" + pack.id : h;
+	}
+
+	/** hash of the denylist text in use; NONE if there is none */
+	public static String denylistHash(){
+		return denylistHash;
 	}
 
 	public static SkinDenylist denylist(){

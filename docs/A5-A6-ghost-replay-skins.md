@@ -9,7 +9,7 @@ Test: `core/src/test/java/.../ranked/test/RaceReplaySkinTest.java` (headless). T
 | Mốc theo tầng | `ranked/race/Splits` | Lần đầu tới mỗi tầng và lúc hạ boss, tính bằng `Statistics.duration` (không bị dời gốc khi đổi tầng hoặc lưu như `Actor.now()`). Nạp từ `EventLog`, tách khỏi vòng 4096 sự kiện của Solo nên run dài không mất mốc đầu. |
 | Ghost | `ranked/race/Ghost` | Mốc của một run trước cùng seed. `compare` cho chênh lệch ở mốc chung gần nhất (âm là đang nhanh hơn), nên so được suốt cả run chứ không chỉ lúc cuối. `better` chọn ghost tốt hơn: hạ boss sâu hơn, rồi xuống sâu hơn, rồi nhanh hơn. |
 | Replay | `ranked/replay/ReplayFile` | Tệp văn bản `spdr-replay v1`: phiên bản game, seed, class, mode, digest cuối, rồi các lệnh theo định dạng `CommandLog`. Xem lại = đưa lệnh qua `TurnRunner`; server dùng cùng tệp để mô phỏng lại (A3). Test: phát lại tệp cho cùng digest, cùng mốc, cùng telemetry. |
-| Telemetry | `ranked/telemetry/Telemetry` | Tóm tắt run từ event log: số sự kiện theo loại, sát thương nhận và gây theo nguồn, đồ đã dùng, hồi máu, số lượt ở mỗi tầng. Chỉ cục bộ, không gửi đi đâu. |
+| Telemetry | `ranked/telemetry/Telemetry`, server `Telemetry` + bảng `telemetry` (schema 5) | Tóm tắt run từ event log: số sự kiện theo loại, sát thương nhận và gây theo nguồn, đồ đã dùng, hồi máu, số lượt ở mỗi tầng, cộng phiên bản game, class, cách kết thúc, tầng, lượt. Trong Ranked, client gửi một frame `TELEMETRY` (giao thức 3) ngay trước báo cáo DIED hoặc CLEARED. Gọn: dòng `key=value`, mỗi bảng theo nguồn giữ 40 mục lớn nhất, tối đa 15 KB (server nhận tối đa 16 KB). Server kiểm tra định dạng rồi lưu theo (trận, bên), không dùng để xét kết quả. Dùng để tinh chỉnh tính năng và làm dữ liệu train; muốn thêm trường thì chỉ thêm dòng mới. |
 | Event log | `EventLog` thêm loại `DEPTH` ở cuối enum | Ghi ở lượt đầu của hero trên một tầng. Trình đọc cũ gặp `DEPTH` sẽ báo lỗi dòng đó; định dạng dòng không đổi nên vẫn là v1. |
 
 Đợt 2: **ghost trong trận** (Solo, cờ `GHOST_RACE`): run tốt nhất mỗi seed lưu ở `ghosts/<seed>.txt` (`ranked/race/Ghosts`), cập nhật ở mỗi mốc mới nếu tốt hơn. Run đang chơi so với ghost đã có lúc bắt đầu và hiện một dòng "Ghost" trong cửa sổ nhân vật (hook `WndHero`), ví dụ "50 turns ahead (depth 2)". Ranked và Boss Practice không dùng ghost Solo. Khi chạy headless (test, server) không ghi file.
@@ -40,7 +40,7 @@ Test: `core/src/test/java/.../ranked/test/RaceReplaySkinTest.java` (headless). T
 
 Giới hạn: replay Solo chỉ khớp nếu hồ sơ và cài đặt giống lúc ghi (game hiện chỉ tự lưu replay Ranked). Tua lui một replay dài phải chạy lại từ đầu (x16). Chưa xem được cửa sổ thông tin nhân vật/nhật ký trong lúc xem.
 
-Còn để sau: ghost của đối thủ trong Ranked, gửi telemetry lên server (chờ user quyết định; hiện chỉ cục bộ).
+Còn để sau: ghost của đối thủ trong Ranked, telemetry cho run Solo (chưa có kết nối server khi chơi Solo), công cụ xuất bảng `telemetry` cho việc train.
 
 ## A6
 
@@ -56,4 +56,8 @@ Xác minh trên v4.0.2: mọi texture nạp theo đường dẫn đi qua `Textur
 
 Danh sách chặn lấy từ thiết kế repo cũ (18 vùng, quy về 10 mục ở đây). Nếu muốn chặn thêm hoặc bớt, chỉ cần sửa file properties.
 
-Còn để sau: chặn theo khung cho đúng cả các gói có kích thước ảnh khác bản gốc, gửi mã băm skin cho server, tải gói từ trong game. Bản dịch tiếng Việt cho tab Skins và dòng Ghost đã có ở `messages/ranked/ranked_vi.properties`.
+| Mã băm gửi server | `ranked/skins/SkinHash`, `SkinPack.hash`, `Skins.rankedSkin/denylistHash`; `RankedClient` gửi `skin` và `skinRules` trong `HELLO`; `Hub.skinError`; `ServerMain`; công cụ `ranked-server/.../SkinHashTool` | Gói được định danh bằng SHA-256 của phần hình: mỗi PNG mà gói thay (đường dẫn và nội dung, đường dẫn sắp xếp). Đổi tên thư mục hay sửa `skin.properties` không đổi mã, sửa một điểm ảnh thì đổi mã. Không gửi ảnh: đối thủ không thấy skin của mình, server chỉ cần biết đó là gói nào. Hình gốc (không gói, hoặc không đọc được denylist nên Ranked không vẽ skin) gửi chuỗi rỗng và luôn được vào. Server từ chối `HELLO` (nên kiểm cả khi nối lại) khi: mã băm có trong `spdr.skinDeny`; có `spdr.skinAllow` mà mã không có trong đó; mã băm denylist của client khác của server (mặc định băm từ `skins/ranked_denylist.properties` của core, nên APK bị sửa denylist sẽ bị bắt); gói không đọc được. Từ lúc kết nối tới khi có kết quả thì tab Skins bị khóa, để gói đã kiểm không đổi giữa trận. Tính mã băm cho file danh sách: `java -cp <classpath server> ...ranked.server.SkinHashTool <thư mục gói>`. |
+
+Test `SkinCheckTest` (4 ca): công cụ và game tính cùng mã, giới hạn độ sâu thư mục giống nhau, tên thư mục/manifest/file không phải ảnh không ảnh hưởng, đổi/di chuyển/thêm ảnh thì đổi mã; server băm đúng denylist của game; file danh sách bỏ comment, từ chối dòng hỏng; mọi trường hợp từ chối và cho vào ở `HELLO`. `ClientInteropTest`: client thật gửi gói bị cấm thì nhận lỗi, gói hợp lệ thì vào được.
+
+Còn để sau: chặn theo khung cho đúng cả các gói có kích thước ảnh khác bản gốc, tải gói từ trong game. Bản dịch tiếng Việt cho tab Skins và dòng Ghost đã có ở `messages/ranked/ranked_vi.properties`.

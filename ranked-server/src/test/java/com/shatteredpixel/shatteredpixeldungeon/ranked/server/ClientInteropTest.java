@@ -52,7 +52,13 @@ class ClientInteropTest {
 	}
 
 	static RankedClient client(int port, String build, String name, Probe p) {
+		return client(port, build, name, "", "", p);
+	}
+
+	static RankedClient client(int port, String build, String name, String skin, String skinRules, Probe p) {
 		RankedClient.Config c = new RankedClient.Config();
+		c.skin = skin;
+		c.skinRules = skinRules;
 		c.port = port;
 		c.build = build;
 		c.platform = "desktop";
@@ -277,6 +283,33 @@ class ClientInteropTest {
 				} finally {
 					a.close();
 					b.close();
+				}
+			}
+		}
+	}
+
+	@Test
+	void skinGoesOutWithHelloAndADeniedOneIsReported() throws Exception {
+		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
+			Hub.Config cfg = new Hub.Config();
+			cfg.skinRules = ServerMain.coreSkinRules();
+			String bad = com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinHash.ofText("shows mimics");
+			cfg.deniedSkins.add(bad);
+			try (Server server = new Server(new Hub(cfg, db, System.currentTimeMillis()), new ServerSocket(0))) {
+				server.start();
+				Probe p = new Probe();
+				RankedClient c = client(server.port(), cfg.build, "dave", bad, cfg.skinRules, p);
+				Probe ok = new Probe();
+				RankedClient o = client(server.port(), cfg.build, "erin",
+						com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinHash.ofText("fine"), cfg.skinRules, ok);
+				try {
+					c.start();
+					assertEquals("skin pack not allowed in ranked", p.errors.poll(10, TimeUnit.SECONDS));
+					o.start();
+					ok.awaitState(State.IDLE);
+				} finally {
+					c.close();
+					o.close();
 				}
 			}
 		}

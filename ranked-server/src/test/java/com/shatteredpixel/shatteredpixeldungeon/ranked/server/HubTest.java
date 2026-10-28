@@ -110,6 +110,27 @@ class HubTest {
 	}
 
 	@Test
+	void telemetryIsStoredPerSideAndCheckedFirst() throws Exception {
+		FakeLink[] p = running();
+		String id = p[0].last(Frame.START).matchId;
+		JsonObject d = new JsonObject();
+		d.addProperty("body", "telemetry=v1\ncount.damage=3\n\nrun.end=DIED\n");
+		hub.receive(p[1], new Frame(Frame.TELEMETRY, 0, id, d), now);
+		assertEquals("telemetry=v1\ncount.damage=3\nrun.end=DIED\n", db.telemetry(id, 1));
+		assertNull(db.telemetry(id, 0));
+
+		JsonObject bad = new JsonObject();
+		bad.addProperty("body", "telemetry=v1\nno equals sign\n");
+		hub.receive(p[0], new Frame(Frame.TELEMETRY, 0, id, bad), now);
+		assertEquals("bad telemetry", p[0].last(Frame.ERROR).s("message"));
+		assertNull(db.telemetry(id, 0));
+
+		assertNull(Telemetry.clean("count.damage=3\n", 1000), "must start with the version");
+		assertNull(Telemetry.clean("telemetry=v1\n", 5), "too long");
+		assertNull(Telemetry.clean("telemetry=v1\nbad key!=1\n", 1000));
+	}
+
+	@Test
 	void winnerByBossClearGetsRating() throws Exception {
 		FakeLink[] p = running();
 		send(p[0], Frame.PROGRESS, "depth", 5, "turns", 900, "bosses", 1);
@@ -210,6 +231,7 @@ class HubTest {
 		hub.tick(now);
 		assertEquals(0, hub.activeMatches());
 		assertEquals("VOIDED", db.matchState(firstMatchId(p)));
+		assertEquals(firstMatchId(p), db.seedUsedBy(11), "a seed sent in START stays used");
 	}
 
 	@Test
@@ -224,6 +246,26 @@ class HubTest {
 		assertEquals("VOID", a.last(Frame.RESULT).s("outcome"));
 		assertEquals(0, db.strikesSince(1, 0));
 		assertEquals(1, db.strikesSince(2, 0));
+		assertNull(db.seedUsedBy(11), "START never went out, so the seed goes back to the pool");
+		assertEquals(3, db.seedsLeft());
+	}
+
+	@Test
+	void leavingBeforeStartGivesTheSeedBack() throws Exception {
+		FakeLink a = hello("alice", "desktop"), b = hello("bob", "desktop");
+		send(a, Frame.QUEUE);
+		send(b, Frame.QUEUE);
+		hub.tick(now);
+		hub.disconnect(b, now);
+		assertNull(db.seedUsedBy(11));
+		// the next match gets the same, still secret seed
+		FakeLink c = hello("carol", "desktop");
+		send(a, Frame.QUEUE);
+		send(c, Frame.QUEUE);
+		hub.tick(now);
+		send(a, Frame.READY);
+		send(c, Frame.READY);
+		assertEquals(11L, a.last(Frame.START).l("seed", -1));
 	}
 
 	@Test
@@ -259,6 +301,19 @@ class HubTest {
 		FakeLink[] p = running();
 		new Hub(cfg, db, now);
 		assertEquals("VOIDED", db.matchState(firstMatchId(p)));
+		assertEquals(firstMatchId(p), db.seedUsedBy(11));
+	}
+
+	@Test
+	void restartBeforeStartGivesTheSeedBack() throws Exception {
+		FakeLink a = hello("alice", "desktop"), b = hello("bob", "desktop");
+		send(a, Frame.QUEUE);
+		send(b, Frame.QUEUE);
+		hub.tick(now);
+		String id = a.last(Frame.MATCH_FOUND).matchId;
+		new Hub(cfg, db, now);
+		assertEquals("VOIDED", db.matchState(id));
+		assertNull(db.seedUsedBy(11));
 	}
 
 	// L6: seed reroll vote
