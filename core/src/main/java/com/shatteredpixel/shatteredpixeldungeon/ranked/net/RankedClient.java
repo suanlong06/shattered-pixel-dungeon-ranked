@@ -53,6 +53,9 @@ public final class RankedClient {
 		public String platform;
 		public String deviceKey;
 		public String name;
+		/** A6: Skins.rankedSkin() and Skins.denylistHash(), checked by the server */
+		public String skin = "";
+		public String skinRules = "";
 		public long pingMs = 5_000;
 		/** the server counts 15 s of silence as a dead link; so do we */
 		public int readTimeoutMs = 15_000;
@@ -262,7 +265,7 @@ public final class RankedClient {
 		synchronized (writeLock){ out = new BufferedOutputStream( s.getOutputStream() ); }
 		send( new NetFrame( NetFrame.HELLO, NetFrame.obj(
 				"protocol", NetFrame.PROTOCOL, "build", cfg.build, "platform", cfg.platform,
-				"deviceKey", cfg.deviceKey, "name", cfg.name ) ) );
+				"deviceKey", cfg.deviceKey, "name", cfg.name, "skin", cfg.skin, "skinRules", cfg.skinRules ) ) );
 		Thread pinger = new Thread( () -> {
 			try {
 				while (socket == s && !s.isClosed()){

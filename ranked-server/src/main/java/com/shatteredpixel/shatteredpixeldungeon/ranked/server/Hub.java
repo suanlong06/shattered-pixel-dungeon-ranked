@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked.server;
 
 import com.google.gson.JsonObject;
 import com.shatteredpixel.shatteredpixeldungeon.ranked.duel.MatchEnd;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinHash;
 
 import java.security.SecureRandom;
 import java.sql.SQLException;
@@ -126,6 +127,14 @@ public final class Hub {
 		public Verifier verifier = (e, done) -> done.accept(new Check(Result.ACCEPT, null, null));
 		/** what an UNVERIFIABLE check does: void the match (default, ratings unchanged) or count the verdict */
 		public boolean acceptUnverifiable = false;
+		/**
+		 * A6 skins. skinRules: hash of the denylist clients must apply when they use a pack (null:
+		 * not checked). A pack is refused if its hash is in deniedSkins, or allowedSkins is set and
+		 * lacks it. Players without a pack (the original art) are always let in.
+		 */
+		public String skinRules = null;
+		public java.util.Set<String> deniedSkins = new java.util.HashSet<>();
+		public java.util.Set<String> allowedSkins = null;
 		/** longest command log per side */
 		public int maxLogCommands = 500_000;
 	}
@@ -277,6 +286,11 @@ public final class Hub {
 			error(c.link, "build mismatch");
 			return;
 		}
+		String skinError = skinError(f.s("skin"), f.s("skinRules"));
+		if (skinError != null) {
+			error(c.link, skinError);
+			return;
+		}
 		String platform = f.s("platform"), key = f.s("deviceKey"), name = f.s("name");
 		if (!"android".equals(platform) && !"desktop".equals(platform)) {
 			error(c.link, "platform must be android or desktop");
@@ -296,6 +310,17 @@ public final class Hub {
 		d.addProperty("season", cfg.season);
 		d.addProperty("rating", db.rating(c.player, cfg.season, platform).rating);
 		c.link.send(new Frame(Frame.WELCOME, d));
+	}
+
+	/** A6: why this skin may not play, or null. Checked at every HELLO, so a reconnect is checked too. */
+	String skinError(String skin, String rules) {
+		if (skin == null || skin.equals(SkinHash.NONE)) return null;
+		if (!SkinHash.wellFormed(skin)) return "skin pack unreadable";
+		if (cfg.skinRules != null && !cfg.skinRules.equals(rules)) return "skin denylist mismatch";
+		if (cfg.deniedSkins.contains(skin) || (cfg.allowedSkins != null && !cfg.allowedSkins.contains(skin))) {
+			return "skin pack not allowed in ranked";
+		}
+		return null;
 	}
 
 	private void queue(Client c, long now) throws SQLException {
