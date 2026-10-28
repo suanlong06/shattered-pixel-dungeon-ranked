@@ -228,6 +228,7 @@ class HubTest {
 		hub.tick(now);
 		assertEquals(0, hub.activeMatches());
 		assertEquals("VOIDED", db.matchState(firstMatchId(p)));
+		assertEquals(firstMatchId(p), db.seedUsedBy(11), "a seed sent in START stays used");
 	}
 
 	@Test
@@ -242,6 +243,26 @@ class HubTest {
 		assertEquals("VOID", a.last(Frame.RESULT).s("outcome"));
 		assertEquals(0, db.strikesSince(1, 0));
 		assertEquals(1, db.strikesSince(2, 0));
+		assertNull(db.seedUsedBy(11), "START never went out, so the seed goes back to the pool");
+		assertEquals(3, db.seedsLeft());
+	}
+
+	@Test
+	void leavingBeforeStartGivesTheSeedBack() throws Exception {
+		FakeLink a = hello("alice", "desktop"), b = hello("bob", "desktop");
+		send(a, Frame.QUEUE);
+		send(b, Frame.QUEUE);
+		hub.tick(now);
+		hub.disconnect(b, now);
+		assertNull(db.seedUsedBy(11));
+		// the next match gets the same, still secret seed
+		FakeLink c = hello("carol", "desktop");
+		send(a, Frame.QUEUE);
+		send(c, Frame.QUEUE);
+		hub.tick(now);
+		send(a, Frame.READY);
+		send(c, Frame.READY);
+		assertEquals(11L, a.last(Frame.START).l("seed", -1));
 	}
 
 	@Test
@@ -277,6 +298,19 @@ class HubTest {
 		FakeLink[] p = running();
 		new Hub(cfg, db, now);
 		assertEquals("VOIDED", db.matchState(firstMatchId(p)));
+		assertEquals(firstMatchId(p), db.seedUsedBy(11));
+	}
+
+	@Test
+	void restartBeforeStartGivesTheSeedBack() throws Exception {
+		FakeLink a = hello("alice", "desktop"), b = hello("bob", "desktop");
+		send(a, Frame.QUEUE);
+		send(b, Frame.QUEUE);
+		hub.tick(now);
+		String id = a.last(Frame.MATCH_FOUND).matchId;
+		new Hub(cfg, db, now);
+		assertEquals("VOIDED", db.matchState(id));
+		assertNull(db.seedUsedBy(11));
 	}
 
 	private static String firstMatchId(FakeLink[] p) {

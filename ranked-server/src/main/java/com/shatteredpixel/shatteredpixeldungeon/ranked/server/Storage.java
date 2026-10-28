@@ -20,7 +20,7 @@ import java.util.List;
  */
 public final class Storage implements AutoCloseable {
 
-	public static final int SCHEMA = 4;
+	public static final int SCHEMA = 5;
 
 	private final Connection db;
 
@@ -66,10 +66,17 @@ public final class Storage implements AutoCloseable {
 				s.execute("PRAGMA user_version = 3");
 			}
 			if (version < 4) {
+				// when START (and so the seed) went out; older matches count as started, so
+				// their seeds are never handed out again
+				s.execute("ALTER TABLE match ADD COLUMN started INTEGER");
+				s.execute("UPDATE match SET started = created");
+				s.execute("PRAGMA user_version = 4");
+			}
+			if (version < 5) {
 				// A5: each side's run summary (key=value lines), for tuning features and training models
 				s.execute("CREATE TABLE telemetry (match_id TEXT NOT NULL REFERENCES match(id), side INTEGER NOT NULL,"
 						+ " received INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY (match_id, side))");
-				s.execute("PRAGMA user_version = 4");
+				s.execute("PRAGMA user_version = 5");
 			}
 		}
 	}
@@ -307,12 +314,39 @@ public final class Storage implements AutoCloseable {
 		}
 	}
 
-	/** server restart mid-match voids the match (T0.5: kept from the old design) */
-	public int voidUnfinished(long now) throws SQLException {
-		try (PreparedStatement p = db.prepareStatement("UPDATE match SET state = 'VOIDED', reason = 'SERVER_RESTART', ended = ? WHERE ended IS NULL")) {
+	/** START is about to be sent: the match's seed is revealed and never goes back to the pool */
+	public void markStarted(String id, long now) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("UPDATE match SET started = ? WHERE id = ?")) {
 			p.setLong(1, now);
+			p.setString(2, id);
+			p.executeUpdate();
+		}
+	}
+
+	/** gives a match's seed back to the pool; only for a match whose START was never sent */
+	public int releaseSeed(String matchId) throws SQLException {
+		try (PreparedStatement p = db.prepareStatement("UPDATE seed SET used_by = NULL, used_at = NULL WHERE used_by = ?"
+				+ " AND EXISTS (SELECT 1 FROM match WHERE id = ? AND started IS NULL)")) {
+			p.setString(1, matchId);
+			p.setString(2, matchId);
 			return p.executeUpdate();
 		}
+	}
+
+	/**
+	 * server restart mid-match voids the match (T0.5: kept from the old design); matches
+	 * still PREPARING never sent their seed, so it goes back to the pool
+	 */
+	public int voidUnfinished(long now) throws SQLException {
+		return inTransaction(() -> {
+			try (Statement s = db.createStatement()) {
+				s.executeUpdate("UPDATE seed SET used_by = NULL, used_at = NULL WHERE used_by IN (SELECT id FROM match WHERE ended IS NULL AND started IS NULL)");
+			}
+			try (PreparedStatement p = db.prepareStatement("UPDATE match SET state = 'VOIDED', reason = 'SERVER_RESTART', ended = ? WHERE ended IS NULL")) {
+				p.setLong(1, now);
+				return p.executeUpdate();
+			}
+		});
 	}
 
 	public void strike(long player, long now, String reason) throws SQLException {

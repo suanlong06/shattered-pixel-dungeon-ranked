@@ -1,6 +1,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.ranked.server;
 
 import com.shatteredpixel.shatteredpixeldungeon.ranked.seed.SeedPoolFile;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinDenylist;
+import com.shatteredpixel.shatteredpixeldungeon.ranked.skins.SkinHash;
 
 import java.io.FileInputStream;
 import java.net.ServerSocket;
@@ -26,6 +28,10 @@ import javax.net.ssl.SSLContext;
  *   spdr.keystore / spdr.keystorePass   PKCS12 keystore; without it the server runs plain TCP
  *   spdr.verify    replay (default): replay command logs before rating (A3); none: accept every verdict
  *   spdr.acceptUnverifiable  true: count verdicts replay cannot follow yet instead of voiding them
+ *   spdr.skinDeny  file of skin pack hashes refused in ranked (one per line, # comments; see SkinHashTool)
+ *   spdr.skinAllow file of the only skin pack hashes let in; unset: any pack not denied
+ *   spdr.skinRules hash of the skin denylist clients must apply (default: core's
+ *                  skins/ranked_denylist.properties; none: not checked)
  * </pre>
  */
 public final class ServerMain {
@@ -38,6 +44,14 @@ public final class ServerMain {
 		int port = Integer.getInteger("spdr.port", 7420);
 		if (!"none".equals(System.getProperty("spdr.verify", "replay"))) cfg.verifier = new ReplayVerifier();
 		cfg.acceptUnverifiable = Boolean.getBoolean("spdr.acceptUnverifiable");
+
+		cfg.skinRules = System.getProperty("spdr.skinRules", coreSkinRules());
+		if ("none".equals(cfg.skinRules)) cfg.skinRules = null;
+		if (System.getProperty("spdr.skinDeny") != null) cfg.deniedSkins = hashes(System.getProperty("spdr.skinDeny"));
+		if (System.getProperty("spdr.skinAllow") != null) cfg.allowedSkins = hashes(System.getProperty("spdr.skinAllow"));
+		System.out.println("skins: " + cfg.deniedSkins.size() + " denied, "
+				+ (cfg.allowedSkins == null ? "any other allowed" : cfg.allowedSkins.size() + " allowed")
+				+ ", denylist " + (cfg.skinRules == null ? "not checked" : cfg.skinRules));
 
 		Storage db = new Storage("jdbc:sqlite:" + System.getProperty("spdr.db", "ranked.db"));
 		String pool = System.getProperty("spdr.seedpool");
@@ -79,6 +93,32 @@ public final class ServerMain {
 		server.start();
 		System.out.println("spd-ranked server on port " + server.port() + ", build " + cfg.build + ", season " + cfg.season);
 		Thread.currentThread().join();
+	}
+
+	/** the hash of core's skin denylist, as the game computes it (Skins.denylistHash), or null */
+	static String coreSkinRules() {
+		try (java.io.InputStream in = ServerMain.class.getResourceAsStream("/" + SkinDenylist.ASSET)) {
+			if (in == null) return null;
+			java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+			byte[] buf = new byte[4096];
+			int n;
+			while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+			return SkinHash.ofText(new String(b.toByteArray(), StandardCharsets.UTF_8));
+		} catch (java.io.IOException e) {
+			return null;
+		}
+	}
+
+	/** skin hashes, one per line; blank lines and # comments skipped; a malformed line stops the server */
+	static java.util.Set<String> hashes(String file) throws java.io.IOException {
+		java.util.Set<String> out = new java.util.HashSet<>();
+		for (String raw : Files.readAllLines(Paths.get(file), StandardCharsets.UTF_8)) {
+			String line = raw.replaceAll("#.*", "").trim();
+			if (line.isEmpty()) continue;
+			if (!SkinHash.wellFormed(line)) throw new IllegalArgumentException(file + ": not a skin hash: " + line);
+			out.add(line);
+		}
+		return out;
 	}
 
 	/** the bytecode hash core's build wrote (core/build.gradle, rankedFingerprint), or null */

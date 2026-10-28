@@ -122,6 +122,15 @@ public final class RankedSession {
 		if (current == this) current = null;
 	}
 
+	/**
+	 * A6: true from connecting to the result. The server checks the skin at HELLO (and again on
+	 * every reconnect), so it may not change in between.
+	 */
+	public static boolean locksSkin(){
+		RankedSession s = current;
+		return s != null && s.state != RankedClient.State.OFFLINE && s.state != RankedClient.State.FINISHED;
+	}
+
 	public void accept(){ client.ready(); }
 	public void resign(){ client.resign(); }
 
@@ -340,6 +349,8 @@ public final class RankedSession {
 		cfg.tls = !(cfg.host.equals( "127.0.0.1" ) || cfg.host.equals( "localhost" ) || cfg.host.startsWith( "192.168." ) || cfg.host.startsWith( "10." ));
 		cfg.build = buildFingerprint();
 		cfg.platform = DeviceCompat.isDesktop() ? "desktop" : "android";
+		cfg.skin = com.shatteredpixel.shatteredpixeldungeon.ranked.skins.Skins.rankedSkin();
+		cfg.skinRules = com.shatteredpixel.shatteredpixeldungeon.ranked.skins.Skins.denylistHash();
 		cfg.deviceKey = deviceKey();
 		cfg.name = GameSettings.getString( KEY_NAME, "Player-" + cfg.deviceKey.substring( 0, 6 ), 24 );
 		return cfg;
