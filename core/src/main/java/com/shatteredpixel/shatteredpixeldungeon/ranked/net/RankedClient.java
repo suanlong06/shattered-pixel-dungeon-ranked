@@ -83,6 +83,8 @@ public final class RankedClient {
 	private volatile int rating = -1;
 	private volatile long playerId = -1;
 	private volatile long resumeLostAt = -1;
+	/** a reroll START came: the old run's log and reports are dropped until {@link #newRun()} */
+	private volatile boolean awaitingNewRun;
 
 	public RankedClient( Config cfg, Listener listener ){
 		this.cfg = cfg;
@@ -130,6 +132,22 @@ public final class RankedClient {
 	}
 
 	public void ready(){ send( match( NetFrame.READY, null ) ); }
+
+	/** L6: vote for a new seed, or decline the opponent's vote */
+	public void voteReroll( boolean accept ){ send( match( NetFrame.VOTE_REROLL, NetFrame.obj( "accept", accept ) ) ); }
+	/** L19: stops this player's own clock until {@link #unpause()} or the budget runs out */
+	public void pause(){ send( match( NetFrame.PAUSE, null ) ); }
+	public void unpause(){ send( match( NetFrame.UNPAUSE, null ) ); }
+
+	/** the run is starting (again, after a reroll): the log restarts from command 0 */
+	public void newRun(){
+		synchronized (log){
+			log.clear();
+			logClass = null;
+			lastReport = null;
+			awaitingNewRun = false;
+		}
+	}
 	public void resign(){ report( match( NetFrame.RESIGN, null ) ); }
 
 	/**
@@ -138,6 +156,7 @@ public final class RankedClient {
 	 */
 	public void log( String heroClass, List<String> cmds ){
 		synchronized (log){
+			if (awaitingNewRun) return;
 			int from = log.size();
 			logClass = heroClass;
 			log.addAll( cmds );
@@ -191,6 +210,7 @@ public final class RankedClient {
 	}
 
 	private void report( NetFrame f ){
+		if (awaitingNewRun && !f.type.equals( NetFrame.RESIGN )) return;
 		lastReport = f;
 		// while reconnecting, the report waits for RESUMED
 		if (state != State.RECONNECTING) send( f );
@@ -309,6 +329,8 @@ public final class RankedClient {
 				setState( State.MATCH_FOUND );
 				break;
 			case NetFrame.START:
+				// a second START is a reroll: the old run's commands must not reach the new log
+				if (state == State.STARTED) awaitingNewRun = true;
 				setState( State.STARTED );
 				break;
 			case NetFrame.RESUMED:

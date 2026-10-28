@@ -217,4 +217,68 @@ class ClientInteropTest {
 			}
 		}
 	}
+
+	/** L6 and L19 through the real client: a reroll restarts the log on the new seed; a pause shows on both sides */
+	@Test
+	void rerollAndPause() throws Exception {
+		try (Storage db = new Storage("jdbc:sqlite::memory:")) {
+			db.addSeeds(Arrays.asList(5L, 6L));
+			Hub.Config cfg = new Hub.Config();
+			cfg.countdownMs = 0;
+			Hub.Evidence[] seen = new Hub.Evidence[1];
+			cfg.verifier = (e, done) -> { seen[0] = e; done.accept(new Hub.Check(Hub.Result.ACCEPT, null, null)); };
+			try (Server server = new Server(new Hub(cfg, db, System.currentTimeMillis()), new ServerSocket(0))) {
+				server.start();
+				Probe pa = new Probe(), pb = new Probe();
+				RankedClient a = client(server.port(), "dev", "alice", pa), b = client(server.port(), "dev", "bob", pb);
+				try {
+					a.start();
+					b.start();
+					pa.awaitState(State.IDLE);
+					pb.awaitState(State.IDLE);
+					a.queue();
+					b.queue();
+					pa.await(NetFrame.MATCH_FOUND);
+					pb.await(NetFrame.MATCH_FOUND);
+					a.ready();
+					b.ready();
+					assertEquals(5L, pa.await(NetFrame.START).l("seed", -1));
+					pb.await(NetFrame.START);
+					Thread.sleep(1500);
+					a.log("WARRIOR", Arrays.asList("CELL 5", "REST 0"));
+					a.progress(2, 40, 0);
+					pb.awaitOpponent(true, 2);
+
+					a.pause();
+					NetFrame paused = pb.await(NetFrame.PAUSED);
+					assertTrue(paused.b("paused"));
+					assertFalse(paused.b("mine"));
+					assertTrue(pa.await(NetFrame.PAUSED).b("mine"));
+					a.unpause();
+					assertFalse(pa.await(NetFrame.PAUSED).b("paused"));
+
+					a.voteReroll(true);
+					assertTrue(pb.await(NetFrame.REROLL_VOTE).b("theirs"));
+					b.voteReroll(true);
+					NetFrame again = pa.await(NetFrame.START);
+					assertEquals(6L, again.l("seed", -1));
+					assertEquals(1, again.i("reroll", 0));
+					// until the game restarts the run, the old run's commands go nowhere
+					a.log("WARRIOR", Arrays.asList("OLD"));
+					a.newRun();
+					a.log("MAGE", Arrays.asList("CELL 9"));
+					Thread.sleep(1500);
+					a.cleared(15, 900, 3);
+					assertEquals("WIN", pa.await(NetFrame.RESULT).s("outcome"));
+					assertEquals(6L, seen[0].seed);
+					Hub.SideLog la = "MAGE".equals(seen[0].sides[0].heroClass) ? seen[0].sides[0] : seen[0].sides[1];
+					assertEquals(Arrays.asList("CELL 9"), la.commands);
+					assertTrue(pa.errors.isEmpty(), pa.errors.toString());
+				} finally {
+					a.close();
+					b.close();
+				}
+			}
+		}
+	}
 }

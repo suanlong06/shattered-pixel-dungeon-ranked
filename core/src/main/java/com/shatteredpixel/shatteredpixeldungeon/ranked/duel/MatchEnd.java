@@ -7,12 +7,17 @@ package com.shatteredpixel.shatteredpixeldungeon.ranked.duel;
  *
  * Order of checks:
  * 1. forfeit, then disconnect longer than the limit: that player loses;
- * 2. a player who killed the final boss wins (earliest clear first, then fewer turns);
+ * 2. a player who killed the final boss wins (earliest clear first, then fewer turns),
+ *    once the other player's own clock has passed that clear time;
  * 3. one dead and the other alive: the living player wins;
  * 4. both dead: deeper floor, then later death, then more turns played; else draw;
- * 5. time limit reached with both alive: deeper floor, then more bosses killed,
- *    then fewer turns; else draw;
+ * 5. time limit reached on both players' own clocks, with both alive: deeper floor,
+ *    then more bosses killed, then fewer turns; else draw;
  * otherwise the match is still running.
+ *
+ * Own clock (L19 pause): each player's time is match time minus the time that player
+ * spent paused ({@link Player#pausedMs}). Pausing stops only your own clock; the
+ * opponent's keeps running. Clear and death times are on the player's own clock.
  */
 public final class MatchEnd {
 
@@ -51,6 +56,10 @@ public final class MatchEnd {
 		public long clearedAt = -1;         // -1: final boss not killed yet
 		public long disconnectedSince = -1; // -1: connected
 		public boolean forfeited = false;
+		public long pausedMs = 0;           // match time spent paused, so far (own clock = match time - this)
+
+		/** this player's own clock at match time {@code now} */
+		public long clock(long now) { return Math.max(0, now - pausedMs); }
 
 		boolean dead() { return deathAt >= 0; }
 		boolean cleared() { return clearedAt >= 0; }
@@ -84,8 +93,16 @@ public final class MatchEnd {
 		}
 
 		if (a.cleared() || b.cleared()) {
-			if (!b.cleared()) return win(true, Reason.BOSS_CLEARED);
-			if (!a.cleared()) return win(false, Reason.BOSS_CLEARED);
+			// a clear is final once the other player's own clock has passed it (or that
+			// player is dead): until then the other may still clear earlier on its own clock
+			if (!b.cleared()) {
+				if (!b.dead() && b.clock(now) < a.clearedAt) return ongoing();
+				return win(true, Reason.BOSS_CLEARED);
+			}
+			if (!a.cleared()) {
+				if (!a.dead() && a.clock(now) < b.clearedAt) return ongoing();
+				return win(false, Reason.BOSS_CLEARED);
+			}
 			int c = Long.compare(b.clearedAt, a.clearedAt); // earlier clear wins
 			if (c == 0) c = Long.compare(b.turns, a.turns); // then fewer turns
 			return c == 0 ? draw() : win(c > 0, Reason.BOSS_CLEARED);
@@ -104,7 +121,7 @@ public final class MatchEnd {
 			return draw();
 		}
 
-		if (now >= rules.timeLimitMs) {
+		if (a.clock(now) >= rules.timeLimitMs && b.clock(now) >= rules.timeLimitMs) {
 			int c = Integer.compare(a.depth, b.depth);
 			if (c != 0) return win(c > 0, Reason.TIMEOUT_DEPTH);
 			c = Integer.compare(a.bossesKilled, b.bossesKilled);
@@ -114,6 +131,10 @@ public final class MatchEnd {
 			return draw();
 		}
 
+		return ongoing();
+	}
+
+	private static Verdict ongoing() {
 		return new Verdict(Outcome.ONGOING, Reason.NONE);
 	}
 

@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 public final class Frame {
 
 	/** bump on any incompatible change; HELLO with another version is refused */
-	public static final int PROTOCOL = 2; // 2: LOG (A3)
+	public static final int PROTOCOL = 3; // 2: LOG (A3); 3: VOTE_REROLL, PAUSE (L6, L19)
 
 	// client -> server
 	public static final String HELLO = "HELLO";
@@ -23,6 +23,11 @@ public final class Frame {
 	/** A3: next part of the command log, {@code {from, cmds, cls}}; see Hub */
 	public static final String LOG = "LOG";
 	public static final String RESUME = "RESUME";
+	/** L6: vote for a new seed, {@code {accept}} (default true; false declines the opponent's vote) */
+	public static final String VOTE_REROLL = "VOTE_REROLL";
+	/** L19: stop this player's own clock, up to the pause budget */
+	public static final String PAUSE = "PAUSE";
+	public static final String UNPAUSE = "UNPAUSE";
 	public static final String PING = "PING";
 
 	// server -> client
@@ -33,6 +38,10 @@ public final class Frame {
 	public static final String OPPONENT = "OPPONENT";
 	public static final String RESUMED = "RESUMED";
 	public static final String RESULT = "RESULT";
+	/** {@code {mine, theirs, voteMs, ended?}}; a passed vote is a new START instead */
+	public static final String REROLL_VOTE = "REROLL_VOTE";
+	/** {@code {mine, paused, leftMs}} */
+	public static final String PAUSED = "PAUSED";
 	public static final String PONG = "PONG";
 	public static final String ERROR = "ERROR";
 

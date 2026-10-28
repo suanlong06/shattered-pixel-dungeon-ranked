@@ -58,7 +58,10 @@ class HubTest {
 
 	void send(FakeLink l, String type, Object... kv) throws Exception {
 		JsonObject d = new JsonObject();
-		for (int i = 0; i < kv.length; i += 2) d.addProperty((String) kv[i], (Number) kv[i + 1]);
+		for (int i = 0; i < kv.length; i += 2) {
+			if (kv[i + 1] instanceof Boolean) d.addProperty((String) kv[i], (Boolean) kv[i + 1]);
+			else d.addProperty((String) kv[i], (Number) kv[i + 1]);
+		}
 		hub.receive(l, new Frame(type, d), now);
 	}
 
@@ -256,6 +259,172 @@ class HubTest {
 		FakeLink[] p = running();
 		new Hub(cfg, db, now);
 		assertEquals("VOIDED", db.matchState(firstMatchId(p)));
+	}
+
+	// L6: seed reroll vote
+
+	@Test
+	void rerollNeedsBothVotesAndStartsOver() throws Exception {
+		FakeLink[] p = running();
+		String id = firstMatchId(p);
+		send(p[0], Frame.PROGRESS, "depth", 4, "turns", 300);
+		send(p[0], Frame.VOTE_REROLL);
+		Frame v = p[1].last(Frame.REROLL_VOTE);
+		assertTrue(v.data.get("theirs").getAsBoolean());
+		assertFalse(v.data.get("mine").getAsBoolean());
+		int starts = count(p[1], Frame.START);
+		send(p[1], Frame.VOTE_REROLL);
+		assertEquals(starts + 1, count(p[1], Frame.START));
+		Frame start = p[0].last(Frame.START);
+		assertEquals(22L, start.l("seed", -1));
+		assertEquals(1, start.i("reroll", 0));
+		assertEquals(22L, db.matchSeed(id));
+		// the revealed seed never goes back to the pool
+		assertEquals(id, db.seedUsedBy(11L));
+		assertEquals(1, p[1].last(Frame.OPPONENT).i("depth", 0));
+		// reports wait for the new countdown, then start from floor 1 again
+		send(p[0], Frame.PROGRESS, "depth", 2, "turns", 10);
+		assertEquals("no running match", p[0].last(Frame.ERROR).s("message"));
+		now += cfg.countdownMs;
+		hub.tick(now);
+		p[0].got.clear();
+		send(p[0], Frame.PROGRESS, "depth", 2, "turns", 10);
+		assertNull(p[0].last(Frame.ERROR));
+		// one reroll per match
+		send(p[0], Frame.VOTE_REROLL);
+		assertEquals("no reroll left", p[0].last(Frame.ERROR).s("message"));
+	}
+
+	@Test
+	void rerollClosesPastFloorFive() throws Exception {
+		FakeLink[] p = running();
+		send(p[1], Frame.PROGRESS, "depth", 6, "turns", 400);
+		send(p[0], Frame.VOTE_REROLL);
+		assertEquals("reroll only up to floor 5", p[0].last(Frame.ERROR).s("message"));
+		assertNull(p[1].last(Frame.REROLL_VOTE));
+	}
+
+	@Test
+	void openVoteEndsWhenSomeoneGoesPastFloorFive() throws Exception {
+		FakeLink[] p = running();
+		send(p[0], Frame.PROGRESS, "depth", 5, "turns", 400);
+		send(p[0], Frame.VOTE_REROLL);
+		send(p[0], Frame.PROGRESS, "depth", 6, "turns", 450);
+		assertEquals("TOO_DEEP", p[1].last(Frame.REROLL_VOTE).s("ended"));
+		send(p[1], Frame.VOTE_REROLL);
+		assertNotNull(p[1].last(Frame.ERROR));
+		assertEquals(11L, db.matchSeed(firstMatchId(p)));
+	}
+
+	@Test
+	void rerollVoteCanBeDeclinedOrExpire() throws Exception {
+		FakeLink[] p = running();
+		send(p[0], Frame.VOTE_REROLL);
+		send(p[1], Frame.VOTE_REROLL, "accept", false);
+		assertEquals("DECLINED", p[0].last(Frame.REROLL_VOTE).s("ended"));
+		send(p[1], Frame.VOTE_REROLL);
+		now += cfg.rerollVoteMs;
+		hub.tick(now);
+		assertEquals("EXPIRED", p[0].last(Frame.REROLL_VOTE).s("ended"));
+		send(p[0], Frame.VOTE_REROLL);
+		assertFalse(p[1].last(Frame.REROLL_VOTE).data.has("ended"));
+		assertEquals(11L, db.matchSeed(firstMatchId(p)));
+	}
+
+	@Test
+	void rerollWithEmptyPoolKeepsTheSeed() throws Exception {
+		FakeLink[] p = running();
+		db.takeSeed("x");
+		db.takeSeed("y");
+		send(p[0], Frame.VOTE_REROLL);
+		send(p[1], Frame.VOTE_REROLL);
+		assertEquals("POOL_EMPTY", p[0].last(Frame.REROLL_VOTE).s("ended"));
+		assertEquals(11L, db.matchSeed(firstMatchId(p)));
+	}
+
+	// L19: pause, own clocks
+
+	@Test
+	void pauseStopsOnlyThePausersClock() throws Exception {
+		cfg.rules = new com.shatteredpixel.shatteredpixeldungeon.ranked.duel.MatchEnd.Rules(15, 600_000, 300_000);
+		FakeLink[] p = running();
+		now += 100_000;
+		send(p[0], Frame.PAUSE);
+		assertTrue(p[1].last(Frame.PAUSED).data.get("paused").getAsBoolean());
+		assertFalse(p[1].last(Frame.PAUSED).data.get("mine").getAsBoolean());
+		// nothing counts while paused
+		send(p[0], Frame.PROGRESS, "depth", 2, "turns", 10);
+		assertEquals("paused", p[0].last(Frame.ERROR).s("message"));
+		now += 40_000;
+		send(p[0], Frame.UNPAUSE);
+		assertEquals(20_000, p[0].last(Frame.PAUSED).l("leftMs", -1));
+		// match time 440 s: b clears at own 440 s, a's own clock is only at 400 s
+		now += 300_000;
+		send(p[1], Frame.CLEARED, "depth", 15, "turns", 900, "bosses", 3);
+		assertNull(p[1].last(Frame.RESULT), "a may still clear earlier on its own clock");
+		now += 20_000;
+		// a clears at own 420 s, before b's 440 s
+		send(p[0], Frame.CLEARED, "depth", 15, "turns", 950, "bosses", 3);
+		assertEquals("WIN", p[0].last(Frame.RESULT).s("outcome"));
+		assertEquals("LOSS", p[1].last(Frame.RESULT).s("outcome"));
+	}
+
+	@Test
+	void clearStandsOnceTheOtherClockPassesIt() throws Exception {
+		FakeLink[] p = running();
+		send(p[0], Frame.PAUSE);
+		now += 10_000;
+		send(p[0], Frame.UNPAUSE);
+		now += 50_000;
+		send(p[1], Frame.CLEARED, "depth", 15, "turns", 900, "bosses", 3);
+		assertNull(p[1].last(Frame.RESULT));
+		now += 10_000;
+		hub.tick(now);
+		assertEquals("WIN", p[1].last(Frame.RESULT).s("outcome"));
+	}
+
+	@Test
+	void pauseBudgetRunsOut() throws Exception {
+		cfg.rules = new com.shatteredpixel.shatteredpixeldungeon.ranked.duel.MatchEnd.Rules(15, 600_000, 300_000);
+		FakeLink[] p = running();
+		send(p[0], Frame.PAUSE);
+		now += 60_000;
+		hub.tick(now);
+		Frame ended = p[0].last(Frame.PAUSED);
+		assertFalse(ended.data.get("paused").getAsBoolean(), "the budget ends the pause");
+		assertEquals(0, ended.l("leftMs", -1));
+		send(p[0], Frame.PAUSE);
+		assertEquals("no pause left", p[0].last(Frame.ERROR).s("message"));
+		now += 100_000;
+		send(p[0], Frame.CLEARED, "depth", 15, "turns", 900, "bosses", 3);
+		assertEquals("WIN", p[0].last(Frame.RESULT).s("outcome"));
+	}
+
+	@Test
+	void timeoutWaitsForBothOwnClocks() throws Exception {
+		cfg.rules = new com.shatteredpixel.shatteredpixeldungeon.ranked.duel.MatchEnd.Rules(15, 600_000, 300_000);
+		FakeLink[] p = running();
+		send(p[0], Frame.PAUSE);
+		now += 30_000;
+		send(p[0], Frame.UNPAUSE);
+		now += 570_000;
+		hub.tick(now);
+		// b is out of time, a still has 30 s
+		assertNull(p[0].last(Frame.RESULT));
+		send(p[1], Frame.PROGRESS, "depth", 9, "turns", 900);
+		assertEquals("time is up", p[1].last(Frame.ERROR).s("message"));
+		send(p[0], Frame.PROGRESS, "depth", 3, "turns", 900);
+		assertNull(p[0].last(Frame.ERROR));
+		now += 30_000;
+		hub.tick(now);
+		assertEquals("WIN", p[0].last(Frame.RESULT).s("outcome"));
+		assertEquals("TIMEOUT_DEPTH", p[0].last(Frame.RESULT).s("reason"));
+	}
+
+	private static int count(FakeLink l, String type) {
+		int n = 0;
+		for (Frame f : l.got) if (f.type.equals(type)) n++;
+		return n;
 	}
 
 	private static String firstMatchId(FakeLink[] p) {

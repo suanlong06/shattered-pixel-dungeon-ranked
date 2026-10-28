@@ -29,8 +29,15 @@ import java.util.function.Consumer;
  * Every PROGRESS, DIED and CLEARED must follow the LOG part that brings the log up to it: the
  * verifier replays the log to its end and compares the result with the side's last report.
  *
- * Not built on purpose (rules the user has not settled): mid-match seed reroll vote and
- * the shared 180 s pause budget. Both would be new frame types plus a Match field.
+ * Seed reroll vote (L6, docs/A1-ranked-server.md): while both players are on floor 5 or
+ * above it, either may send VOTE_REROLL; if the other agrees within {@code rerollVoteMs},
+ * the match takes a fresh seed from the pool, both logs and reports start over and a new
+ * START (with {@code reroll}) begins a new countdown. {@code {accept: false}} declines.
+ * The old seed stays marked with this match: it was revealed, so it never goes back.
+ *
+ * Pause (L19): each player has {@code pauseBudgetMs} of pause per match. PAUSE stops that
+ * player's own clock only; the opponent's keeps running (MatchEnd.Player#pausedMs). While
+ * paused the side's LOG and reports are refused; UNPAUSE or an empty budget ends it.
  */
 public final class Hub {
 
@@ -128,6 +135,14 @@ public final class Hub {
 		public boolean acceptUnverifiable = false;
 		/** longest command log per side */
 		public int maxLogCommands = 500_000;
+		/** L6: a reroll vote is possible while both players are on this floor or above */
+		public int rerollMaxDepth = 5;
+		/** how long a reroll vote waits for the other player */
+		public long rerollVoteMs = 30_000;
+		/** rerolls a match may have */
+		public int rerollsPerMatch = 1;
+		/** L19: pause time each player may use in a match */
+		public long pauseBudgetMs = 60_000;
 	}
 
 	static final class Side {
@@ -140,6 +155,19 @@ public final class Hub {
 		final MatchEnd.Player p = new MatchEnd.Player();
 		String heroClass;
 		final List<String> log = new ArrayList<>();
+		/** match time this side's open reroll vote was cast, -1 if none */
+		long voteAt = -1;
+		/** match time the current pause began, -1 when not paused */
+		long pausedAt = -1;
+		/** pause time used by finished pauses */
+		long pauseUsed;
+		/** pause time used before the latest reroll: it counts toward the budget, not this run's clock */
+		long pauseUsedBefore;
+
+		boolean paused() { return pausedAt >= 0; }
+
+		/** pause time used so far, the running pause included */
+		long pauseUsed(long clock) { return pauseUsed + (paused() ? Math.max(0, clock - pausedAt) : 0); }
 
 		Side(long player, String name, double rating, String token) {
 			this.player = player;
@@ -152,12 +180,13 @@ public final class Hub {
 	static final class Match {
 		final String id;
 		final String platform;
-		final long seed;
+		long seed;
 		final long created;
 		final Side[] sides;
 		State state = State.PREPARING;
 		long t0;
 		MatchEnd.Verdict pending;
+		int rerolls;
 
 		Match(String id, String platform, long seed, long created, Side a, Side b) {
 			this.id = id;
@@ -218,6 +247,8 @@ public final class Hub {
 			voidMatch(m, now, "LEFT_BEFORE_START", s.player);
 		} else if (m.state == State.COUNTDOWN || m.state == State.RUNNING) {
 			s.p.disconnectedSince = m.clock(now);
+			// a vote cannot be answered by someone who left
+			if (m.sides[0].voteAt >= 0 || m.sides[1].voteAt >= 0) endVote(m, "LEFT");
 			opponent(m, s);
 			judge(m, now);
 		}
@@ -245,7 +276,10 @@ public final class Hub {
 			case Frame.RESUME: resume(c, f); break;
 			case Frame.READY: ready(c, now); break;
 			case Frame.PROGRESS: case Frame.DIED: case Frame.CLEARED: case Frame.RESIGN: report(c, f, now); break;
-			case Frame.LOG: log(c, f); break;
+			case Frame.LOG: log(c, f, now); break;
+			case Frame.VOTE_REROLL: vote(c, f, now); break;
+			case Frame.PAUSE: pause(c, now); break;
+			case Frame.UNPAUSE: unpause(c, now); break;
 			default: error(link, "unknown type " + f.type);
 		}
 	}
@@ -263,6 +297,13 @@ public final class Hub {
 				continue;
 			}
 			if (m.state == State.COUNTDOWN && now >= m.t0) m.state = State.RUNNING;
+			if (m.state == State.RUNNING) {
+				long t = m.clock(now);
+				for (Side s : m.sides) {
+					if (s.voteAt >= 0 && t - s.voteAt >= cfg.rerollVoteMs) endVote(m, "EXPIRED");
+					if (s.paused() && s.pauseUsed(t) >= cfg.pauseBudgetMs) endPause(m, s, t);
+				}
+			}
 			judge(m, now);
 		}
 	}
@@ -338,6 +379,8 @@ public final class Hub {
 			d.addProperty("resumeToken", s.token);
 			d.addProperty("finalBossDepth", cfg.rules.finalBossDepth);
 			d.addProperty("timeLimitMs", cfg.rules.timeLimitMs);
+			d.addProperty("pauseBudgetMs", cfg.pauseBudgetMs);
+			d.addProperty("rerollMaxDepth", cfg.rerollMaxDepth);
 			s.link.send(new Frame(Frame.MATCH_FOUND, 0, id, d));
 		}
 	}
@@ -361,6 +404,7 @@ public final class Hub {
 		JsonObject d = new JsonObject();
 		d.addProperty("seed", m.seed);
 		d.addProperty("t0", m.t0);
+		d.addProperty("reroll", m.rerolls);
 		return d;
 	}
 
@@ -383,12 +427,14 @@ public final class Hub {
 		d.addProperty("depth", s.p.depth);
 		d.addProperty("turns", s.p.turns);
 		d.addProperty("logCount", s.log.size());
+		d.addProperty("pauseLeftMs", cfg.pauseBudgetMs - s.pauseUsed(m.clock(lastNow)));
+		d.addProperty("paused", s.paused());
 		c.link.send(new Frame(Frame.RESUMED, 0, m.id, d));
 		opponent(m, s);
 		opponent(m, other(m, s));
 	}
 
-	private void log(Client c, Frame f) {
+	private void log(Client c, Frame f, long now) {
 		Match m = c.match;
 		// the first part (hero class, no commands yet) comes with START, during the countdown
 		if (m == null || (m.state != State.RUNNING && m.state != State.COUNTDOWN) || (f.matchId != null && !f.matchId.equals(m.id))) {
@@ -398,6 +444,10 @@ public final class Hub {
 		Side s = side(m, c.player);
 		if (s.p.deathAt >= 0 || s.p.clearedAt >= 0) {
 			error(c.link, "log is closed");
+			return;
+		}
+		if (s.paused()) {
+			error(c.link, "paused");
 			return;
 		}
 		int from = f.i("from", -1);
@@ -444,9 +494,19 @@ public final class Hub {
 			return;
 		}
 		Side s = side(m, c.player);
-		long t = m.clock(now);
+		syncPause(m, now);
+		// clear and death times are on the side's own clock (pauses taken out)
+		long t = s.p.clock(m.clock(now));
 		if (f.type.equals(Frame.RESIGN)) {
 			s.p.forfeited = true;
+		} else if (s.paused()) {
+			error(c.link, "paused");
+			return;
+		} else if (t >= cfg.rules.timeLimitMs) {
+			// own time is up: the side waits for the other clock; later progress does not count
+			error(c.link, "time is up");
+			judge(m, now);
+			return;
 		} else if (s.p.deathAt < 0 && s.p.clearedAt < 0) {
 			int depth = f.i("depth", s.p.depth);
 			long turns = f.l("turns", s.p.turns);
@@ -465,6 +525,10 @@ public final class Hub {
 			s.p.bossesKilled = bosses;
 			if (f.type.equals(Frame.DIED)) s.p.deathAt = t;
 			if (f.type.equals(Frame.CLEARED)) s.p.clearedAt = t;
+			// past floor 5 a reroll is off the table, so an open vote ends
+			if (s.p.depth > cfg.rerollMaxDepth || s.p.deathAt >= 0 || s.p.clearedAt >= 0) {
+				if (m.sides[0].voteAt >= 0 || m.sides[1].voteAt >= 0) endVote(m, "TOO_DEEP");
+			}
 			opponent(m, s);
 		}
 		judge(m, now);
@@ -482,8 +546,159 @@ public final class Hub {
 		o.link.send(new Frame(Frame.OPPONENT, 0, m.id, d));
 	}
 
+	private void vote(Client c, Frame f, long now) throws SQLException {
+		Match m = c.match;
+		if (m == null || m.state != State.RUNNING || (f.matchId != null && !f.matchId.equals(m.id))) {
+			error(c.link, "no running match");
+			return;
+		}
+		Side s = side(m, c.player), o = other(m, s);
+		boolean accept = !f.data.has("accept") || f.data.get("accept").getAsBoolean();
+		if (!accept) {
+			if (o.voteAt >= 0) endVote(m, "DECLINED");
+			return;
+		}
+		if (m.rerolls >= cfg.rerollsPerMatch) {
+			error(c.link, "no reroll left");
+			return;
+		}
+		if (!rerollOpen(s) || !rerollOpen(o)) {
+			error(c.link, "reroll only up to floor " + cfg.rerollMaxDepth);
+			return;
+		}
+		if (o.link == null) {
+			error(c.link, "opponent is not connected");
+			return;
+		}
+		if (s.voteAt >= 0) return;
+		s.voteAt = m.clock(now);
+		if (o.voteAt < 0) {
+			voteState(m, null);
+			return;
+		}
+		reroll(m, now);
+	}
+
+	/** a side can still take part in a reroll: alive, not done, not past the reroll floor */
+	private boolean rerollOpen(Side s) {
+		return s.p.depth <= cfg.rerollMaxDepth && s.p.deathAt < 0 && s.p.clearedAt < 0 && !s.p.forfeited;
+	}
+
+	/** both agreed: a new seed, logs and reports start over, a new countdown */
+	private void reroll(Match m, long now) throws SQLException {
+		Long seed = db.rerollMatch(m.id, now);
+		if (seed == null) {
+			System.err.println("seed pool empty: reroll refused for " + m.id);
+			endVote(m, "POOL_EMPTY");
+			return;
+		}
+		long clock = m.clock(now);
+		m.seed = seed;
+		m.rerolls++;
+		m.state = State.COUNTDOWN;
+		m.t0 = now + cfg.countdownMs;
+		for (Side s : m.sides) {
+			s.voteAt = -1;
+			// pause time already used stays used; a pause in progress ends with the old run
+			if (s.paused()) s.pauseUsed += Math.max(0, clock - s.pausedAt);
+			s.pausedAt = -1;
+			s.heroClass = null;
+			s.log.clear();
+			MatchEnd.Player p = s.p;
+			p.depth = 1;
+			p.bossesKilled = 0;
+			p.turns = 0;
+			p.deathAt = -1;
+			p.clearedAt = -1;
+			p.pausedMs = 0;
+			// the match clock restarts with t0
+			if (p.disconnectedSince >= 0) p.disconnectedSince = 0;
+		}
+		for (Side s : m.sides) {
+			s.pauseUsedBefore = s.pauseUsed;
+			if (s.link != null) s.link.send(new Frame(Frame.START, 0, m.id, startData(m)));
+		}
+		for (Side s : m.sides) opponent(m, s);
+	}
+
+	private void endVote(Match m, String why) {
+		for (Side s : m.sides) s.voteAt = -1;
+		voteState(m, why);
+	}
+
+	/** REROLL_VOTE to both: who has voted, and why the vote ended (null while it is open) */
+	private void voteState(Match m, String ended) {
+		for (Side s : m.sides) {
+			if (s.link == null) continue;
+			Side o = other(m, s);
+			JsonObject d = new JsonObject();
+			d.addProperty("mine", s.voteAt >= 0);
+			d.addProperty("theirs", o.voteAt >= 0);
+			d.addProperty("voteMs", cfg.rerollVoteMs);
+			if (ended != null) d.addProperty("ended", ended);
+			s.link.send(new Frame(Frame.REROLL_VOTE, 0, m.id, d));
+		}
+	}
+
+	private void pause(Client c, long now) {
+		Match m = c.match;
+		if (m == null || m.state != State.RUNNING) {
+			error(c.link, "no running match");
+			return;
+		}
+		Side s = side(m, c.player);
+		long t = m.clock(now);
+		if (s.paused()) return;
+		if (s.p.deathAt >= 0 || s.p.clearedAt >= 0) {
+			error(c.link, "run is over");
+			return;
+		}
+		if (s.pauseUsed(t) >= cfg.pauseBudgetMs) {
+			error(c.link, "no pause left");
+			return;
+		}
+		s.pausedAt = t;
+		pauseState(m, s, t);
+	}
+
+	private void unpause(Client c, long now) {
+		Match m = c.match;
+		if (m == null || m.state != State.RUNNING) return;
+		Side s = side(m, c.player);
+		if (s.paused()) endPause(m, s, m.clock(now));
+	}
+
+	private void endPause(Match m, Side s, long clock) {
+		// never more than the budget, even if the tick that ends it comes late
+		s.pauseUsed = Math.min(cfg.pauseBudgetMs, s.pauseUsed(clock));
+		s.pausedAt = -1;
+		s.p.pausedMs = s.pauseUsed - s.pauseUsedBefore;
+		pauseState(m, s, clock);
+	}
+
+	/** PAUSED to both: {@code mine} is about the receiver, {@code leftMs} the paused side's budget */
+	private void pauseState(Match m, Side s, long clock) {
+		for (Side to : m.sides) {
+			if (to.link == null) continue;
+			JsonObject d = new JsonObject();
+			d.addProperty("mine", to == s);
+			d.addProperty("paused", s.paused());
+			d.addProperty("leftMs", Math.max(0, cfg.pauseBudgetMs - s.pauseUsed(clock)));
+			to.link.send(new Frame(Frame.PAUSED, 0, m.id, d));
+		}
+	}
+
+	/** brings each side's paused time (the running pause included, capped at the budget) up to now */
+	private void syncPause(Match m, long now) {
+		long t = m.clock(now);
+		for (Side s : m.sides) {
+			s.p.pausedMs = Math.min(cfg.pauseBudgetMs, s.pauseUsed(t)) - s.pauseUsedBefore;
+		}
+	}
+
 	private void judge(Match m, long now) throws SQLException {
 		if (m.state != State.RUNNING && m.state != State.COUNTDOWN) return;
+		syncPause(m, now);
 		MatchEnd.Verdict v = MatchEnd.judge(m.sides[0].p, m.sides[1].p, m.clock(now), cfg.rules);
 		if (!v.over()) return;
 		// both players gone is not a contest (T0.5: both disconnected = void)
