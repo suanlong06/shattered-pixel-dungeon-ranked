@@ -197,6 +197,19 @@ public class QuickSlotButton extends Button {
 				return SPDAction.QUICKSLOT_5;
 			case 5:
 				return SPDAction.QUICKSLOT_6;
+			// spd-ranked: C1 second hotbar
+			case 6:
+				return SPDAction.QUICKSLOT_7;
+			case 7:
+				return SPDAction.QUICKSLOT_8;
+			case 8:
+				return SPDAction.QUICKSLOT_9;
+			case 9:
+				return SPDAction.QUICKSLOT_10;
+			case 10:
+				return SPDAction.QUICKSLOT_11;
+			case 11:
+				return SPDAction.QUICKSLOT_12;
 			default:
 				return super.keyAction();
 		}

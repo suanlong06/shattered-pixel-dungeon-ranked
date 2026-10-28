@@ -52,6 +52,7 @@ public class CharHealthIndicator extends HealthBar {
 			x = sprite.x + sprite.width()/6f;
 			y = sprite.y - 2;
 			level( target );
+			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.HpTicks.update( this, target ); // spd-ranked: C6
 			visible = target.HP < target.HT || target.shielding() > 0 || target.incomingDOT() > 0;
 		} else {
 			visible = false;

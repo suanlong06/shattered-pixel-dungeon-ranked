@@ -47,6 +47,7 @@ public class TargetHealthIndicator extends HealthBar {
 			x = sprite.x;
 			y = sprite.y - 3;
 			level( target );
+			com.shatteredpixel.shatteredpixeldungeon.ranked.qol.HpTicks.update( this, target ); // spd-ranked: C6
 			visible = true;
 		} else {
 			visible = false;

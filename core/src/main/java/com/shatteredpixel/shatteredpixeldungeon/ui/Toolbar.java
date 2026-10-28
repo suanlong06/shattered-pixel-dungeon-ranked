@@ -473,8 +473,23 @@ public class Toolbar extends Component {
 		add(pickedUp = new PickedUpItem());
 	}
 	
+	// spd-ranked: C1, the second hotbar row sits above the toolbar; top() includes it so the log and tags move up
 	@Override
 	protected void layout() {
+		spdrLayout();
+		for (int i = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Hotbar2.FIRST; i < btnQuick.length; i++){
+			btnQuick[i].visible = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Hotbar2.shown();
+			btnQuick[i].enable( btnQuick[i].visible && lastEnabled );
+		}
+		com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Hotbar2.place( this, btnQuick );
+	}
+
+	@Override
+	public float top() {
+		return y - com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Hotbar2.extraHeight();
+	}
+
+	private void spdrLayout() {
 
 		float right = width;
 
