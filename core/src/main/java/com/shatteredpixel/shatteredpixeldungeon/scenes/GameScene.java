@@ -318,6 +318,7 @@ public class GameScene extends PixelScene {
 		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.qol.KnownItemMarkers() ); // spd-ranked: B3
 		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ItemNoteMarkers() ); // spd-ranked: C2
 		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.qol.TileIndicator() ); // spd-ranked: C1
+		add( new com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ExplorationMemory.Overlay() ); // spd-ranked: C5
 		
 		for ( Heap heap : Dungeon.level.heaps.valueList() ) {
 			addHeapSprite( heap );

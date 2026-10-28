@@ -15,7 +15,9 @@ public enum Feature {
 	//display/camera only, safe in Ranked (docs/C-research.md)
 	ITEM_NOTE_MARKERS    ( true, true ),  // C2
 	CAMERA_KEYS          ( true, true ),  // C1
-	TILE_INDICATOR       ( true, true );  // C1
+	TILE_INDICATOR       ( true, true ),  // C1
+	WIKI                 ( true, true ),  // C4, Ranked: the same standard catalog for both players
+	EXPLORATION_MEMORY   ( true, true );  // C5, only what the player has discovered
 
 	/** value in Solo until the player changes it */
 	public final boolean soloDefault;

@@ -530,6 +530,7 @@ public class WndJournal extends WndTabbed {
 				} else {
 					grid.addHeader(Messages.get(this, "floor_header", i));
 				}
+				String spdrMemory = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.ExplorationMemory.line( i ); if (spdrMemory != null) grid.addHeader( spdrMemory, 6, false ); // spd-ranked: C5
 				for( Notes.Record rec : recs){
 
 					ScrollingGridPane.GridItem gridItem = new ScrollingGridPane.GridItem(rec.icon()){
@@ -746,7 +747,7 @@ public class WndJournal extends WndTabbed {
 	private static void addGridItems( ScrollingGridPane grid, Collection<Class<?>> classes) {
 		for (Class<?> itemClass : classes) {
 
-			boolean seen = Catalog.isSeen(itemClass);;
+			boolean seen = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Wiki.seen( Catalog.isSeen(itemClass) ); // spd-ranked: C4
 			ItemSprite sprite = null;
 			Image secondIcon = null;
 			String title = "";
@@ -846,7 +847,7 @@ public class WndJournal extends WndTabbed {
 			}
 
 			String finalTitle = title;
-			String finalDesc = desc;
+			String finalDesc = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Wiki.withTip( desc, itemClass, seen ); // spd-ranked: C4
 			ScrollingGridPane.GridItem gridItem = new ScrollingGridPane.GridItem(sprite) {
 				@Override
 				public boolean onClick(float x, float y) {
@@ -877,7 +878,7 @@ public class WndJournal extends WndTabbed {
 	private static void addGridEntities(ScrollingGridPane grid, Collection<Class<?>> classes) {
 		for (Class<?> entityCls : classes){
 
-			boolean seen = Bestiary.isSeen(entityCls);
+			boolean seen = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Wiki.seen( Bestiary.isSeen(entityCls) ); // spd-ranked: C4
 			Mob mob = null;
 			Image icon = null;
 			String title = null;
@@ -980,7 +981,7 @@ public class WndJournal extends WndTabbed {
 
 			Mob finalMob = mob;
 			String finalTitle = title;
-			String finalDesc = desc;
+			String finalDesc = com.shatteredpixel.shatteredpixeldungeon.ranked.qol.Wiki.withTip( desc, entityCls, seen ); // spd-ranked: C4
 			ScrollingGridPane.GridItem gridItem = new ScrollingGridPane.GridItem(icon) {
 				@Override
 				public boolean onClick(float x, float y) {
